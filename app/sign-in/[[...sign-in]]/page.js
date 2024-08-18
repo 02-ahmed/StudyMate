@@ -19,7 +19,7 @@ export default function Page() {
         }}
       >
         <Typography variant="h4" component="h1" gutterBottom>
-          Welcome Back to TutMentor!
+          Welcome Back to StudyMate!
         </Typography>
         <Typography
           variant="body1"
