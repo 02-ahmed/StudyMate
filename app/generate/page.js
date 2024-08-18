@@ -15,27 +15,38 @@ import {
   DialogContentText,
   DialogActions,
   CardContent,
+  AppBar,
+  Toolbar,
+  CircularProgress, // Import CircularProgress component
 } from "@mui/material";
 import { collection, doc, getDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/firebase";
-import { useUser } from "@clerk/nextjs";
+import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 export default function Generate() {
   const { isLoaded, isSignedIn, user } = useUser();
   const [flipped, setFlipped] = useState([]);
   const [text, setText] = useState("");
-  const [flashcards, setFlashcards] = useState([]);
+  const [summaryNotes, setSummaryNotes] = useState([]);
   const [setName, setSetName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [open, setOpen] = useState(false);
-  //const router = useRouter()
+  const [loading, setLoading] = useState(false); // Add loading state
+  const router = useRouter();
 
-  const handleOpenDialog = () => setDialogOpen(true);
+  const handleOpenDialog = () => {
+    if (!isSignedIn) {
+      alert("Please sign in to save summary notes.");
+      return;
+    }
+    setDialogOpen(true);
+  };
+
   const handleCloseDialog = () => setDialogOpen(false);
 
-  const saveFlashcards = async () => {
+  const saveSummaryNotes = async () => {
     if (!setName.trim()) {
-      alert("Please enter a name for your flashcard set.");
+      alert("Please enter a name for your summary notes set.");
       return;
     }
 
@@ -48,33 +59,35 @@ export default function Generate() {
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data();
         const updatedSets = [
-          ...(userData.flashcardSets || []),
+          ...(userData.summaryNoteSets || []),
           { name: setName },
         ];
-        batch.update(userDocRef, { flashcardSets: updatedSets });
+        batch.update(userDocRef, { summaryNoteSets: updatedSets });
       } else {
-        batch.set(userDocRef, { flashcardSets: [{ name: setName }] });
+        batch.set(userDocRef, { summaryNoteSets: [{ name: setName }] });
       }
 
-      const setDocRef = doc(collection(userDocRef, "flashcardSets"), setName);
-      batch.set(setDocRef, { flashcards });
+      const setDocRef = doc(collection(userDocRef, "summaryNoteSets"), setName);
+      batch.set(setDocRef, { summaryNotes });
 
       await batch.commit();
 
-      alert("Flashcards saved successfully!");
+      alert("Summary notes saved successfully!");
       handleCloseDialog();
       setSetName("");
     } catch (error) {
-      console.error("Error saving flashcards:", error);
-      alert("An error occurred while saving flashcards. Please try again.");
+      console.error("Error saving summary notes:", error);
+      alert("An error occurred while saving summary notes. Please try again.");
     }
   };
 
   const handleSubmit = async () => {
     if (!text.trim()) {
-      alert("Please enter some text to generate flashcards.");
+      alert("Please enter some text to generate summary notes.");
       return;
     }
+
+    setLoading(true); // Start loading
 
     try {
       const response = await fetch("/api/generate", {
@@ -83,23 +96,56 @@ export default function Generate() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate flashcards");
+        throw new Error("Failed to generate summary notes");
       }
 
       const data = await response.json();
-      setFlashcards(data);
+      setSummaryNotes(data);
     } catch (error) {
-      console.error("Error generating flashcards:", error);
-      alert("An error occurred while generating flashcards. Please try again.");
+      console.error("Error generating summary notes:", error);
+      alert(
+        "An error occurred while generating summary notes. Please try again."
+      );
+    } finally {
+      setLoading(false); // Stop loading
     }
+  };
+
+  const handleViewSavedNotes = () => {
+    if (!isSignedIn) {
+      alert("Please sign in to view saved summary notes.");
+      return;
+    }
+    router.push("/flashcards");
   };
 
   return (
     <>
+      {/* AppBar with SignInButton and UserButton */}
+      <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            StudyMate
+          </Typography>
+          {isSignedIn ? (
+            <UserButton afterSignOutUrl="/" />
+          ) : (
+            <SignInButton mode="modal">
+              <Button color="inherit">Sign In</Button>
+            </SignInButton>
+          )}
+        </Toolbar>
+      </AppBar>
+
       <Container maxWidth="md">
-        <Box sx={{ my: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Generate Flashcards
+        <Box sx={{ my: 4, textAlign: "center" }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            gutterBottom
+            sx={{ fontWeight: "bold", color: "#3f51b5" }}
+          >
+            Generate Summary Notes
           </Typography>
           <TextField
             value={text}
@@ -116,15 +162,21 @@ export default function Generate() {
             color="primary"
             onClick={handleSubmit}
             fullWidth
+            sx={{ py: 1.5 }}
+            disabled={loading} // Disable button while loading
           >
-            Generate Flashcards
+            {loading ? (
+              <CircularProgress size={24} color="inherit" /> // Show loading indicator
+            ) : (
+              "Generate Summary Notes"
+            )}
           </Button>
         </Box>
         <Dialog open={dialogOpen} onClose={handleCloseDialog}>
-          <DialogTitle>Save Flashcard Set</DialogTitle>
+          <DialogTitle>Save Summary Notes Set</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              Please enter a name for your flashcard set.
+              Please enter a name for your summary notes set.
             </DialogContentText>
             <TextField
               autoFocus
@@ -139,19 +191,25 @@ export default function Generate() {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button onClick={saveFlashcards} color="primary">
+            <Button onClick={saveSummaryNotes} color="primary">
               Save
             </Button>
           </DialogActions>
         </Dialog>
       </Container>
-      {flashcards.length > 0 && (
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h5" component="h2" gutterBottom>
-            Generated Flashcards
+
+      {summaryNotes.length > 0 && (
+        <Box sx={{ mt: 4, textAlign: "center" }}>
+          <Typography
+            variant="h5"
+            component="h2"
+            gutterBottom
+            sx={{ fontWeight: "bold", color: "#3f51b5" }}
+          >
+            Generated Summary Notes
           </Typography>
           <Grid container spacing={3}>
-            {flashcards.map((flashcard, index) => (
+            {summaryNotes.map((summaryNote, index) => (
               <Grid item xs={12} sm={6} md={4} key={index}>
                 <Card
                   onClick={() => {
@@ -161,11 +219,7 @@ export default function Generate() {
                   }}
                 >
                   <CardContent>
-                    <Box
-                      sx={{
-                        perspective: "1000px",
-                      }}
-                    >
+                    <Box sx={{ perspective: "1000px" }}>
                       <Box
                         sx={{
                           width: "100%",
@@ -194,7 +248,7 @@ export default function Generate() {
                           }}
                         >
                           <Typography variant="h5" component="div">
-                            {flashcard.front}
+                            {summaryNote.front}
                           </Typography>
                         </Box>
 
@@ -215,7 +269,7 @@ export default function Generate() {
                           }}
                         >
                           <Typography variant="h5" component="div">
-                            {flashcard.back}
+                            {summaryNote.back}
                           </Typography>
                         </Box>
                       </Box>
@@ -227,7 +281,8 @@ export default function Generate() {
           </Grid>
         </Box>
       )}
-      {flashcards.length > 0 && (
+
+      {summaryNotes.length > 0 && (
         <Box
           sx={{
             mt: 4,
@@ -240,8 +295,18 @@ export default function Generate() {
             variant="contained"
             color="primary"
             onClick={handleOpenDialog}
+            sx={{ mr: 2 }}
+            disabled={!isSignedIn} // Disable if user is not signed in
           >
-            Save Flashcards
+            Save Summary Notes
+          </Button>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={handleViewSavedNotes}
+            disabled={!isSignedIn} // Disable if user is not signed in
+          >
+            View Saved Summary Notes
           </Button>
         </Box>
       )}
