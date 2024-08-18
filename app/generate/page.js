@@ -215,6 +215,7 @@ export default function Generate() {
           >
             Generated Summary Notes
           </Typography>
+          <Typography>Tap on a note for more information</Typography>
           <Grid container spacing={3}>
             {summaryNotes.map((summaryNote, index) => (
               <Grid item xs={12} sm={6} md={4} key={index}>
