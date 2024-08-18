@@ -121,8 +121,8 @@ export default function Home() {
                     Easy Text Input
                   </Typography>
                   <Typography sx={{ color: "text.secondary", mt: 1 }}>
-                    Simply paste your text whether it's just just one word or
-                    your full notes and let our tool do all the work. It's that
+                    Simply paste your text whether it is just just one word or
+                    your full notes and let our tool do all the work. It is that
                     easy
                   </Typography>
                 </CardContent>

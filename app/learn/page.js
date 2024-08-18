@@ -78,10 +78,10 @@ export default function LearnMore() {
             </Typography>
             <Typography sx={{ color: "text.secondary", mb: 4 }}>
               Study Mate is your all-in-one tool for creating flashcards,
-              summary notes, and organizing your study materials. Whether you're
-              preparing for exams, working on projects, or just keeping up with
-              your courses, Study Mate offers an intuitive interface to help you
-              stay on top of your learning.
+              summary notes, and organizing your study materials. Whether you
+              are preparing for exams, working on projects, or just keeping up
+              with your courses, Study Mate offers an intuitive interface to
+              help you stay on top of your learning.
             </Typography>
             <Button
               variant="contained"
