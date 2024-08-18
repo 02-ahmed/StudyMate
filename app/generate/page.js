@@ -133,6 +133,7 @@ export default function Generate() {
             variant="contained"
             sx={{ mt: 2, px: 1, py: 1, mr: 3, mb: 2 }}
             href="/flashcards"
+            disabled={!isSignedIn}
           >
             View Notes
           </Button>
