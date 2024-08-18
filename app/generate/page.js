@@ -23,6 +23,7 @@ import { collection, doc, getDoc, writeBatch } from "firebase/firestore";
 import db from "@/firebase";
 import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function Generate() {
   const { isLoaded, isSignedIn, user } = useUser();
@@ -129,8 +130,8 @@ export default function Generate() {
             StudyMate
           </Typography>
           <Button
-            variant="outlined"
-            sx={{ mt: 2, px: 4, py: 1.5 }}
+            variant="contained"
+            sx={{ mt: 2, px: 1, py: 1, mr: 3, mb: 2 }}
             href="/flashcards"
           >
             View Notes
