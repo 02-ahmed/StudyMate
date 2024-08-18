@@ -20,7 +20,7 @@ import {
   CircularProgress, // Import CircularProgress component
 } from "@mui/material";
 import { collection, doc, getDoc, writeBatch } from "firebase/firestore";
-import { db } from "@/firebase";
+import db from "@/firebase";
 import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
@@ -28,11 +28,12 @@ export default function Generate() {
   const { isLoaded, isSignedIn, user } = useUser();
   const [flipped, setFlipped] = useState([]);
   const [text, setText] = useState("");
-  const [summaryNotes, setSummaryNotes] = useState([]);
+  const [flashcards, setFlashcards] = useState([]);
   const [setName, setSetName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false); // Add loading state
   const router = useRouter();
+  const [open, setOpen] = useState(false);
 
   const handleOpenDialog = () => {
     if (!isSignedIn) {
@@ -44,7 +45,7 @@ export default function Generate() {
 
   const handleCloseDialog = () => setDialogOpen(false);
 
-  const saveSummaryNotes = async () => {
+  const saveFlashcards = async () => {
     if (!setName.trim()) {
       alert("Please enter a name for your summary notes set.");
       return;
@@ -59,16 +60,16 @@ export default function Generate() {
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data();
         const updatedSets = [
-          ...(userData.summaryNoteSets || []),
+          ...(userData.flashcardSets || []),
           { name: setName },
         ];
-        batch.update(userDocRef, { summaryNoteSets: updatedSets });
+        batch.update(userDocRef, { flashcardSets: updatedSets });
       } else {
-        batch.set(userDocRef, { summaryNoteSets: [{ name: setName }] });
+        batch.set(userDocRef, { flashcardSets: [{ name: setName }] });
       }
 
-      const setDocRef = doc(collection(userDocRef, "summaryNoteSets"), setName);
-      batch.set(setDocRef, { summaryNotes });
+      const setDocRef = doc(collection(userDocRef, "flashcardSets"), setName);
+      batch.set(setDocRef, { flashcards });
 
       await batch.commit();
 
@@ -100,7 +101,7 @@ export default function Generate() {
       }
 
       const data = await response.json();
-      setSummaryNotes(data);
+      setFlashcards(data);
     } catch (error) {
       console.error("Error generating summary notes:", error);
       alert(
@@ -198,14 +199,14 @@ export default function Generate() {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button onClick={saveSummaryNotes} color="primary">
+            <Button onClick={saveFlashcards} color="primary">
               Save
             </Button>
           </DialogActions>
         </Dialog>
       </Container>
 
-      {summaryNotes.length > 0 && (
+      {flashcards.length > 0 && (
         <Box sx={{ mt: 4, textAlign: "center" }}>
           <Typography
             variant="h5"
@@ -215,9 +216,9 @@ export default function Generate() {
           >
             Generated Summary Notes
           </Typography>
-          <Typography>Tap on a note for more information</Typography>
+          <Typography>Tap on a note for more</Typography>
           <Grid container spacing={3}>
-            {summaryNotes.map((summaryNote, index) => (
+            {flashcards.map((summaryNote, index) => (
               <Grid item xs={12} sm={6} md={4} key={index}>
                 <Card
                   onClick={() => {
@@ -290,7 +291,7 @@ export default function Generate() {
         </Box>
       )}
 
-      {summaryNotes.length > 0 && (
+      {flashcards.length > 0 && (
         <Box
           sx={{
             mt: 4,
