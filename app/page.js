@@ -97,6 +97,7 @@ export default function Home() {
               variant="outlined"
               color="primary"
               sx={{ mt: 2, px: 4, py: 1.5 }}
+              href="/learn"
             >
               Learn More
             </Button>
@@ -177,16 +178,17 @@ export default function Home() {
                   Basic
                 </Typography>
                 <Typography variant="h6" gutterBottom>
-                  $2 / month
+                  Free
                 </Typography>
                 <Typography sx={{ color: "text.secondary", mt: 2 }}>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  Access to basic services. Active by default
                 </Typography>
                 <Button
                   variant="contained"
                   color="primary"
                   sx={{ mt: 4, px: 4, py: 1.5 }}
                   onClick={() => handleSubmit("basic")}
+                  disabled
                 >
                   Choose Basic
                 </Button>
@@ -205,7 +207,7 @@ export default function Home() {
                   $5 / month
                 </Typography>
                 <Typography sx={{ color: "text.secondary", mt: 2 }}>
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                  Course outline generation and study resources
                 </Typography>
                 <Button
                   variant="contained"
