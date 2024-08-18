@@ -127,6 +127,13 @@ export default function Generate() {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             StudyMate
           </Typography>
+          <Button
+            variant="outlined"
+            sx={{ mt: 2, px: 4, py: 1.5 }}
+            href="/flashcards"
+          >
+            View Notes
+          </Button>
           {isSignedIn ? (
             <UserButton afterSignOutUrl="/" />
           ) : (
