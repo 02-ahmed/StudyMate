@@ -12,10 +12,12 @@ import {
   Toolbar,
   Box,
   Button,
+  IconButton,
 } from "@mui/material";
-import { collection, doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 export default function Flashcard() {
   const { isLoaded, isSignedIn, user } = useUser();
@@ -24,6 +26,26 @@ export default function Flashcard() {
 
   const handleCardClick = (id) => {
     router.push(`/flashcard?id=${id}`);
+  };
+
+  const handleDelete = async (flashcardName) => {
+    if (!user) return;
+
+    const docRef = doc(collection(db, "users"), user.id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const existingFlashcards = docSnap.data().flashcardSets || [];
+      const updatedFlashcards = existingFlashcards.filter(
+        (fc) => fc.name !== flashcardName
+      );
+
+      await updateDoc(docRef, {
+        flashcardSets: updatedFlashcards,
+      });
+
+      setFlashcards(updatedFlashcards);
+    }
   };
 
   useEffect(() => {
@@ -67,7 +89,7 @@ export default function Flashcard() {
             gutterBottom
             sx={{ fontWeight: "bold", color: "#3f51b5" }}
           >
-            My Note collection
+            My Note Collection
           </Typography>
           <Typography
             variant="body1"
@@ -89,6 +111,7 @@ export default function Flashcard() {
                     "&:hover": {
                       transform: "scale(1.05)",
                     },
+                    position: "relative",
                   }}
                 >
                   <CardActionArea
@@ -104,6 +127,17 @@ export default function Flashcard() {
                       </Typography>
                     </CardContent>
                   </CardActionArea>
+                  <IconButton
+                    aria-label="delete"
+                    onClick={() => handleDelete(flashcard.name)}
+                    sx={{
+                      position: "absolute",
+                      top: 8,
+                      right: 8,
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
                 </Card>
               </Grid>
             ))
