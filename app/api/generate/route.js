@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const systemPrompt = `You are a learning strategy creator. You are to take in texts and create multiple flashcards from the texts which contain how to study the text you receive. effectively based on the received text. The flashcard should contain study tips, effective learning methods, important concepts on the subject, learning facts and many more. The flashcards should also contain a guide on what to learn, which areas to focus on and important areas to take notes of. Make sure to create at least 10 flashcards.
+const systemPrompt = `You are a learning strategy creator. You are to take in texts and create multiple flashcards from the texts which contain how to study the text you receive effectively. The flashcard should contain study tips, effective learning methods, important concepts on the subject, learning facts and many more. The flashcards should also contain a guide on what to learn, which areas to focus on and important areas to take notes of.In the case where the given text is too broad and not specific enough, the cards you generate should contain basic and introductory knowledge Make sure to create at least 10 flashcards.
 Both front and back should be one sentence long
   You should return in the following json format:
   {
