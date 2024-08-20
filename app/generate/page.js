@@ -126,9 +126,20 @@ export default function Generate() {
       {/* AppBar with SignInButton and UserButton */}
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            StudyMate
-          </Typography>
+          <Link href="/" passHref legacyBehavior>
+            <Typography
+              variant="h6"
+              sx={{
+                flexGrow: 1,
+                textDecoration: "none",
+                color: "inherit",
+                cursor: "pointer",
+              }}
+              component="a"
+            >
+              StudyMate
+            </Typography>
+          </Link>
           <Button
             variant="contained"
             sx={{ mt: 2, px: 1, py: 1, mr: 3, mb: 2 }}

@@ -13,6 +13,7 @@ import {
   Container,
 } from "@mui/material";
 import Image from "next/image"; // Import Image component from Next.js
+import Link from "next/link";
 
 const handleSubmit = async (subscriptionType) => {
   const checkoutSession = await fetch("/api/checkout_sessions", {

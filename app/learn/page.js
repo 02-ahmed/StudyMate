@@ -12,15 +12,27 @@ import {
 } from "@mui/material";
 import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function LearnMore() {
   return (
     <>
       <AppBar position="static" sx={{ backgroundColor: "#3f51b5" }}>
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            StudyMate
-          </Typography>
+          <Link href="/" passHref legacyBehavior>
+            <Typography
+              variant="h6"
+              sx={{
+                flexGrow: 1,
+                textDecoration: "none",
+                color: "inherit",
+                cursor: "pointer",
+              }}
+              component="a"
+            >
+              StudyMate
+            </Typography>
+          </Link>
           <SignedOut>
             <Button color="inherit" href="/sign-in">
               Login

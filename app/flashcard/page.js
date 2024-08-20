@@ -17,6 +17,9 @@ import { collection, doc, getDocs } from "firebase/firestore";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import Link from "next/link";
+
 export default function Flashcard() {
   const { isLoaded, isSignedIn, user } = useUser();
   const [flashcards, setFlashcards] = useState([]);
@@ -56,14 +59,30 @@ export default function Flashcard() {
     router.push(`/quiz?id=${id}`);
   };
 
+  // Navigate back to flashcards page
+  const handleBackClick = () => {
+    router.push("/flashcards");
+  };
+
   return (
     <>
       {/* AppBar with SignInButton and UserButton */}
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            StudyMate
-          </Typography>
+          <Link href="/" passHref legacyBehavior>
+            <Typography
+              variant="h6"
+              sx={{
+                flexGrow: 1,
+                textDecoration: "none",
+                color: "inherit",
+                cursor: "pointer",
+              }}
+              component="a"
+            >
+              StudyMate
+            </Typography>
+          </Link>
           {isSignedIn ? (
             <UserButton afterSignOutUrl="/" />
           ) : (
@@ -76,6 +95,15 @@ export default function Flashcard() {
 
       <Container maxWidth="md">
         <Box sx={{ my: 4, textAlign: "center" }}>
+          {/* Back Button */}
+          <Button
+            onClick={handleBackClick}
+            startIcon={<ArrowBackIcon />}
+            sx={{ mb: 2 }}
+          >
+            Back to Collection
+          </Button>
+
           <Typography
             variant="h4"
             component="h1"

@@ -18,6 +18,8 @@ import { collection, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import DeleteIcon from "@mui/icons-material/Delete";
+import Link from "next/link";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 export default function Flashcard() {
   const { isLoaded, isSignedIn, user } = useUser();
@@ -63,14 +65,30 @@ export default function Flashcard() {
     getFlashcards();
   }, [user]);
 
+  // Navigate back to generate page
+  const handleBackClick = () => {
+    router.push("/generate");
+  };
+
   return (
     <>
       {/* AppBar with SignInButton and UserButton */}
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            StudyMate
-          </Typography>
+          <Link href="/" passHref legacyBehavior>
+            <Typography
+              variant="h6"
+              sx={{
+                flexGrow: 1,
+                textDecoration: "none",
+                color: "inherit",
+                cursor: "pointer",
+              }}
+              component="a"
+            >
+              StudyMate
+            </Typography>
+          </Link>
           {isSignedIn ? (
             <UserButton afterSignOutUrl="/" />
           ) : (
@@ -83,6 +101,15 @@ export default function Flashcard() {
 
       <Container maxWidth="md">
         <Box sx={{ my: 4, textAlign: "center" }}>
+          {/* Back Button */}
+          <Button
+            onClick={handleBackClick}
+            startIcon={<ArrowBackIcon />}
+            sx={{ mb: 2 }}
+          >
+            Back to Generate
+          </Button>
+
           <Typography
             variant="h4"
             component="h1"
