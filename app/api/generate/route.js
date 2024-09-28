@@ -16,35 +16,27 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 export async function POST(req) {
-  try {
-    const data = await req.text();
-    let model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      systemInstruction: systemPrompt,
-      generationConfig: { responseMimeType: "application/json" },
-    });
+  const data = await req.text();
+  let model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    systemInstruction: systemPrompt,
+    generationConfig: { responseMimeType: "application/json" },
+  });
 
-    let result = await model.generateContent({
-      contents: [
-        {
-          role: "model",
-          parts: [{ text: systemPrompt }],
-        },
-        {
-          role: "user",
-          parts: [{ text: data }],
-        },
-      ],
-    });
+  let result = await model.generateContent({
+    contents: [
+      {
+        role: "model",
+        parts: [{ text: systemPrompt }],
+      },
+      {
+        role: "user",
+        parts: [{ text: data }],
+      },
+    ],
+  });
 
-    const flashcards = JSON.parse(result.response.text());
+  const flashcards = JSON.parse(result.response.text());
 
-    return NextResponse.json(flashcards.flashcards);
-  } catch (error) {
-    console.error("Error generating flashcards:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Error generating flashcards" }),
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(flashcards.flashcards);
 }
