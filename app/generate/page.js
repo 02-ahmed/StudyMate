@@ -17,7 +17,7 @@ import {
   CardContent,
   AppBar,
   Toolbar,
-  CircularProgress, // Import CircularProgress component
+  CircularProgress,
 } from "@mui/material";
 import { collection, doc, getDoc, writeBatch } from "firebase/firestore";
 import db from "@/firebase";
@@ -32,7 +32,7 @@ export default function Generate() {
   const [flashcards, setFlashcards] = useState([]);
   const [setName, setSetName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(false); // Add loading state
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -89,8 +89,7 @@ export default function Generate() {
       return;
     }
 
-    setLoading(true); // Start loading
-
+    setLoading(true);
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -109,7 +108,7 @@ export default function Generate() {
         "An error occurred while generating summary notes. Please try again."
       );
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
 
@@ -184,7 +183,7 @@ export default function Generate() {
             onClick={handleSubmit}
             fullWidth
             sx={{ py: 1.5 }}
-            disabled={loading} // Disable button while loading
+            disabled={loading}
           >
             {loading ? (
               <CircularProgress size={24} color="inherit" /> // Show loading indicator

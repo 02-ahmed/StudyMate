@@ -41,6 +41,9 @@ export default function Home() {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             StudyMate
           </Typography>
+          <Button color="inherit" href="/summarise">
+            Summarise PDF
+          </Button>
           <SignedOut>
             <Button color="inherit" href="/sign-in">
               Login
@@ -55,12 +58,12 @@ export default function Home() {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="md" sx={{ my: 20 }}>
+      <Container maxWidth="md" sx={{ my: 10 }}>
         <Grid container spacing={4} alignItems="center">
           {/* Image Section */}
           <Grid item xs={12} md={6}>
             <Image
-              src="/images/study.jpg" // Replace with the path to your image
+              src="/images/study.jpg"
               alt="Someone studying"
               width={400}
               height={250}
@@ -105,7 +108,7 @@ export default function Home() {
           </Grid>
         </Grid>
 
-        <Box sx={{ my: 20, px: 6 }}>
+        {/* <Box sx={{ my: 20, px: 6 }}>
           <Typography
             variant="h4"
             component="h2"
@@ -221,7 +224,7 @@ export default function Home() {
               </Card>
             </Grid>
           </Grid>
-        </Box>
+        </Box> */}
       </Container>
     </>
   );
