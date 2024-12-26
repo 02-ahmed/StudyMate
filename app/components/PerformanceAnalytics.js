@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
   Box,
@@ -47,13 +47,7 @@ export default function PerformanceAnalytics() {
     averageScore: 0,
   });
 
-  useEffect(() => {
-    if (user) {
-      loadAnalytics();
-    }
-  }, [user]);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     try {
       // Get recent test results
       const testResultsRef = collection(db, "users", user.id, "testResults");
@@ -258,7 +252,13 @@ export default function PerformanceAnalytics() {
       console.error("Error loading analytics:", error);
       setLoading(false);
     }
-  };
+  }, [user, router]);
+
+  useEffect(() => {
+    if (user) {
+      loadAnalytics();
+    }
+  }, [user, loadAnalytics]);
 
   const handleTopicClick = (topic) => {
     setSelectedTopic(topic);
@@ -360,7 +360,8 @@ export default function PerformanceAnalytics() {
                               variant="body2"
                               color="text.secondary"
                             >
-                              • "{card.question}" (missed {card.count} times)
+                              • &ldquo;{card.question}&rdquo; (missed{" "}
+                              {card.count} times)
                             </Typography>
                           ))}
                         </Box>
