@@ -11,10 +11,9 @@ const {
 } = require("@mui/material");
 const { useSearchParams } = require("next/navigation");
 const { useRouter } = require("next/router");
-const { useState, useEffect } = require("react");
+const { useState, useEffect, Suspense } = require("react");
 
-const ResultPage = () => {
-  // const router = useRouter()
+function ResultContent() {
   const searchParams = useSearchParams();
   const session_id = searchParams.get("session_id");
   const [loading, setLoading] = useState(true);
@@ -97,6 +96,23 @@ const ResultPage = () => {
         </>
       )}
     </Container>
+  );
+}
+
+const ResultPage = () => {
+  return (
+    <Suspense
+      fallback={
+        <Container maxWidth="sm" sx={{ textAlign: "center", mt: 40 }}>
+          <CircularProgress />
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Loading...
+          </Typography>
+        </Container>
+      }
+    >
+      <ResultContent />
+    </Suspense>
   );
 };
 

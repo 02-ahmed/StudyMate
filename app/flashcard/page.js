@@ -12,15 +12,15 @@ import {
   Typography,
   AppBar,
   Toolbar,
+  CircularProgress,
 } from "@mui/material";
 import { collection, doc, getDocs } from "firebase/firestore";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-
+import { useState, useEffect, Suspense } from "react";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import Link from "next/link";
 
-export default function Flashcard() {
+function FlashcardContent() {
   const { isLoaded, isSignedIn, user } = useUser();
   const [flashcards, setFlashcards] = useState([]);
   const [flipped, setFlipped] = useState({});
@@ -217,5 +217,22 @@ export default function Flashcard() {
         )}
       </Container>
     </>
+  );
+}
+
+export default function Flashcard() {
+  return (
+    <Suspense
+      fallback={
+        <Container maxWidth="md" sx={{ textAlign: "center", mt: 4 }}>
+          <CircularProgress />
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Loading...
+          </Typography>
+        </Container>
+      }
+    >
+      <FlashcardContent />
+    </Suspense>
   );
 }
