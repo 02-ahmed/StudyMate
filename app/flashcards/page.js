@@ -1,6 +1,6 @@
 "use client";
-import db from "@/firebase";
-import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
+
+import { useUser } from "@clerk/nextjs";
 import {
   Card,
   CardActionArea,
@@ -8,178 +8,266 @@ import {
   Container,
   Grid,
   Typography,
-  AppBar,
-  Toolbar,
   Box,
   Button,
-  IconButton,
 } from "@mui/material";
-import { collection, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import DeleteIcon from "@mui/icons-material/Delete";
-import Link from "next/link";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { db } from "../../utils/firebase";
 
 export default function Flashcard() {
-  const { isLoaded, isSignedIn, user } = useUser();
-  const [flashcards, setFlashcards] = useState([]);
+  const { user } = useUser();
+  const [collections, setCollections] = useState([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const handleCardClick = (id) => {
-    router.push(`/flashcard?id=${id}`);
-  };
-
-  const handleDelete = async (flashcardName) => {
-    if (!user) return;
-
-    const docRef = doc(collection(db, "users"), user.id);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const existingFlashcards = docSnap.data().flashcardSets || [];
-      const updatedFlashcards = existingFlashcards.filter(
-        (fc) => fc.name !== flashcardName
-      );
-
-      await updateDoc(docRef, {
-        flashcardSets: updatedFlashcards,
-      });
-
-      setFlashcards(updatedFlashcards);
-    }
-  };
-
   useEffect(() => {
-    async function getFlashcards() {
+    async function loadCollections() {
       if (!user) return;
-      const docRef = doc(collection(db, "users"), user.id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const collections = docSnap.data().flashcardSets || [];
-        setFlashcards(collections);
-      } else {
-        await setDoc(docRef, { flashcards: [] });
+
+      try {
+        const collectionsData = [];
+
+        // First, try to load from the old structure
+        const userDocRef = doc(collection(db, "users"), user.id);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          if (userData.flashcardSets) {
+            // Handle old data structure
+            for (const set of userData.flashcardSets) {
+              const setDocRef = doc(
+                collection(userDocRef, "flashcardSets"),
+                set.name
+              );
+              const setDocSnap = await getDoc(setDocRef);
+              if (setDocSnap.exists()) {
+                const setData = setDocSnap.data();
+                collectionsData.push({
+                  id: set.name,
+                  name: set.name,
+                  createdAt: set.createdAt || new Date(),
+                  cardCount: setData.flashcards
+                    ? Object.keys(setData.flashcards).length
+                    : 0,
+                });
+              }
+            }
+          }
+        }
+
+        // Now also load from the new structure
+        const collectionsRef = collection(
+          db,
+          "users",
+          user.id,
+          "flashcardSets"
+        );
+        const querySnapshot = await getDocs(collectionsRef);
+
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          // Only add if we don't already have this set
+          if (!collectionsData.some((col) => col.id === doc.id)) {
+            collectionsData.push({
+              id: doc.id,
+              name: data.name || doc.id,
+              createdAt: data.createdAt,
+              cardCount: data.flashcards
+                ? Object.keys(data.flashcards).length
+                : 0,
+            });
+          }
+        });
+
+        console.log("Loaded collections:", collectionsData);
+        setCollections(collectionsData);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading collections:", error);
+        setLoading(false);
       }
     }
-    getFlashcards();
+
+    loadCollections();
   }, [user]);
 
-  // Navigate back to generate page
-  const handleBackClick = () => {
-    router.push("/generate");
+  const handleCardClick = (id) => {
+    router.push(`/flashcards/${id}`);
   };
 
-  return (
+  const handleBackClick = () => {
+    router.push("/notes");
+  };
+
+  const LoadingSkeleton = () => (
     <>
-      {/* AppBar with SignInButton and UserButton */}
-      <AppBar position="static">
-        <Toolbar>
-          <Link href="/" passHref legacyBehavior>
-            <Typography
-              variant="h6"
-              sx={{
-                flexGrow: 1,
-                textDecoration: "none",
-                color: "inherit",
-                cursor: "pointer",
-              }}
-              component="a"
-            >
-              StudyMate
-            </Typography>
-          </Link>
-          {isSignedIn ? (
-            <UserButton afterSignOutUrl="/" />
-          ) : (
-            <SignInButton mode="modal">
-              <Button color="inherit">Sign In</Button>
-            </SignInButton>
-          )}
-        </Toolbar>
-      </AppBar>
+      <Box sx={{ my: 4, textAlign: "center" }}>
+        <Button
+          onClick={handleBackClick}
+          startIcon={<ArrowBackIcon />}
+          sx={{ mb: 2 }}
+        >
+          Back to Notes
+        </Button>
 
-      <Container maxWidth="md">
-        <Box sx={{ my: 4, textAlign: "center" }}>
-          {/* Back Button */}
-          <Button
-            onClick={handleBackClick}
-            startIcon={<ArrowBackIcon />}
-            sx={{ mb: 2 }}
-          >
-            Back to Generate
-          </Button>
+        <Typography
+          variant="h4"
+          component="h1"
+          gutterBottom
+          sx={{ fontWeight: "bold", color: "#3f51b5" }}
+        >
+          My Note Collection
+        </Typography>
+        <Typography variant="body1" component="p" sx={{ mb: 4, color: "#666" }}>
+          Click on a note set to view your summaries.
+        </Typography>
+      </Box>
 
-          <Typography
-            variant="h4"
-            component="h1"
-            gutterBottom
-            sx={{ fontWeight: "bold", color: "#3f51b5" }}
-          >
-            My Note Collection
-          </Typography>
-          <Typography
-            variant="body1"
-            component="p"
-            sx={{ mb: 4, color: "#666" }}
-          >
-            Click on a note set to view your summaries.
-          </Typography>
-        </Box>
-
-        <Grid container spacing={3} sx={{ mt: 4 }}>
-          {flashcards.length > 0 ? (
-            flashcards.map((flashcard, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
-                <Card
+      <Grid container spacing={3}>
+        {[1, 2, 3].map((index) => (
+          <Grid item xs={12} sm={6} md={4} key={index}>
+            <Card sx={{ height: "100%", bgcolor: "background.paper" }}>
+              <CardContent>
+                <Box
                   sx={{
-                    boxShadow: 3,
-                    transition: "transform 0.2s",
-                    "&:hover": {
-                      transform: "scale(1.05)",
-                    },
-                    position: "relative",
+                    height: 28,
+                    width: "70%",
+                    bgcolor: "grey.200",
+                    borderRadius: 1,
+                    mb: 2,
+                    animation: "pulse 1.5s ease-in-out infinite",
                   }}
-                >
-                  <CardActionArea
-                    onClick={() => handleCardClick(flashcard.name)}
-                  >
-                    <CardContent>
-                      <Typography
-                        variant="h5"
-                        component="div"
-                        sx={{ fontWeight: "bold", color: "#3f51b5" }}
-                      >
-                        {flashcard.name}
-                      </Typography>
-                    </CardContent>
-                  </CardActionArea>
-                  <IconButton
-                    aria-label="delete"
-                    onClick={() => handleDelete(flashcard.name)}
-                    sx={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                    }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Card>
-              </Grid>
-            ))
-          ) : (
+                />
+                <Box
+                  sx={{
+                    height: 20,
+                    width: "40%",
+                    bgcolor: "grey.200",
+                    borderRadius: 1,
+                    mb: 1,
+                    animation: "pulse 1.5s ease-in-out infinite",
+                  }}
+                />
+                <Box
+                  sx={{
+                    height: 20,
+                    width: "60%",
+                    bgcolor: "grey.200",
+                    borderRadius: 1,
+                    animation: "pulse 1.5s ease-in-out infinite",
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+      <style jsx global>{`
+        @keyframes pulse {
+          0% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+          100% {
+            opacity: 1;
+          }
+        }
+      `}</style>
+    </>
+  );
+
+  return (
+    <Container maxWidth="md">
+      {loading ? (
+        <LoadingSkeleton />
+      ) : (
+        <>
+          <Box sx={{ my: 4, textAlign: "center" }}>
+            <Button
+              onClick={handleBackClick}
+              startIcon={<ArrowBackIcon />}
+              sx={{ mb: 2 }}
+            >
+              Back to Notes
+            </Button>
+
+            <Typography
+              variant="h4"
+              component="h1"
+              gutterBottom
+              sx={{ fontWeight: "bold", color: "#3f51b5" }}
+            >
+              My Note Collection
+            </Typography>
             <Typography
               variant="body1"
               component="p"
-              sx={{ mt: 4, color: "#666", textAlign: "center", width: "100%" }}
+              sx={{ mb: 4, color: "#666" }}
             >
-              No flashcard sets found. Create your first flashcard set to get
-              started!
+              Click on a note set to view your summaries.
             </Typography>
-          )}
-        </Grid>
-      </Container>
-    </>
+          </Box>
+
+          <Grid container spacing={3}>
+            {collections.map((collection) => (
+              <Grid item xs={12} sm={6} md={4} key={collection.id}>
+                <Card
+                  sx={{
+                    height: "100%",
+                    transition: "transform 0.2s",
+                    "&:hover": {
+                      transform: "translateY(-4px)",
+                    },
+                  }}
+                >
+                  <CardActionArea
+                    onClick={() => handleCardClick(collection.id)}
+                  >
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        {collection.name}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {collection.cardCount} cards
+                      </Typography>
+                      {collection.createdAt && (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: 1 }}
+                        >
+                          Created:{" "}
+                          {new Date(
+                            collection.createdAt.seconds * 1000
+                          ).toLocaleDateString()}
+                        </Typography>
+                      )}
+                    </CardContent>
+                  </CardActionArea>
+                </Card>
+              </Grid>
+            ))}
+            {collections.length === 0 && (
+              <Grid item xs={12}>
+                <Box sx={{ textAlign: "center", py: 4 }}>
+                  <Typography variant="h6" color="text.secondary">
+                    No note collections found
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    Create your first note collection to get started
+                  </Typography>
+                </Box>
+              </Grid>
+            )}
+          </Grid>
+        </>
+      )}
+    </Container>
   );
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
+import "react-quill/dist/quill.snow.css";
 import {
   Grid,
   Card,
   Container,
-  TextField,
   Button,
   Typography,
   Box,
@@ -15,15 +16,35 @@ import {
   DialogContentText,
   DialogActions,
   CardContent,
-  AppBar,
-  Toolbar,
   CircularProgress,
+  TextField,
 } from "@mui/material";
-import { collection, doc, getDoc, writeBatch } from "firebase/firestore";
-import db from "@/firebase";
+import {
+  collection,
+  doc,
+  getDoc,
+  writeBatch,
+  addDoc,
+} from "firebase/firestore";
+import { db } from "../../utils/firebase";
 import { useUser, SignInButton, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+
+// Import Quill dynamically to avoid SSR issues
+const ReactQuill = dynamic(() => import("react-quill"), {
+  ssr: false,
+  loading: () => <CircularProgress />,
+});
+
+// Quill modules configuration
+const modules = {
+  toolbar: [
+    ["bold", "italic"], // Only bold and italic for now
+  ],
+};
+
+const formats = ["bold", "italic"];
 
 export default function Generate() {
   const { isLoaded, isSignedIn, user } = useUser();
@@ -53,30 +74,20 @@ export default function Generate() {
     }
 
     try {
-      const userDocRef = doc(collection(db, "users"), user.id);
-      const userDocSnap = await getDoc(userDocRef);
-
-      const batch = writeBatch(db);
-
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        const updatedSets = [
-          ...(userData.flashcardSets || []),
-          { name: setName },
-        ];
-        batch.update(userDocRef, { flashcardSets: updatedSets });
-      } else {
-        batch.set(userDocRef, { flashcardSets: [{ name: setName }] });
-      }
-
-      const setDocRef = doc(collection(userDocRef, "flashcardSets"), setName);
-      batch.set(setDocRef, { flashcards });
-
-      await batch.commit();
+      const flashcardsRef = collection(db, "users", user.id, "flashcardSets");
+      const docRef = await addDoc(flashcardsRef, {
+        name: setName.trim(),
+        createdAt: new Date(),
+        flashcards: flashcards.map((card, index) => ({
+          front: card.front,
+          back: card.back,
+          id: index,
+        })),
+      });
 
       alert("Summary notes saved successfully!");
       handleCloseDialog();
-      setSetName("");
+      router.push(`/flashcards/${docRef.id}`);
     } catch (error) {
       console.error("Error saving summary notes:", error);
       alert("An error occurred while saving summary notes. Please try again.");
@@ -91,9 +102,12 @@ export default function Generate() {
 
     setLoading(true);
     try {
+      // Strip HTML tags for the API call
+      const plainText = text.replace(/<[^>]+>/g, "");
+
       const response = await fetch("/api/generate", {
         method: "POST",
-        body: text,
+        body: plainText,
       });
 
       if (!response.ok) {
@@ -121,102 +135,75 @@ export default function Generate() {
   };
 
   return (
-    <>
-      {/* AppBar with SignInButton and UserButton */}
-      <AppBar position="static">
-        <Toolbar>
-          <Link href="/" passHref legacyBehavior>
-            <Typography
-              variant="h6"
-              sx={{
-                flexGrow: 1,
-                textDecoration: "none",
-                color: "inherit",
-                cursor: "pointer",
-              }}
-              component="a"
-            >
-              StudyMate
-            </Typography>
-          </Link>
+    <Container maxWidth="md">
+      <Box sx={{ my: 4, textAlign: "center" }}>
+        <Typography
+          variant="h4"
+          component="h1"
+          gutterBottom
+          sx={{ fontWeight: "bold", color: "#3f51b5" }}
+        >
+          Generate Summary Notes
+        </Typography>
+        <Box sx={{ mb: 4, display: "flex", justifyContent: "flex-end" }}>
           <Button
             variant="contained"
-            sx={{ mt: 2, px: 1, py: 1, mr: 3, mb: 2 }}
+            sx={{ px: 3, py: 1 }}
             href="/flashcards"
             disabled={!isSignedIn}
           >
             View Notes
           </Button>
-          {isSignedIn ? (
-            <UserButton afterSignOutUrl="/" />
-          ) : (
-            <SignInButton mode="modal">
-              <Button color="inherit">Sign In</Button>
-            </SignInButton>
-          )}
-        </Toolbar>
-      </AppBar>
-
-      <Container maxWidth="md">
-        <Box sx={{ my: 4, textAlign: "center" }}>
-          <Typography
-            variant="h4"
-            component="h1"
-            gutterBottom
-            sx={{ fontWeight: "bold", color: "#3f51b5" }}
-          >
-            Generate Summary Notes
-          </Typography>
-          <TextField
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            label="Enter text"
-            fullWidth
-            multiline
-            rows={4}
-            variant="outlined"
-            sx={{ mb: 2 }}
-          />
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleSubmit}
-            fullWidth
-            sx={{ py: 1.5 }}
-            disabled={loading}
-          >
-            {loading ? (
-              <CircularProgress size={24} color="inherit" /> // Show loading indicator
-            ) : (
-              "Generate Summary Notes"
-            )}
-          </Button>
         </Box>
-        <Dialog open={dialogOpen} onClose={handleCloseDialog}>
-          <DialogTitle>Save Summary Notes Set</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Please enter a name for your summary notes set.
-            </DialogContentText>
-            <TextField
-              autoFocus
-              margin="dense"
-              label="Set Name"
-              type="text"
-              fullWidth
-              value={setName}
-              onChange={(e) => setSetName(e.target.value)}
-              variant="outlined"
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button onClick={saveFlashcards} color="primary">
-              Save
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Container>
+        <Box sx={{ mb: 2, backgroundColor: "white", borderRadius: 1 }}>
+          <ReactQuill
+            value={text}
+            onChange={setText}
+            modules={modules}
+            formats={formats}
+            placeholder="Enter text..."
+            style={{ height: "200px" }}
+          />
+        </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleSubmit}
+          fullWidth
+          sx={{ py: 1.5, mt: 2 }}
+          disabled={loading}
+        >
+          {loading ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            "Generate Summary Notes"
+          )}
+        </Button>
+      </Box>
+      <Dialog open={dialogOpen} onClose={handleCloseDialog}>
+        <DialogTitle>Save Summary Notes Set</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Please enter a name for your summary notes set.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Set Name"
+            type="text"
+            fullWidth
+            value={setName}
+            onChange={(e) => setSetName(e.target.value)}
+            variant="outlined"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button onClick={saveFlashcards} color="primary">
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {flashcards.length > 0 && (
         <Box sx={{ mt: 4, textAlign: "center" }}>
@@ -262,13 +249,37 @@ export default function Generate() {
                             display: "flex",
                             justifyContent: "center",
                             alignItems: "center",
-                            backgroundColor: "#aaa",
+                            backgroundColor: "#fff",
                             border: "1px solid #ccc",
                             padding: 2,
                             boxSizing: "border-box",
+                            overflowY: "auto",
+                            "&::-webkit-scrollbar": {
+                              width: "8px",
+                            },
+                            "&::-webkit-scrollbar-track": {
+                              background: "#f1f1f1",
+                              borderRadius: "4px",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                              background: "#888",
+                              borderRadius: "4px",
+                              "&:hover": {
+                                background: "#666",
+                              },
+                            },
                           }}
                         >
-                          <Typography variant="h5" component="div">
+                          <Typography
+                            variant="h6"
+                            component="div"
+                            sx={{
+                              wordBreak: "break-word",
+                              whiteSpace: "pre-wrap",
+                              maxWidth: "100%",
+                              fontSize: "1rem",
+                            }}
+                          >
                             {summaryNote.front}
                           </Typography>
                         </Box>
@@ -287,9 +298,33 @@ export default function Generate() {
                             padding: 2,
                             boxSizing: "border-box",
                             transform: "rotateY(180deg)",
+                            overflowY: "auto",
+                            "&::-webkit-scrollbar": {
+                              width: "8px",
+                            },
+                            "&::-webkit-scrollbar-track": {
+                              background: "#f1f1f1",
+                              borderRadius: "4px",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                              background: "#888",
+                              borderRadius: "4px",
+                              "&:hover": {
+                                background: "#666",
+                              },
+                            },
                           }}
                         >
-                          <Typography variant="h5" component="div">
+                          <Typography
+                            variant="h6"
+                            component="div"
+                            sx={{
+                              wordBreak: "break-word",
+                              whiteSpace: "pre-wrap",
+                              maxWidth: "100%",
+                              fontSize: "1rem",
+                            }}
+                          >
                             {summaryNote.back}
                           </Typography>
                         </Box>
@@ -331,6 +366,6 @@ export default function Generate() {
           </Button>
         </Box>
       )}
-    </>
+    </Container>
   );
 }

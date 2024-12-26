@@ -1,231 +1,187 @@
 "use client";
-import getStripe from "../utils/get-stripe";
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+
+import { useUser } from "@clerk/nextjs";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
-  AppBar,
-  Box,
+  Container,
+  Typography,
   Button,
   Grid,
-  Toolbar,
-  Typography,
+  Box,
   Card,
   CardContent,
-  Container,
 } from "@mui/material";
-import Image from "next/image"; // Import Image component from Next.js
-import Link from "next/link";
-
-const handleSubmit = async (subscriptionType) => {
-  const checkoutSession = await fetch("/api/checkout_sessions", {
-    method: "POST",
-    headers: { origin: "http://localhost:3000" },
-    body: JSON.stringify({ subscriptionType }),
-  });
-  const checkoutSessionJson = await checkoutSession.json();
-
-  const stripe = await getStripe();
-  const { error } = await stripe.redirectToCheckout({
-    sessionId: checkoutSessionJson.id,
-  });
-
-  if (error) {
-    console.warn(error.message);
-  }
-};
+import Image from "next/image";
 
 export default function Home() {
+  const { isLoaded, isSignedIn } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      router.push("/dashboard");
+    }
+  }, [isLoaded, isSignedIn, router]);
+
+  if (!isLoaded || isSignedIn) {
+    return null; // Don't show landing page while checking auth or if signed in
+  }
+
   return (
-    <>
-      <AppBar position="static" sx={{ backgroundColor: "#3f51b5" }}>
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            StudyMate
-          </Typography>
-          <Button color="inherit" href="/summarise">
-            Summarise PDF
-          </Button>
-          <SignedOut>
-            <Button color="inherit" href="/sign-in">
-              Login
-            </Button>
-            <Button color="inherit" href="/sign-up">
-              Sign Up
-            </Button>
-          </SignedOut>
-          <SignedIn>
-            <UserButton />
-          </SignedIn>
-        </Toolbar>
-      </AppBar>
+    <Container maxWidth="lg">
+      {/* Hero Section */}
+      <Box sx={{ py: { xs: 8, md: 12 }, textAlign: "center" }}>
+        <Typography
+          variant="h2"
+          component="h1"
+          gutterBottom
+          sx={{
+            fontWeight: "bold",
+            color: "#3f51b5",
+            fontSize: { xs: "2.5rem", md: "3.75rem" },
+          }}
+        >
+          Transform Your Study Experience
+        </Typography>
+        <Typography
+          variant="h5"
+          sx={{
+            color: "text.secondary",
+            mb: 4,
+            maxWidth: "800px",
+            mx: "auto",
+          }}
+        >
+          Create smart flashcards, generate study notes, and track your progress
+          with AI-powered learning tools.
+        </Typography>
+        <Button
+          variant="contained"
+          size="large"
+          href="/sign-up"
+          sx={{ px: 4, py: 1.5, fontSize: "1.1rem" }}
+        >
+          Get Started Free
+        </Button>
+      </Box>
 
-      <Container maxWidth="md" sx={{ my: 10 }}>
-        <Grid container spacing={4} alignItems="center">
-          {/* Image Section */}
+      {/* Features Section */}
+      <Grid container spacing={4} sx={{ py: 8 }}>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: "100%", textAlign: "center", p: 3 }}>
+            <CardContent>
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold" }}>
+                AI-Powered Notes
+              </Typography>
+              <Typography color="text.secondary">
+                Transform any text into organized study materials with our
+                advanced AI technology.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: "100%", textAlign: "center", p: 3 }}>
+            <CardContent>
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold" }}>
+                Smart Review System
+              </Typography>
+              <Typography color="text.secondary">
+                Track your progress and review cards at the optimal time for
+                better retention.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: "100%", textAlign: "center", p: 3 }}>
+            <CardContent>
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: "bold" }}>
+                Study Analytics
+              </Typography>
+              <Typography color="text.secondary">
+                Get insights into your learning progress and identify areas for
+                improvement.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* How It Works Section */}
+      <Box sx={{ py: 8 }}>
+        <Typography
+          variant="h3"
+          gutterBottom
+          sx={{
+            textAlign: "center",
+            fontWeight: "bold",
+            color: "#3f51b5",
+            mb: 6,
+          }}
+        >
+          How It Works
+        </Typography>
+        <Grid container spacing={6} alignItems="center">
           <Grid item xs={12} md={6}>
-            <Image
-              src="/images/study.jpg"
-              alt="Someone studying"
-              width={400}
-              height={250}
-              style={{ borderRadius: "8px" }}
-            />
+            <Box sx={{ position: "relative", height: "300px" }}>
+              <Image
+                src="/images/study.jpg"
+                alt="Study process"
+                layout="fill"
+                objectFit="cover"
+                style={{ borderRadius: "8px" }}
+              />
+            </Box>
           </Grid>
-
-          {/* Text and Buttons Section */}
           <Grid item xs={12} md={6}>
-            <Typography
-              variant="h2"
-              component="h1"
-              gutterBottom
-              sx={{ fontWeight: "bold", color: "#3f51b5" }}
-            >
-              Welcome to Study Mate
-            </Typography>
-            <Typography
-              variant="h5"
-              component="h2"
-              gutterBottom
-              sx={{ color: "text.secondary", mb: 4 }}
-            >
-              The easiest way to create summary notes.
-            </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              sx={{ mt: 2, mr: 2, px: 4, py: 1.5 }}
-              href="/generate"
-            >
-              Get Started
-            </Button>
-            <Button
-              variant="outlined"
-              color="primary"
-              sx={{ mt: 2, px: 4, py: 1.5 }}
-              href="/learn"
-            >
-              Learn More
-            </Button>
+            <Box>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
+                1. Input Your Study Material
+              </Typography>
+              <Typography paragraph color="text.secondary">
+                Simply paste your text or upload your notes.
+              </Typography>
+
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
+                2. Generate Smart Notes
+              </Typography>
+              <Typography paragraph color="text.secondary">
+                Our AI creates organized flashcards and study materials.
+              </Typography>
+
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
+                3. Review and Learn
+              </Typography>
+              <Typography paragraph color="text.secondary">
+                Study effectively with our smart review system.
+              </Typography>
+            </Box>
           </Grid>
         </Grid>
+      </Box>
 
-        {/* <Box sx={{ my: 20, px: 6 }}>
-          <Typography
-            variant="h4"
-            component="h2"
-            gutterBottom
-            sx={{ fontWeight: "bold", color: "#3f51b5", textAlign: "center" }}
-          >
-            Features
-          </Typography>
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={4}>
-              <Card sx={{ p: 2, height: "100%" }}>
-                <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                    Easy Text Input
-                  </Typography>
-                  <Typography sx={{ color: "text.secondary", mt: 1 }}>
-                    Simply paste your text whether it is just just one word or
-                    your full notes and let our tool do all the work. It is that
-                    easy
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Card sx={{ p: 2, height: "100%" }}>
-                <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                    AI Powered Summaries
-                  </Typography>
-                  <Typography sx={{ color: "text.secondary", mt: 1 }}>
-                    Our AI algorithm understands your text and generates
-                    relevant study points and solutions giving you the right
-                    direction to study
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Card sx={{ p: 2, height: "100%" }}>
-                <CardContent>
-                  <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                    Cloud Storage
-                  </Typography>
-                  <Typography sx={{ color: "text.secondary", mt: 1 }}>
-                    Access your study cards from any device anywhere. Your study
-                    summaries are always saved for easy access
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Box>
-
-        <Box sx={{ my: 20, textAlign: "center" }}>
-          <Typography
-            variant="h4"
-            component="h2"
-            gutterBottom
-            sx={{ fontWeight: "bold", color: "#3f51b5" }}
-          >
-            Pricing
-          </Typography>
-          <Grid container spacing={4} justifyContent="center">
-            <Grid item xs={12} md={4}>
-              <Card sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
-                <Typography
-                  variant="h5"
-                  gutterBottom
-                  sx={{ fontWeight: "bold", color: "#3f51b5" }}
-                >
-                  Basic
-                </Typography>
-                <Typography variant="h6" gutterBottom>
-                  Free
-                </Typography>
-                <Typography sx={{ color: "text.secondary", mt: 2 }}>
-                  Access to basic services. Active by default
-                </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  sx={{ mt: 4, px: 4, py: 1.5 }}
-                  onClick={() => handleSubmit("basic")}
-                  disabled
-                >
-                  Choose Basic
-                </Button>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Card sx={{ p: 3, borderRadius: 2, boxShadow: 3 }}>
-                <Typography
-                  variant="h5"
-                  gutterBottom
-                  sx={{ fontWeight: "bold", color: "#3f51b5" }}
-                >
-                  Pro
-                </Typography>
-                <Typography variant="h6" gutterBottom>
-                  $5 / month
-                </Typography>
-                <Typography sx={{ color: "text.secondary", mt: 2 }}>
-                  Course outline generation and study resources
-                </Typography>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  sx={{ mt: 4, px: 4, py: 1.5 }}
-                  onClick={() => handleSubmit("pro")}
-                >
-                  Choose Pro
-                </Button>
-              </Card>
-            </Grid>
-          </Grid>
-        </Box> */}
-      </Container>
-    </>
+      {/* CTA Section */}
+      <Box sx={{ py: 8, textAlign: "center" }}>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: "bold" }}>
+          Ready to Transform Your Study Habits?
+        </Typography>
+        <Typography
+          sx={{ mb: 4, maxWidth: "600px", mx: "auto", color: "text.secondary" }}
+        >
+          Join thousands of students who are already studying smarter, not
+          harder.
+        </Typography>
+        <Button
+          variant="contained"
+          size="large"
+          href="/sign-up"
+          sx={{ px: 4, py: 1.5 }}
+        >
+          Start Learning Now
+        </Button>
+      </Box>
+    </Container>
   );
 }
