@@ -17,6 +17,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AutoStoriesIcon from "@mui/icons-material/AutoStories";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
+import TestStats from "../components/TestStats";
+import PerformanceAnalytics from "../components/PerformanceAnalytics";
 
 export default function DashboardContent() {
   const { user } = useUser();
@@ -110,9 +112,27 @@ export default function DashboardContent() {
                     View My Notes
                   </Button>
                 </Grid>
+                <Grid item xs={12}>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    size="large"
+                    onClick={() => router.push("/practice")}
+                  >
+                    Take Practice Test
+                  </Button>
+                </Grid>
               </Grid>
             </CardContent>
           </Card>
+        </Grid>
+
+        <Grid item xs={12}>
+          <TestStats />
+        </Grid>
+
+        <Grid item xs={12}>
+          <PerformanceAnalytics />
         </Grid>
       </Grid>
     </Container>

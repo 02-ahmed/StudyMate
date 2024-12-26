@@ -148,6 +148,20 @@ function NavigationBarContent() {
               Generate Notes
             </Button>
           </Link>
+          <Link href="/practice" passHref style={{ textDecoration: "none" }}>
+            <Button
+              sx={{
+                color: isActive("/practice") ? "#3f51b5" : "#666",
+                borderBottom: isActive("/practice")
+                  ? "2px solid #3f51b5"
+                  : "none",
+                borderRadius: 0,
+                px: 2,
+              }}
+            >
+              Practice Tests
+            </Button>
+          </Link>
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
