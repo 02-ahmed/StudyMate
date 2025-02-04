@@ -75,17 +75,32 @@ export default function PerformanceAnalytics() {
         totalScore += testData.score || 0;
 
         // Calculate streak
-        const testDate = new Date(testData.dateTaken).toDateString();
+        const testDate = new Date(testData.dateTaken.toDate()).toDateString();
+        const currentDate = new Date().toDateString();
+
         if (lastTestDate) {
           const dayDiff = Math.abs(
             (new Date(testDate) - new Date(lastTestDate)) /
               (1000 * 60 * 60 * 24)
           );
-          if (dayDiff <= 1) streak++;
-          else streak = 1;
+          if (dayDiff <= 1) {
+            streak++;
+          } else {
+            streak = 1;
+          }
         } else {
           streak = 1;
         }
+
+        // Check if the last test was more than a day ago
+        const daysSinceLastTest = Math.abs(
+          (new Date(currentDate) - new Date(testDate)) / (1000 * 60 * 60 * 24)
+        );
+
+        if (daysSinceLastTest > 1) {
+          streak = 0;
+        }
+
         lastTestDate = testDate;
 
         // Get flashcard set details

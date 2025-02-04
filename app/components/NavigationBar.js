@@ -76,6 +76,18 @@ function NavigationBarContent() {
               StudyMate
             </Typography>
           </Link>
+          <Link href="/generate" passHref style={{ textDecoration: "none" }}>
+            <Button
+              sx={{
+                color: isActive("/generate") ? "#3f51b5" : "#666",
+                borderRadius: 0,
+                px: 2,
+                mr: 2,
+              }}
+            >
+              Generate Notes
+            </Button>
+          </Link>
           <Button color="inherit" href="/sign-in" sx={{ color: "#3f51b5" }}>
             Sign In
           </Button>

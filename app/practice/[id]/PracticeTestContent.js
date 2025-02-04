@@ -31,79 +31,6 @@ import { db } from "../../../utils/firebase";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
-function generateQuestions(flashcards, config) {
-  const { questionTypes, numQuestions } = config;
-  const questions = [];
-  const usedIndices = new Set();
-
-  // Helper function to get random flashcards for multiple choice options
-  const getRandomOptions = (correctAnswer, count) => {
-    const options = [correctAnswer];
-    const availableCards = flashcards.filter(
-      (card) => card.back !== correctAnswer
-    );
-
-    while (options.length < count && availableCards.length > 0) {
-      const randomIndex = Math.floor(Math.random() * availableCards.length);
-      options.push(availableCards[randomIndex].back);
-      availableCards.splice(randomIndex, 1);
-    }
-
-    // Shuffle options
-    return options.sort(() => Math.random() - 0.5);
-  };
-
-  while (
-    questions.length < numQuestions &&
-    usedIndices.size < flashcards.length
-  ) {
-    let index;
-    do {
-      index = Math.floor(Math.random() * flashcards.length);
-    } while (usedIndices.has(index));
-
-    usedIndices.add(index);
-    const card = flashcards[index];
-    const typeIndex = Math.floor(Math.random() * questionTypes.length);
-    const questionType = questionTypes[typeIndex];
-
-    switch (questionType) {
-      case "multipleChoice": {
-        const options = getRandomOptions(card.back, 4);
-        questions.push({
-          type: "multipleChoice",
-          question: card.front,
-          options,
-          correctAnswer: card.back,
-        });
-        break;
-      }
-      case "trueFalse": {
-        const isTrue = Math.random() < 0.5;
-        const answer = isTrue
-          ? card.back
-          : flashcards[(index + 1) % flashcards.length].back;
-        questions.push({
-          type: "trueFalse",
-          question: `${card.front}\nAnswer: ${answer}`,
-          correctAnswer: isTrue,
-        });
-        break;
-      }
-      case "fillInBlank": {
-        questions.push({
-          type: "fillInBlank",
-          question: card.front,
-          correctAnswer: card.back,
-        });
-        break;
-      }
-    }
-  }
-
-  return questions.sort(() => Math.random() - 0.5);
-}
-
 export default function PracticeTestContent({ params }) {
   const { user } = useUser();
   const router = useRouter();
@@ -115,12 +42,42 @@ export default function PracticeTestContent({ params }) {
   const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState(null);
   const [startTime, setStartTime] = useState(null);
+  const [generatingQuestions, setGeneratingQuestions] = useState(false);
 
   useEffect(() => {
     if (user) {
       loadTest();
     }
   }, [user]);
+
+  const generateAIQuestions = async (flashcards, config) => {
+    try {
+      setGeneratingQuestions(true);
+      const response = await fetch("/api/generate-questions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          flashcards,
+          numQuestions: config.numQuestions,
+          questionTypes: config.questionTypes,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate questions");
+      }
+
+      const data = await response.json();
+      return data.questions;
+    } catch (error) {
+      console.error("Error generating AI questions:", error);
+      throw error;
+    } finally {
+      setGeneratingQuestions(false);
+    }
+  };
 
   const loadTest = async () => {
     try {
@@ -136,8 +93,8 @@ export default function PracticeTestContent({ params }) {
           return;
         }
 
-        const generatedQuestions = generateQuestions(data.flashcards, config);
-        setQuestions(generatedQuestions);
+        const aiQuestions = await generateAIQuestions(data.flashcards, config);
+        setQuestions(aiQuestions);
         setStartTime(new Date());
       } else {
         setError("Flashcard set not found");
@@ -239,11 +196,23 @@ export default function PracticeTestContent({ params }) {
     }
   };
 
-  if (loading) {
+  if (loading || generatingQuestions) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
           <CircularProgress />
+          <Typography>
+            {generatingQuestions
+              ? "Generating practice questions..."
+              : "Loading..."}
+          </Typography>
         </Box>
       </Container>
     );
@@ -341,9 +310,28 @@ export default function PracticeTestContent({ params }) {
 
       <Card sx={{ mb: 4 }}>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
-            {currentQuestion.question}
-          </Typography>
+          {currentQuestion.type === "trueFalse" ? (
+            <>
+              <Typography variant="h6" gutterBottom>
+                {currentQuestion.question.split("\nStatement:")[0]}
+              </Typography>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                gutterBottom
+                sx={{ mb: 2 }}
+              >
+                Statement: {currentQuestion.question.split("\nStatement:")[1]}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Is this statement true or false?
+              </Typography>
+            </>
+          ) : (
+            <Typography variant="h5" gutterBottom>
+              {currentQuestion.question}
+            </Typography>
+          )}
 
           {currentQuestion.type === "multipleChoice" && (
             <FormControl component="fieldset">

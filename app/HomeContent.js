@@ -24,8 +24,13 @@ export default function HomeContent() {
     }
   }, [isLoaded, isSignedIn, router]);
 
-  if (!isLoaded || isSignedIn) {
-    return null; // Don't show landing page while checking auth or if signed in
+  if (!isLoaded) {
+    return null; // Only show loading state
+  }
+
+  // Don't show the landing page content if user is signed in
+  if (isSignedIn) {
+    return null;
   }
 
   return (
@@ -56,14 +61,26 @@ export default function HomeContent() {
           Create smart flashcards, generate study notes, and track your progress
           with AI-powered learning tools.
         </Typography>
-        <Button
-          variant="contained"
-          size="large"
-          href="/sign-up"
-          sx={{ px: 4, py: 1.5, fontSize: "1.1rem" }}
-        >
-          Get Started Free
-        </Button>
+        <Box sx={{ display: "flex", gap: 2, justifyContent: "center" }}>
+          <Button
+            variant="contained"
+            size="large"
+            href="/generate"
+            sx={{ px: 4, py: 1.5, fontSize: "1.1rem" }}
+          >
+            Try Generate Notes
+          </Button>
+          {!isSignedIn && (
+            <Button
+              variant="outlined"
+              size="large"
+              href="/sign-up"
+              sx={{ px: 4, py: 1.5, fontSize: "1.1rem" }}
+            >
+              Sign Up Free
+            </Button>
+          )}
+        </Box>
       </Box>
 
       {/* Features Section */}

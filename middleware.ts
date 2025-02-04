@@ -5,7 +5,12 @@ import { authMiddleware } from "@clerk/nextjs";
 // See https://clerk.com/docs/references/nextjs/auth-middleware for more information about configuring your middleware
 export default authMiddleware({
   // Public routes are routes that don't require authentication
-  publicRoutes: ["/"],
+  publicRoutes: [
+    "/",
+    "/generate",
+    "/api/generate",
+    "/api/generate-questions", // If this API endpoint exists for the generate feature
+  ],
 });
 
 export const config = {
