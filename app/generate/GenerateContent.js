@@ -263,6 +263,19 @@ export default function GenerateContent() {
                     newFlipped[index] = !newFlipped[index];
                     setFlipped(newFlipped);
                   }}
+                  sx={{
+                    height: "100%",
+                    borderRadius: 2,
+                    background:
+                      "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
+                    boxShadow: "0 4px 20px rgba(63, 81, 181, 0.15)",
+                    transition:
+                      "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                    "&:hover": {
+                      transform: "translateY(-4px)",
+                      boxShadow: "0 8px 30px rgba(63, 81, 181, 0.2)",
+                    },
+                  }}
                 >
                   <CardContent>
                     <Box sx={{ perspective: "1000px" }}>
@@ -288,22 +301,26 @@ export default function GenerateContent() {
                             justifyContent: "center",
                             alignItems: "center",
                             backgroundColor: "#fff",
-                            border: "1px solid #ccc",
+                            borderRadius: 2,
+                            border: "1px solid rgba(63, 81, 181, 0.1)",
                             padding: 2,
                             boxSizing: "border-box",
+                            background:
+                              "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
+                            boxShadow: "inset 0 0 10px rgba(63, 81, 181, 0.05)",
                             overflowY: "auto",
                             "&::-webkit-scrollbar": {
-                              width: "8px",
+                              width: "6px",
                             },
                             "&::-webkit-scrollbar-track": {
                               background: "#f1f1f1",
-                              borderRadius: "4px",
+                              borderRadius: "3px",
                             },
                             "&::-webkit-scrollbar-thumb": {
-                              background: "#888",
-                              borderRadius: "4px",
+                              background: "#3f51b5",
+                              borderRadius: "3px",
                               "&:hover": {
-                                background: "#666",
+                                background: "#303f9f",
                               },
                             },
                           }}
@@ -316,6 +333,10 @@ export default function GenerateContent() {
                               whiteSpace: "pre-wrap",
                               maxWidth: "100%",
                               fontSize: "1rem",
+                              color: "#3f51b5",
+                              fontWeight: 500,
+                              textAlign: "center",
+                              lineHeight: 1.6,
                             }}
                           >
                             {summaryNote.front}
@@ -332,23 +353,27 @@ export default function GenerateContent() {
                             justifyContent: "center",
                             alignItems: "center",
                             backgroundColor: "#fff",
-                            border: "1px solid #ccc",
+                            borderRadius: 2,
+                            border: "1px solid rgba(63, 81, 181, 0.1)",
                             padding: 2,
                             boxSizing: "border-box",
                             transform: "rotateY(180deg)",
+                            background:
+                              "linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%)",
+                            boxShadow: "inset 0 0 10px rgba(63, 81, 181, 0.05)",
                             overflowY: "auto",
                             "&::-webkit-scrollbar": {
-                              width: "8px",
+                              width: "6px",
                             },
                             "&::-webkit-scrollbar-track": {
                               background: "#f1f1f1",
-                              borderRadius: "4px",
+                              borderRadius: "3px",
                             },
                             "&::-webkit-scrollbar-thumb": {
-                              background: "#888",
-                              borderRadius: "4px",
+                              background: "#3f51b5",
+                              borderRadius: "3px",
                               "&:hover": {
-                                background: "#666",
+                                background: "#303f9f",
                               },
                             },
                           }}
@@ -361,6 +386,10 @@ export default function GenerateContent() {
                               whiteSpace: "pre-wrap",
                               maxWidth: "100%",
                               fontSize: "1rem",
+                              color: "#3f51b5",
+                              fontWeight: 500,
+                              textAlign: "center",
+                              lineHeight: 1.6,
                             }}
                           >
                             {summaryNote.back}

@@ -174,6 +174,24 @@ function NavigationBarContent() {
               Practice Tests
             </Button>
           </Link>
+          <Link
+            href="/saved-reviews"
+            passHref
+            style={{ textDecoration: "none" }}
+          >
+            <Button
+              sx={{
+                color: isActive("/saved-reviews") ? "#3f51b5" : "#666",
+                borderBottom: isActive("/saved-reviews")
+                  ? "2px solid #3f51b5"
+                  : "none",
+                borderRadius: 0,
+                px: 2,
+              }}
+            >
+              Saved Reviews
+            </Button>
+          </Link>
         </Box>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>

@@ -14,18 +14,21 @@ const NavigationBar = dynamic(() => import("./components/NavigationBar"), {
 
 export default function RootLayout({ children }) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body className={inter.className}>
-          <NavigationBar />
+    <html lang="en">
+      <body>
+        <ClerkProvider>
           <Box
-            component="main"
-            sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "#f5f5f5" }}
+            sx={{
+              minHeight: "100vh",
+              bgcolor: "#f1f5f9",
+              pb: 4,
+            }}
           >
+            <NavigationBar />
             {children}
           </Box>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

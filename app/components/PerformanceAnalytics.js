@@ -22,6 +22,7 @@ import {
   Button,
   Paper,
   Collapse,
+  Grid,
 } from "@mui/material";
 import { collection, query, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "../../utils/firebase";
@@ -29,6 +30,26 @@ import CloseIcon from "@mui/icons-material/Close";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import InsightsIcon from "@mui/icons-material/Insights";
+import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import { keyframes } from "@mui/system";
+import SchoolIcon from "@mui/icons-material/School";
+import YouTubeIcon from "@mui/icons-material/YouTube";
+import ArticleIcon from "@mui/icons-material/Article";
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const fireAnimation = keyframes`
+  0% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(-5deg); }
+  75% { transform: translateY(2px) rotate(5deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+`;
 
 export default function PerformanceAnalytics() {
   const { user } = useUser();
@@ -36,6 +57,8 @@ export default function PerformanceAnalytics() {
   const [loading, setLoading] = useState(true);
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [expandedSection, setExpandedSection] = useState(null);
+  const [reviewContent, setReviewContent] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
   const [analytics, setAnalytics] = useState({
     byQuestionType: {},
     frequentlyMissed: [],
@@ -46,6 +69,9 @@ export default function PerformanceAnalytics() {
     totalTestsTaken: 0,
     averageScore: 0,
   });
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [aiExplanation, setAiExplanation] = useState("");
+  const [resources, setResources] = useState({ articles: [], videos: [] });
 
   const loadAnalytics = useCallback(async () => {
     try {
@@ -200,28 +226,6 @@ export default function PerformanceAnalytics() {
       // Generate enhanced recommendations
       const recommendations = [];
 
-      // Topic-based recommendations
-      if (weakTopics.length > 0) {
-        recommendations.push({
-          type: "topic",
-          message: `Focus on reviewing ${
-            weakTopics[0].topic
-          } (${weakTopics[0].accuracy.toFixed(1)}% accuracy)`,
-          priority: 1,
-          action: () => setSelectedTopic(weakTopics[0].topic),
-        });
-      }
-
-      // Question-based recommendations
-      if (frequentlyMissed.length > 0) {
-        recommendations.push({
-          type: "card",
-          message: "Review these frequently missed cards",
-          cards: frequentlyMissed.slice(0, 3),
-          priority: 2,
-        });
-      }
-
       // Question type recommendations
       const weakestType = Object.entries(questionTypeStats)
         .map(([type, stats]) => ({
@@ -237,7 +241,92 @@ export default function PerformanceAnalytics() {
             .replace(/([A-Z])/g, " $1")
             .toLowerCase()} questions`,
           priority: 3,
-          action: () => router.push("/practice"),
+          action: () => router.push(`/practice?type=${weakestType.type}`),
+          config: {
+            questionType: weakestType.type,
+          },
+        });
+      }
+
+      // Topic-based recommendations
+      if (weakTopics.length > 0) {
+        recommendations.push({
+          type: "topic",
+          message: `Focus on reviewing ${
+            weakTopics[0].topic
+          } (${weakTopics[0].accuracy.toFixed(1)}% accuracy)`,
+          priority: 1,
+          action: () =>
+            router.push(
+              `/practice?topic=${encodeURIComponent(weakTopics[0].topic)}`
+            ),
+          config: {
+            topic: weakTopics[0].topic,
+          },
+        });
+      }
+
+      // Question-based recommendations
+      if (frequentlyMissed.length > 0) {
+        // Group missed questions by topic and combine with weak topics data
+        const missedByTopic = {};
+
+        // First add all weak topics, even if they don't have frequently missed questions
+        weakTopics.forEach((topic) => {
+          missedByTopic[topic.topic] = {
+            questions: [],
+            accuracy: topic.accuracy,
+          };
+        });
+
+        // Then add frequently missed questions to their respective topics
+        frequentlyMissed.forEach((question) => {
+          question.tags.forEach((tag) => {
+            if (!missedByTopic[tag]) {
+              const topicStats = topicPerformance.get(tag) || {
+                correct: 0,
+                total: 0,
+              };
+              const accuracy =
+                topicStats.total > 0
+                  ? (topicStats.correct / topicStats.total) * 100
+                  : 0;
+              missedByTopic[tag] = {
+                questions: [],
+                accuracy: accuracy,
+              };
+            }
+            missedByTopic[tag].questions.push(question);
+          });
+        });
+
+        // Convert to array and sort by accuracy (ascending) to prioritize weakest topics
+        const sortedTopics = Object.entries(missedByTopic)
+          .map(([topic, data]) => ({
+            topic,
+            questions: data.questions,
+            count: data.questions.length,
+            accuracy: data.accuracy,
+          }))
+          .sort((a, b) => a.accuracy - b.accuracy);
+
+        recommendations.push({
+          type: "card",
+          message: "Review these frequently missed topics",
+          cards: frequentlyMissed.slice(0, 3),
+          topics: sortedTopics,
+          priority: 2,
+          action: () => {
+            router.push(
+              `/review?topics=${encodeURIComponent(
+                JSON.stringify(sortedTopics)
+              )}`
+            );
+          },
+          config: {
+            topics: sortedTopics.map((t) => t.topic),
+            focusOnMissed: true,
+          },
         });
       }
 
@@ -283,6 +372,491 @@ export default function PerformanceAnalytics() {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  const generateExplanation = async (card) => {
+    try {
+      const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+      // Generate explanation prompt
+      const prompt = `
+        I need help understanding this concept:
+        Question: "${card.question}"
+        Correct Answer: "${card.answer}"
+        Topic: ${card.tags.join(", ")}
+
+        Please provide:
+        1. A detailed explanation of the concept
+        2. Key points and relationships to other topics
+        3. Common misconceptions and how to avoid them
+        4. Study tips and real-world applications
+        5. Suggested search terms for finding educational videos and articles about this topic
+      `;
+
+      const result = await model.generateContent(prompt);
+      const explanation = result.response.text();
+
+      // Parse the AI response to extract explanation and resource suggestions
+      const [mainExplanation, ...resourceSuggestions] = explanation.split(
+        "Suggested search terms:"
+      );
+
+      // Generate search queries for educational content
+      const searchTerms = resourceSuggestions[0]
+        .split(",")
+        .map((term) => term.trim());
+
+      // Structure resources based on search terms
+      const resources = {
+        articles: searchTerms.map((term) => ({
+          title: `Understanding ${term}`,
+          url: `https://scholar.google.com/scholar?q=${encodeURIComponent(
+            term
+          )}`,
+          source: "Google Scholar",
+        })),
+        videos: searchTerms.map((term) => ({
+          title: `${term} Explained`,
+          url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
+            term + " education"
+          )}`,
+          duration: "Various",
+        })),
+      };
+
+      setAiExplanation(mainExplanation);
+      setResources(resources);
+    } catch (error) {
+      console.error("Error generating explanation:", error);
+      setAiExplanation(
+        "Sorry, there was an error generating the explanation. Please try again."
+      );
+      setResources({ articles: [], videos: [] });
+    }
+  };
+
+  const generateReviewContent = async (topics) => {
+    try {
+      setReviewLoading(true);
+      console.log("=== REVIEW ACTION CLICKED ===");
+
+      const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+      // Join all topics for the prompt
+      const topicsString = topics.map((t) => t.topic).join(", ");
+
+      const prompt = `
+        Create a comprehensive study guide for: ${topicsString}
+
+        Structure your response as follows:
+
+        1. Detailed Notes:
+        - Core concepts and definitions
+        - Step-by-step explanations
+        - Key formulas or principles
+        - Visual descriptions and examples
+        - Historical context and development
+
+        2. In-Depth Explanations:
+        - Break down complex ideas
+        - Real-world applications and examples
+        - How concepts interconnect
+        - Problem-solving strategies
+        - Common questions answered
+
+        3. Study Resources:
+        - Recommended textbook chapters
+        - Online course recommendations
+        - Key research papers
+        - Interactive learning tools
+        - Practice problem sources
+
+        4. Video Content:
+        - Specific YouTube channels and playlists
+        - Online lecture series
+        - Tutorial recommendations
+        - Visual demonstrations
+        - Expert talks and presentations
+
+        5. Additional Learning Materials:
+        - Practice exercises
+        - Memory aids and mnemonics
+        - Diagrams and charts to create
+        - Study group activities
+        - Self-assessment questions
+
+        Format each section clearly with bullet points and include specific, actionable recommendations.
+      `;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // Parse the response into sections
+      const sections = text.split(/\d\.\s+/).filter(Boolean);
+
+      setReviewContent({
+        detailedNotes: sections[0] || "",
+        explanations: sections[1] || "",
+        studyResources: sections[2] || "",
+        videoContent: sections[3] || "",
+        additionalMaterials: sections[4] || "",
+      });
+    } catch (error) {
+      console.error("Error generating review content:", error);
+      setReviewContent({
+        error: "Failed to generate review content. Please try again.",
+      });
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  const renderExplanationDialog = () => {
+    if (!selectedCard) return null;
+
+    return (
+      <Dialog
+        open={!!selectedCard}
+        onClose={() => setSelectedCard(null)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            background: "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+            color: "white",
+          }}
+        >
+          <SchoolIcon />
+          Enhanced Learning
+          <IconButton
+            onClick={() => setSelectedCard(null)}
+            sx={{
+              position: "absolute",
+              right: 8,
+              top: 8,
+              color: "white",
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Question
+            </Typography>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                bgcolor: "rgba(63, 81, 181, 0.05)",
+                borderRadius: 2,
+              }}
+            >
+              <Typography>{selectedCard.question}</Typography>
+            </Paper>
+          </Box>
+
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Correct Answer
+            </Typography>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2,
+                bgcolor: "rgba(76, 175, 80, 0.05)",
+                borderRadius: 2,
+                border: "1px solid rgba(76, 175, 80, 0.2)",
+              }}
+            >
+              <Typography color="success.main">
+                {selectedCard.answer}
+              </Typography>
+            </Paper>
+          </Box>
+
+          <Accordion
+            defaultExpanded
+            sx={{
+              mb: 2,
+              "&:before": { display: "none" },
+              boxShadow: "none",
+              bgcolor: "transparent",
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                bgcolor: "rgba(63, 81, 181, 0.05)",
+                borderRadius: 2,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <LightbulbIcon color="primary" />
+                <Typography variant="h6">AI Explanation</Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography
+                component="pre"
+                sx={{
+                  whiteSpace: "pre-wrap",
+                  fontFamily: "inherit",
+                  mt: 1,
+                }}
+              >
+                {aiExplanation}
+              </Typography>
+            </AccordionDetails>
+          </Accordion>
+
+          <Accordion
+            sx={{
+              mb: 2,
+              "&:before": { display: "none" },
+              boxShadow: "none",
+              bgcolor: "transparent",
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                bgcolor: "rgba(63, 81, 181, 0.05)",
+                borderRadius: 2,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <ArticleIcon color="primary" />
+                <Typography variant="h6">Related Articles</Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              <List>
+                {resources.articles.map((article, index) => (
+                  <ListItem
+                    key={index}
+                    sx={{
+                      bgcolor: "white",
+                      mb: 1,
+                      borderRadius: 2,
+                      "&:hover": {
+                        bgcolor: "rgba(63, 81, 181, 0.05)",
+                      },
+                    }}
+                  >
+                    <ListItemText
+                      primary={article.title}
+                      secondary={article.source}
+                    />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Read
+                    </Button>
+                  </ListItem>
+                ))}
+              </List>
+            </AccordionDetails>
+          </Accordion>
+
+          <Accordion
+            sx={{
+              "&:before": { display: "none" },
+              boxShadow: "none",
+              bgcolor: "transparent",
+            }}
+          >
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{
+                bgcolor: "rgba(63, 81, 181, 0.05)",
+                borderRadius: 2,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <YouTubeIcon color="primary" />
+                <Typography variant="h6">Video Resources</Typography>
+              </Box>
+            </AccordionSummary>
+            <AccordionDetails>
+              <List>
+                {resources.videos.map((video, index) => (
+                  <ListItem
+                    key={index}
+                    sx={{
+                      bgcolor: "white",
+                      mb: 1,
+                      borderRadius: 2,
+                      "&:hover": {
+                        bgcolor: "rgba(63, 81, 181, 0.05)",
+                      },
+                    }}
+                  >
+                    <ListItemText
+                      primary={video.title}
+                      secondary={`Duration: ${video.duration}`}
+                    />
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      href={video.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Watch
+                    </Button>
+                  </ListItem>
+                ))}
+              </List>
+            </AccordionDetails>
+          </Accordion>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
+  const renderReviewDialog = () => {
+    if (!reviewContent) return null;
+
+    return (
+      <Dialog
+        open={!!reviewContent}
+        onClose={() => setReviewContent(null)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            background: "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            background: "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+            color: "white",
+          }}
+        >
+          <SchoolIcon />
+          Study Guide
+          <IconButton
+            onClick={() => setReviewContent(null)}
+            sx={{
+              position: "absolute",
+              right: 8,
+              top: 8,
+              color: "white",
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {reviewLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : reviewContent.error ? (
+            <Alert severity="error">{reviewContent.error}</Alert>
+          ) : (
+            <>
+              <Accordion defaultExpanded>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <SchoolIcon color="primary" />
+                    <Typography variant="h6">Detailed Notes</Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography sx={{ whiteSpace: "pre-wrap" }}>
+                    {reviewContent.detailedNotes}
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
+
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <LightbulbIcon color="primary" />
+                    <Typography variant="h6">In-Depth Explanations</Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography sx={{ whiteSpace: "pre-wrap" }}>
+                    {reviewContent.explanations}
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
+
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <ArticleIcon color="primary" />
+                    <Typography variant="h6">Study Resources</Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography sx={{ whiteSpace: "pre-wrap" }}>
+                    {reviewContent.studyResources}
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
+
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <YouTubeIcon color="primary" />
+                    <Typography variant="h6">Video Content</Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography sx={{ whiteSpace: "pre-wrap" }}>
+                    {reviewContent.videoContent}
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
+
+              <Accordion>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <SchoolIcon color="primary" />
+                    <Typography variant="h6">
+                      Additional Learning Materials
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <Typography sx={{ whiteSpace: "pre-wrap" }}>
+                    {reviewContent.additionalMaterials}
+                  </Typography>
+                </AccordionDetails>
+              </Accordion>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
@@ -297,300 +871,528 @@ export default function PerformanceAnalytics() {
   };
 
   return (
-    <>
-      <Card>
-        <CardContent>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card
+        sx={{
+          borderRadius: 4,
+          background: "rgba(255, 255, 255, 0.9)",
+          backdropFilter: "blur(10px)",
+          boxShadow: "0 8px 32px rgba(63, 81, 181, 0.15)",
+        }}
+      >
+        <CardContent sx={{ position: "relative" }}>
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background:
+                "linear-gradient(135deg, rgba(63, 81, 181, 0.05) 0%, rgba(121, 134, 203, 0.05) 100%)",
+              borderRadius: 4,
+              zIndex: 0,
             }}
-          >
-            <Typography variant="h6">Performance Analysis</Typography>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Total Tests: {analytics.totalTestsTaken}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Average Score: {analytics.averageScore.toFixed(1)}%
+          />
+          <Box sx={{ position: "relative", zIndex: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 4 }}>
+              <InsightsIcon
+                sx={{
+                  fontSize: 40,
+                  color: "#3f51b5",
+                  filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.2))",
+                  mr: 2,
+                }}
+              />
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 600,
+                  background:
+                    "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                Performance Insights
               </Typography>
             </Box>
-          </Box>
 
-          {/* Study Streak */}
-          {analytics.studyStreak > 0 && (
-            <Alert severity="success" sx={{ mb: 3 }}>
-              🔥 {analytics.studyStreak} Day Study Streak!
-            </Alert>
-          )}
+            {analytics.studyStreak > 0 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 260, damping: 20 }}
+              >
+                <Paper
+                  sx={{
+                    p: 2,
+                    mb: 3,
+                    borderRadius: 3,
+                    background:
+                      "linear-gradient(135deg, #ff9800 0%, #ff5722 100%)",
+                    color: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    boxShadow: "0 8px 32px rgba(255, 152, 0, 0.3)",
+                  }}
+                >
+                  <LocalFireDepartmentIcon
+                    sx={{
+                      fontSize: 40,
+                      animation: `${fireAnimation} 2s infinite`,
+                    }}
+                  />
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                      {analytics.studyStreak} Day Streak!
+                    </Typography>
+                    <Typography variant="body2">
+                      Keep up the great work! You&apos;re on fire! 🔥
+                    </Typography>
+                  </Box>
+                </Paper>
+              </motion.div>
+            )}
 
-          {/* Recommendations Section */}
-          <Paper sx={{ mb: 3, p: 2 }} elevation={0} variant="outlined">
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                cursor: "pointer",
-              }}
-              onClick={() => toggleSection("recommendations")}
-            >
-              <Typography variant="subtitle1">Study Recommendations</Typography>
-              {expandedSection === "recommendations" ? (
-                <ExpandLessIcon />
-              ) : (
-                <ExpandMoreIcon />
-              )}
-            </Box>
-            <Collapse in={expandedSection === "recommendations"}>
-              {analytics.recommendations.length > 0 ? (
-                <List>
-                  {analytics.recommendations.map((rec, index) => (
-                    <ListItem
-                      key={index}
+            <Grid container spacing={3}>
+              {analytics.weakTopics.length > 0 && (
+                <Grid item xs={12} md={6}>
+                  <motion.div
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <Paper
                       sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-start",
+                        p: 3,
+                        height: "100%",
+                        borderRadius: 3,
+                        background: "rgba(255, 255, 255, 0.9)",
+                        backdropFilter: "blur(10px)",
+                        boxShadow: "0 8px 32px rgba(63, 81, 181, 0.1)",
+                        position: "relative",
+                        overflow: "hidden",
+                        "&::before": {
+                          content: '""',
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background:
+                            "linear-gradient(135deg, rgba(63, 81, 181, 0.05) 0%, rgba(121, 134, 203, 0.05) 100%)",
+                          zIndex: 0,
+                        },
+                        "& > *": {
+                          position: "relative",
+                          zIndex: 1,
+                        },
                       }}
                     >
-                      <ListItemText primary={rec.message} />
-                      {rec.action && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={rec.action}
-                          sx={{ mt: 1 }}
-                        >
-                          Take Action
-                        </Button>
-                      )}
-                      {rec.type === "card" && rec.cards && (
-                        <Box sx={{ mt: 1 }}>
-                          {rec.cards.map((card, idx) => (
-                            <Typography
-                              key={idx}
-                              variant="body2"
-                              color="text.secondary"
-                            >
-                              • &ldquo;{card.question}&rdquo; (missed{" "}
-                              {card.count} times)
-                            </Typography>
-                          ))}
-                        </Box>
-                      )}
-                    </ListItem>
-                  ))}
-                </List>
-              ) : (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  Take more tests to get personalized recommendations
-                </Alert>
-              )}
-            </Collapse>
-          </Paper>
-
-          {/* Question Types Section */}
-          <Paper sx={{ mb: 3, p: 2 }} elevation={0} variant="outlined">
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                cursor: "pointer",
-              }}
-              onClick={() => toggleSection("questionTypes")}
-            >
-              <Typography variant="subtitle1">
-                Performance by Question Type
-              </Typography>
-              {expandedSection === "questionTypes" ? (
-                <ExpandLessIcon />
-              ) : (
-                <ExpandMoreIcon />
-              )}
-            </Box>
-            <Collapse in={expandedSection === "questionTypes"}>
-              <Box sx={{ mt: 2 }}>
-                {Object.entries(analytics.byQuestionType).map(
-                  ([type, stats]) => (
-                    <Box key={type} sx={{ mb: 2 }}>
-                      <Box
+                      <Typography
+                        variant="h6"
+                        gutterBottom
                         sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          mb: 1,
+                          color: "#1a237e",
+                          fontWeight: 600,
+                          textShadow: "0 2px 4px rgba(0,0,0,0.1)",
                         }}
                       >
-                        <Typography variant="body2">
-                          {type.replace(/([A-Z])/g, " $1").trim()}
-                        </Typography>
-                        <Typography variant="body2">
-                          {formatAccuracy(stats.correct, stats.total)}
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={
-                          stats.total > 0
-                            ? (stats.correct / stats.total) * 100
-                            : 0
-                        }
-                        sx={{ height: 8, borderRadius: 4 }}
-                      />
-                    </Box>
-                  )
-                )}
-              </Box>
-            </Collapse>
-          </Paper>
+                        Areas for Improvement
+                      </Typography>
+                      <List>
+                        {analytics.weakTopics.map((topic, index) => (
+                          <motion.div
+                            key={topic.topic}
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: index * 0.1 }}
+                          >
+                            <ListItem
+                              sx={{
+                                mb: 1,
+                                bgcolor: "rgba(255, 255, 255, 0.8)",
+                                borderRadius: 2,
+                                backdropFilter: "blur(10px)",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                                transition:
+                                  "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+                                "&:hover": {
+                                  transform: "translateY(-2px)",
+                                  boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
+                                  bgcolor: "rgba(255, 255, 255, 0.9)",
+                                },
+                              }}
+                            >
+                              <ListItemText
+                                primary={topic.topic}
+                                secondary={`Accuracy: ${topic.accuracy.toFixed(
+                                  1
+                                )}%`}
+                                primaryTypographyProps={{
+                                  fontWeight: 600,
+                                  color: "#1a237e",
+                                }}
+                                secondaryTypographyProps={{
+                                  color:
+                                    topic.accuracy < 50
+                                      ? "#f44336"
+                                      : topic.accuracy < 70
+                                      ? "#ff9800"
+                                      : "#4caf50",
+                                }}
+                              />
+                              <LinearProgress
+                                variant="determinate"
+                                value={topic.accuracy}
+                                sx={{
+                                  width: 100,
+                                  height: 8,
+                                  borderRadius: 4,
+                                  bgcolor: "rgba(63, 81, 181, 0.1)",
+                                  "& .MuiLinearProgress-bar": {
+                                    bgcolor:
+                                      topic.accuracy < 50
+                                        ? "#f44336"
+                                        : topic.accuracy < 70
+                                        ? "#ff9800"
+                                        : "#4caf50",
+                                    borderRadius: 4,
+                                  },
+                                }}
+                              />
+                            </ListItem>
+                          </motion.div>
+                        ))}
+                      </List>
+                    </Paper>
+                  </motion.div>
+                </Grid>
+              )}
 
-          {/* Topics Section */}
-          {analytics.weakTopics.length > 0 && (
-            <Paper sx={{ mb: 3, p: 2 }} elevation={0} variant="outlined">
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  cursor: "pointer",
-                }}
-                onClick={() => toggleSection("topics")}
-              >
-                <Typography variant="subtitle1">Topics to Review</Typography>
-                {expandedSection === "topics" ? (
-                  <ExpandLessIcon />
-                ) : (
-                  <ExpandMoreIcon />
-                )}
-              </Box>
-              <Collapse in={expandedSection === "topics"}>
-                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 2 }}>
-                  {analytics.weakTopics.map((topic, index) => (
-                    <Chip
-                      key={index}
-                      label={`${topic.topic} (${topic.accuracy.toFixed(1)}%)`}
-                      color="warning"
-                      onClick={() => handleTopicClick(topic.topic)}
-                      sx={{ cursor: "pointer" }}
-                    />
-                  ))}
-                </Box>
-              </Collapse>
-            </Paper>
-          )}
+              {analytics.recommendations.length > 0 && (
+                <Grid item xs={12} md={6}>
+                  <motion.div
+                    initial={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <Paper
+                      sx={{
+                        p: 3,
+                        height: "100%",
+                        borderRadius: 3,
+                        background:
+                          "linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%)",
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        gutterBottom
+                        sx={{
+                          color: "#3f51b5",
+                          fontWeight: 600,
+                          mb: 3,
+                          textAlign: { xs: "center", sm: "left" },
+                        }}
+                      >
+                        Personalized Recommendations
+                      </Typography>
+                      <List sx={{ width: "100%" }}>
+                        {analytics.recommendations.map((rec, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ x: 20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: index * 0.1 }}
+                          >
+                            <ListItem
+                              sx={{
+                                mb: 2,
+                                bgcolor: "rgba(255, 255, 255, 0.9)",
+                                borderRadius: 3,
+                                flexDirection: "column",
+                                alignItems: "stretch",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                                transition:
+                                  "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+                                "&:hover": {
+                                  transform: "translateY(-2px)",
+                                  boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
+                                },
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexDirection: { xs: "column", sm: "row" },
+                                  alignItems: { xs: "stretch", sm: "center" },
+                                  justifyContent: "space-between",
+                                  width: "100%",
+                                  gap: 2,
+                                }}
+                              >
+                                <ListItemText
+                                  primary={rec.message}
+                                  primaryTypographyProps={{
+                                    fontWeight: 600,
+                                    color: "#1a237e",
+                                    fontSize: "1rem",
+                                  }}
+                                />
+                                {rec.type !== "card" && rec.action && (
+                                  <Button
+                                    variant="contained"
+                                    size="small"
+                                    onClick={rec.action}
+                                    sx={{
+                                      borderRadius: 2,
+                                      background:
+                                        "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+                                      boxShadow:
+                                        "0 3px 5px 2px rgba(63, 81, 181, .3)",
+                                      minWidth: "100px",
+                                      flexShrink: 0,
+                                      py: 0.5,
+                                      px: 2,
+                                    }}
+                                  >
+                                    Take Action
+                                  </Button>
+                                )}
+                              </Box>
+                              {rec.type === "card" && rec.topics && (
+                                <Box sx={{ width: "100%" }}>
+                                  <Typography
+                                    variant="subtitle2"
+                                    color="text.secondary"
+                                    sx={{
+                                      mb: 2,
+                                      textAlign: { xs: "center", sm: "left" },
+                                      fontWeight: 500,
+                                    }}
+                                  >
+                                    Topics to review:
+                                  </Typography>
+                                  <Grid container spacing={2}>
+                                    {rec.topics.map((topicData, idx) => (
+                                      <Grid item xs={12} sm={6} key={idx}>
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            flexDirection: {
+                                              xs: "column",
+                                              sm: "row",
+                                            },
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            bgcolor: "rgba(63, 81, 181, 0.04)",
+                                            p: 2,
+                                            borderRadius: 2,
+                                            gap: { xs: 1.5, sm: 2 },
+                                            height: "100%",
+                                            transition:
+                                              "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+                                            "&:hover": {
+                                              transform: "translateY(-2px)",
+                                              boxShadow:
+                                                "0 4px 12px rgba(63, 81, 181, 0.15)",
+                                              bgcolor:
+                                                "rgba(63, 81, 181, 0.06)",
+                                            },
+                                          }}
+                                        >
+                                          <Box
+                                            sx={{
+                                              textAlign: {
+                                                xs: "center",
+                                                sm: "left",
+                                              },
+                                              width: "100%",
+                                            }}
+                                          >
+                                            <Typography
+                                              variant="body1"
+                                              sx={{
+                                                fontWeight: 600,
+                                                color: "#1a237e",
+                                                mb: 0.5,
+                                                fontSize: "0.95rem",
+                                              }}
+                                            >
+                                              {topicData.topic}
+                                            </Typography>
+                                            <Typography
+                                              variant="body2"
+                                              color="text.secondary"
+                                              sx={{ mb: { xs: 1, sm: 0 } }}
+                                            >
+                                              {topicData.count} questions
+                                            </Typography>
+                                          </Box>
+                                          <Button
+                                            variant="contained"
+                                            size="small"
+                                            onClick={() => {
+                                              const topicForReview = {
+                                                topic: topicData.topic,
+                                                questions: topicData.questions,
+                                                count: topicData.count,
+                                              };
+                                              router.push(
+                                                `/review?topics=${encodeURIComponent(
+                                                  JSON.stringify([
+                                                    topicForReview,
+                                                  ])
+                                                )}`
+                                              );
+                                            }}
+                                            sx={{
+                                              borderRadius: 2,
+                                              background:
+                                                "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+                                              boxShadow:
+                                                "0 3px 5px 2px rgba(63, 81, 181, .3)",
+                                              minWidth: "100px",
+                                              flexShrink: 0,
+                                              py: 0.5,
+                                              px: 2,
+                                              transition:
+                                                "transform 0.2s ease-in-out",
+                                              "&:hover": {
+                                                transform: "scale(1.05)",
+                                              },
+                                            }}
+                                          >
+                                            Study Now
+                                          </Button>
+                                        </Box>
+                                      </Grid>
+                                    ))}
+                                  </Grid>
+                                </Box>
+                              )}
+                            </ListItem>
+                          </motion.div>
+                        ))}
+                      </List>
+                    </Paper>
+                  </motion.div>
+                </Grid>
+              )}
+            </Grid>
 
-          {/* Frequently Missed Questions Section */}
-          {analytics.frequentlyMissed.length > 0 && (
-            <Paper sx={{ p: 2 }} elevation={0} variant="outlined">
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  cursor: "pointer",
+            {selectedTopic && (
+              <Dialog
+                open={!!selectedTopic}
+                onClose={() => setSelectedTopic(null)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                  sx: {
+                    borderRadius: 3,
+                    background:
+                      "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
+                  },
                 }}
-                onClick={() => toggleSection("missed")}
               >
-                <Typography variant="subtitle1">
-                  Frequently Missed Questions
-                </Typography>
-                {expandedSection === "missed" ? (
-                  <ExpandLessIcon />
-                ) : (
-                  <ExpandMoreIcon />
-                )}
-              </Box>
-              <Collapse in={expandedSection === "missed"}>
-                <List>
-                  {analytics.frequentlyMissed.map((item, index) => (
-                    <ListItem key={index}>
-                      <ListItemText
-                        primary={item.question}
-                        secondary={`Correct answer: ${item.answer} (missed ${item.count} times)`}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Collapse>
-            </Paper>
-          )}
+                <DialogTitle
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    background:
+                      "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+                    color: "white",
+                  }}
+                >
+                  <EmojiEventsIcon />
+                  Topic Details: {selectedTopic}
+                  <IconButton
+                    onClick={() => setSelectedTopic(null)}
+                    sx={{
+                      position: "absolute",
+                      right: 8,
+                      top: 8,
+                      color: "white",
+                    }}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                </DialogTitle>
+                <DialogContent sx={{ mt: 2 }}>
+                  {selectedTopic &&
+                    analytics.topicQuestions.has(selectedTopic) && (
+                      <List>
+                        {analytics.topicQuestions
+                          .get(selectedTopic)
+                          .map((question, index) => (
+                            <ListItem key={index}>
+                              <ListItemText
+                                primary={question.question}
+                                secondary={
+                                  <>
+                                    <Typography
+                                      component="span"
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      Answer: {question.answer}
+                                    </Typography>
+                                    <br />
+                                    <Typography
+                                      component="span"
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      Accuracy:{" "}
+                                      {formatAccuracy(
+                                        question.correctCount,
+                                        question.totalAttempts
+                                      )}
+                                    </Typography>
+                                  </>
+                                }
+                              />
+                            </ListItem>
+                          ))}
+                      </List>
+                    )}
+                  <Box
+                    sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
+                  >
+                    <Button
+                      variant="contained"
+                      onClick={() => {
+                        router.push(
+                          `/practice?topic=${encodeURIComponent(selectedTopic)}`
+                        );
+                        setSelectedTopic(null);
+                      }}
+                      sx={{
+                        background:
+                          "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+                        boxShadow: "0 3px 5px 2px rgba(63, 81, 181, .3)",
+                      }}
+                    >
+                      Practice This Topic
+                    </Button>
+                  </Box>
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {renderReviewDialog()}
+            {renderExplanationDialog()}
+          </Box>
         </CardContent>
       </Card>
-
-      {/* Topic Details Dialog */}
-      <Dialog
-        open={Boolean(selectedTopic)}
-        onClose={() => setSelectedTopic(null)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography variant="h6">Topic Details: {selectedTopic}</Typography>
-            <IconButton onClick={() => setSelectedTopic(null)}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          {selectedTopic && analytics.topicQuestions.has(selectedTopic) && (
-            <List>
-              {analytics.topicQuestions
-                .get(selectedTopic)
-                .map((question, index) => (
-                  <ListItem key={index}>
-                    <ListItemText
-                      primary={question.question}
-                      secondary={
-                        <>
-                          <Typography
-                            component="span"
-                            variant="body2"
-                            color="text.secondary"
-                          >
-                            Answer: {question.answer}
-                          </Typography>
-                          <br />
-                          <Typography
-                            component="span"
-                            variant="body2"
-                            color="text.secondary"
-                          >
-                            Accuracy:{" "}
-                            {formatAccuracy(
-                              question.correctCount,
-                              question.totalAttempts
-                            )}
-                          </Typography>
-                        </>
-                      }
-                    />
-                  </ListItem>
-                ))}
-            </List>
-          )}
-          <Box sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}>
-            <Button
-              variant="contained"
-              onClick={() => {
-                router.push("/practice");
-                setSelectedTopic(null);
-              }}
-            >
-              Practice This Topic
-            </Button>
-          </Box>
-        </DialogContent>
-      </Dialog>
-    </>
+    </motion.div>
   );
 }

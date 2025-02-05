@@ -18,6 +18,15 @@ import {
 } from "@mui/material";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 import { db } from "../../utils/firebase";
+import { motion } from "framer-motion";
+import TimelineIcon from "@mui/icons-material/Timeline";
+import { keyframes } from "@mui/system";
+
+const pulseAnimation = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+`;
 
 export default function TestStats() {
   const { user } = useUser();
@@ -103,75 +112,242 @@ export default function TestStats() {
   };
 
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          Practice Test Statistics
-        </Typography>
-
-        <Box sx={{ display: "flex", gap: 4, mb: 4 }}>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">
-              Average Score
-            </Typography>
-            <Typography variant="h4" color="primary">
-              {stats.averageScore.toFixed(1)}%
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card
+        sx={{
+          borderRadius: 4,
+          background: "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
+          boxShadow: "0 4px 20px rgba(63, 81, 181, 0.15)",
+        }}
+      >
+        <CardContent>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 4 }}>
+            <TimelineIcon
+              sx={{
+                fontSize: 40,
+                color: "#3f51b5",
+                filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.2))",
+                mr: 2,
+              }}
+            />
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                background: "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Practice Test Statistics
             </Typography>
           </Box>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">
-              Tests Completed
-            </Typography>
-            <Typography variant="h4" color="primary">
-              {stats.testsCompleted}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="subtitle2" color="text.secondary">
-              Time Practiced
-            </Typography>
-            <Typography variant="h4" color="primary">
-              {formatTime(stats.totalTimePracticed)}
-            </Typography>
-          </Box>
-        </Box>
 
-        <Typography variant="subtitle1" gutterBottom>
-          Recent Test History
-        </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 4,
+              mb: 4,
+              flexWrap: "wrap",
+              justifyContent: "space-around",
+            }}
+          >
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  minWidth: 200,
+                  textAlign: "center",
+                  background:
+                    "linear-gradient(135deg, #3f51b5 0%, #5c6bc0 100%)",
+                  color: "white",
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  sx={{ mb: 1, color: "rgba(255,255,255,0.8)" }}
+                >
+                  Average Score
+                </Typography>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: "bold",
+                    textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  {stats.averageScore.toFixed(1)}%
+                </Typography>
+              </Paper>
+            </motion.div>
 
-        <TableContainer component={Paper} variant="outlined">
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Score</TableCell>
-                <TableCell>Questions</TableCell>
-                <TableCell>Time</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {testHistory.map((test) => (
-                <TableRow key={test.id}>
-                  <TableCell>{formatDate(test.dateTaken)}</TableCell>
-                  <TableCell>{test.score.toFixed(1)}%</TableCell>
-                  <TableCell>
-                    {test.correctAnswers} / {test.totalQuestions}
-                  </TableCell>
-                  <TableCell>{formatTime(test.timeSpentSeconds)}</TableCell>
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  minWidth: 200,
+                  textAlign: "center",
+                  background:
+                    "linear-gradient(135deg, #5c6bc0 0%, #7986cb 100%)",
+                  color: "white",
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  sx={{ mb: 1, color: "rgba(255,255,255,0.8)" }}
+                >
+                  Tests Completed
+                </Typography>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: "bold",
+                    textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  {stats.testsCompleted}
+                </Typography>
+              </Paper>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 3,
+                  borderRadius: 3,
+                  minWidth: 200,
+                  textAlign: "center",
+                  background:
+                    "linear-gradient(135deg, #7986cb 0%, #9fa8da 100%)",
+                  color: "white",
+                }}
+              >
+                <Typography
+                  variant="subtitle2"
+                  sx={{ mb: 1, color: "rgba(255,255,255,0.8)" }}
+                >
+                  Time Practiced
+                </Typography>
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: "bold",
+                    textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  {formatTime(stats.totalTimePracticed)}
+                </Typography>
+              </Paper>
+            </motion.div>
+          </Box>
+
+          <Typography
+            variant="h6"
+            sx={{
+              mb: 3,
+              fontWeight: 600,
+              color: "#3f51b5",
+            }}
+          >
+            Recent Test History
+          </Typography>
+
+          <TableContainer
+            component={Paper}
+            variant="outlined"
+            sx={{
+              borderRadius: 3,
+              overflow: "hidden",
+              "& .MuiTableCell-root": {
+                borderColor: "rgba(63, 81, 181, 0.1)",
+              },
+            }}
+          >
+            <Table>
+              <TableHead>
+                <TableRow
+                  sx={{
+                    background: "rgba(63, 81, 181, 0.05)",
+                  }}
+                >
+                  <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Score</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Questions</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Time</TableCell>
                 </TableRow>
-              ))}
-              {testHistory.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} align="center">
-                    No test history yet
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </CardContent>
-    </Card>
+              </TableHead>
+              <TableBody>
+                {testHistory.map((test, index) => (
+                  <motion.tr
+                    key={test.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    component={TableRow}
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: "rgba(63, 81, 181, 0.05)",
+                      },
+                    }}
+                  >
+                    <TableCell>{formatDate(test.dateTaken)}</TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            color: test.score >= 70 ? "#4caf50" : "#f44336",
+                            fontWeight: 500,
+                          }}
+                        >
+                          {test.score.toFixed(1)}%
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      {test.correctAnswers} / {test.totalQuestions}
+                    </TableCell>
+                    <TableCell>{formatTime(test.timeSpentSeconds)}</TableCell>
+                  </motion.tr>
+                ))}
+                {testHistory.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                      <Typography color="text.secondary">
+                        No test history yet. Take your first test to see your
+                        progress!
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

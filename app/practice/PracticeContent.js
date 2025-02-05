@@ -19,13 +19,14 @@ import {
   Checkbox,
   CircularProgress,
 } from "@mui/material";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../utils/firebase";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function PracticeContent() {
   const { user } = useUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [flashcardSets, setFlashcardSets] = useState([]);
   const [selectedSet, setSelectedSet] = useState("");
@@ -35,6 +36,37 @@ export default function PracticeContent() {
     fillInBlank: true,
   });
   const [numQuestions, setNumQuestions] = useState(10);
+
+  // Handle URL parameters for pre-configuration
+  useEffect(() => {
+    const type = searchParams.get("type");
+    const topic = searchParams.get("topic");
+    const focus = searchParams.get("focus");
+
+    // Reset question types based on recommended type
+    if (type) {
+      setQuestionTypes({
+        multipleChoice: type === "multipleChoice",
+        trueFalse: type === "trueFalse",
+        fillInBlank: type === "fillInBlank",
+      });
+    }
+
+    // If topic is specified, find and select the matching set
+    if (topic && flashcardSets.length > 0) {
+      const matchingSet = flashcardSets.find(
+        (set) => set.tags && set.tags.includes(topic)
+      );
+      if (matchingSet) {
+        setSelectedSet(matchingSet.id);
+      }
+    }
+
+    // If focusing on missed questions, adjust the configuration
+    if (focus === "missed") {
+      setNumQuestions(5); // Start with fewer questions for focused practice
+    }
+  }, [searchParams, flashcardSets]);
 
   useEffect(() => {
     if (user) {
@@ -57,6 +89,7 @@ export default function PracticeContent() {
             id: doc.id,
             name: data.name || "Untitled Set",
             cardCount: data.flashcards.length,
+            tags: data.tags || [],
           });
         }
       });
@@ -86,6 +119,7 @@ export default function PracticeContent() {
         .filter(([_, enabled]) => enabled)
         .map(([type]) => type),
       numQuestions,
+      focus: searchParams.get("focus"), // Pass through the focus parameter
     };
 
     router.push(`/practice/${selectedSet}?config=${JSON.stringify(config)}`);
@@ -107,16 +141,39 @@ export default function PracticeContent() {
         variant="h4"
         component="h1"
         gutterBottom
-        sx={{ textAlign: "center" }}
+        sx={{
+          textAlign: "center",
+          background: "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          fontWeight: "bold",
+        }}
       >
         Practice Test Generator
       </Typography>
 
-      <Typography variant="body1" sx={{ mb: 4, textAlign: "center" }}>
-        Create a custom practice test from your flashcard sets
+      <Typography
+        variant="body1"
+        sx={{ mb: 4, textAlign: "center", color: "text.secondary" }}
+      >
+        {searchParams.get("type")
+          ? `Focusing on ${searchParams
+              .get("type")
+              .replace(/([A-Z])/g, " $1")
+              .toLowerCase()} questions`
+          : searchParams.get("topic")
+          ? `Practicing ${searchParams.get("topic")}`
+          : "Create a custom practice test from your flashcard sets"}
       </Typography>
 
-      <Card sx={{ mb: 4 }}>
+      <Card
+        sx={{
+          mb: 4,
+          borderRadius: 3,
+          boxShadow: "0 4px 20px rgba(63, 81, 181, 0.15)",
+          background: "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
+        }}
+      >
         <CardContent>
           <Grid container spacing={3}>
             <Grid item xs={12}>
@@ -137,7 +194,7 @@ export default function PracticeContent() {
             </Grid>
 
             <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ color: "#3f51b5" }}>
                 Question Types
               </Typography>
               <FormGroup>
@@ -198,6 +255,17 @@ export default function PracticeContent() {
                 disabled={
                   !selectedSet || !Object.values(questionTypes).some(Boolean)
                 }
+                sx={{
+                  background:
+                    "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+                  boxShadow: "0 3px 5px 2px rgba(63, 81, 181, .3)",
+                  borderRadius: 2,
+                  height: "50px",
+                  "&:hover": {
+                    background:
+                      "linear-gradient(45deg, #303f9f 30%, #5c6bc0 90%)",
+                  },
+                }}
               >
                 Generate Practice Test
               </Button>
