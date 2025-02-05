@@ -205,26 +205,32 @@ export default function ReviewContent() {
           sx={{
             mb: 4,
             display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: { xs: "stretch", sm: "center" },
+            gap: { xs: 2, sm: 0 },
           }}
         >
-          <Box>
+          <Box sx={{ textAlign: { xs: "center", sm: "left" } }}>
             <Typography
               variant="h4"
               sx={{
                 fontWeight: "bold",
-                textAlign: "center",
                 background: "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
+                fontSize: { xs: "1.75rem", sm: "2.125rem" },
               }}
             >
               Study Guide
             </Typography>
             <Typography
               variant="body1"
-              sx={{ textAlign: "center", mt: 1, color: "text.secondary" }}
+              sx={{
+                mt: 1,
+                color: "text.secondary",
+                fontSize: { xs: "0.875rem", sm: "1rem" },
+              }}
             >
               Comprehensive review materials to help you master these topics
             </Typography>
@@ -238,9 +244,15 @@ export default function ReviewContent() {
               background: "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
               boxShadow: "0 3px 5px 2px rgba(63, 81, 181, .3)",
               color: "white",
+              width: { xs: "100%", sm: "auto" },
+              height: { xs: 48, sm: 40 },
+              fontSize: { xs: "1rem", sm: "0.875rem" },
+              "&:hover": {
+                background: "linear-gradient(45deg, #303f9f 30%, #5c6bc0 90%)",
+              },
             }}
           >
-            {saving ? "Saving..." : "Save Review"}
+            {saving ? "Saving..." : "SAVE REVIEW"}
           </Button>
         </Box>
 
