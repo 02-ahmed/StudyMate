@@ -157,30 +157,30 @@ export default function ReviewContent() {
           {topics.map((topic, index) => (
             <Grid item xs={12} sm={6} key={index}>
               <Paper
+                elevation={0}
                 sx={{
-                  p: 3,
-                  minHeight: "150px",
                   bgcolor: "#f8f9ff",
                   borderRadius: 2,
+                  p: 3,
+                  height: "100%",
                   display: "flex",
-                  flexDirection: "column",
-                  position: "relative",
+                  alignItems: "center",
+                  gap: 3,
                 }}
               >
-                <Box>
+                <Box sx={{ flex: 1 }}>
                   <Typography
                     variant="h6"
                     sx={{
                       color: "#1a237e",
-                      fontWeight: 500,
+                      fontWeight: 600,
                       fontSize: "1.1rem",
-                      mb: 1,
+                      mb: 0.5,
                     }}
                   >
                     {topic}
                   </Typography>
                   <Typography
-                    variant="body2"
                     sx={{
                       color: "text.secondary",
                       fontSize: "0.875rem",
@@ -189,38 +189,17 @@ export default function ReviewContent() {
                     {topic.questions || 0} questions
                   </Typography>
                 </Box>
-                <Box
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => handleTopicChange(null, topic)}
                   sx={{
-                    position: "absolute",
-                    right: 24,
-                    top: "50%",
-                    transform: "translateY(-50%)",
+                    minWidth: "fit-content",
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  <Button
-                    variant="contained"
-                    onClick={() => handleTopicChange(null, topic)}
-                    sx={{
-                      bgcolor: "#3f51b5",
-                      color: "white",
-                      px: 2,
-                      py: 0.5,
-                      minHeight: 0,
-                      borderRadius: 6,
-                      textTransform: "uppercase",
-                      fontWeight: 500,
-                      fontSize: "0.75rem",
-                      letterSpacing: "0.02857em",
-                      boxShadow: "0 3px 5px 2px rgba(63, 81, 181, .3)",
-                      whiteSpace: "nowrap",
-                      "&:hover": {
-                        bgcolor: "#303f9f",
-                      },
-                    }}
-                  >
-                    STUDY NOW
-                  </Button>
-                </Box>
+                  Study Now
+                </Button>
               </Paper>
             </Grid>
           ))}

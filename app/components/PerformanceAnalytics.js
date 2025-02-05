@@ -962,7 +962,7 @@ export default function PerformanceAnalytics() {
 
             <Grid container spacing={3}>
               {analytics.weakTopics.length > 0 && (
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={5}>
                   <motion.div
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
@@ -978,6 +978,7 @@ export default function PerformanceAnalytics() {
                         boxShadow: "0 8px 32px rgba(63, 81, 181, 0.1)",
                         position: "relative",
                         overflow: "hidden",
+                        maxWidth: "100%",
                         "&::before": {
                           content: '""',
                           position: "absolute",
@@ -1006,7 +1007,7 @@ export default function PerformanceAnalytics() {
                       >
                         Areas for Improvement
                       </Typography>
-                      <List>
+                      <List sx={{ width: "100%" }}>
                         {analytics.weakTopics.map((topic, index) => (
                           <motion.div
                             key={topic.topic}
@@ -1052,7 +1053,7 @@ export default function PerformanceAnalytics() {
                                 variant="determinate"
                                 value={topic.accuracy}
                                 sx={{
-                                  width: 100,
+                                  width: 80,
                                   height: 8,
                                   borderRadius: 4,
                                   bgcolor: "rgba(63, 81, 181, 0.1)",
@@ -1077,7 +1078,7 @@ export default function PerformanceAnalytics() {
               )}
 
               {analytics.recommendations.length > 0 && (
-                <Grid item xs={12} md={6}>
+                <Grid item xs={12} md={7}>
                   <motion.div
                     initial={{ x: 20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
@@ -1174,7 +1175,7 @@ export default function PerformanceAnalytics() {
                                     color="text.secondary"
                                     sx={{
                                       mb: 2,
-                                      textAlign: { xs: "center", sm: "left" },
+                                      textAlign: "left",
                                       fontWeight: 500,
                                     }}
                                   >
@@ -1186,16 +1187,11 @@ export default function PerformanceAnalytics() {
                                         <Box
                                           sx={{
                                             display: "flex",
-                                            flexDirection: {
-                                              xs: "column",
-                                              sm: "row",
-                                            },
                                             alignItems: "center",
                                             justifyContent: "space-between",
                                             bgcolor: "rgba(63, 81, 181, 0.04)",
                                             p: 2,
                                             borderRadius: 2,
-                                            gap: { xs: 1.5, sm: 2 },
                                             height: "100%",
                                             transition:
                                               "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
@@ -1208,21 +1204,12 @@ export default function PerformanceAnalytics() {
                                             },
                                           }}
                                         >
-                                          <Box
-                                            sx={{
-                                              textAlign: {
-                                                xs: "center",
-                                                sm: "left",
-                                              },
-                                              width: "100%",
-                                            }}
-                                          >
+                                          <Box>
                                             <Typography
                                               variant="body1"
                                               sx={{
                                                 fontWeight: 600,
                                                 color: "#1a237e",
-                                                mb: 0.5,
                                                 fontSize: "0.95rem",
                                               }}
                                             >
@@ -1231,9 +1218,8 @@ export default function PerformanceAnalytics() {
                                             <Typography
                                               variant="body2"
                                               color="text.secondary"
-                                              sx={{ mb: { xs: 1, sm: 0 } }}
                                             >
-                                              {topicData.count} questions
+                                              {topicData.count || 0} questions
                                             </Typography>
                                           </Box>
                                           <Button
@@ -1260,13 +1246,12 @@ export default function PerformanceAnalytics() {
                                               boxShadow:
                                                 "0 3px 5px 2px rgba(63, 81, 181, .3)",
                                               minWidth: "100px",
-                                              flexShrink: 0,
-                                              py: 0.5,
-                                              px: 2,
-                                              transition:
-                                                "transform 0.2s ease-in-out",
+                                              height: "32px",
+                                              whiteSpace: "nowrap",
+                                              ml: 2,
                                               "&:hover": {
-                                                transform: "scale(1.05)",
+                                                background:
+                                                  "linear-gradient(45deg, #303f9f 30%, #5c6bc0 90%)",
                                               },
                                             }}
                                           >

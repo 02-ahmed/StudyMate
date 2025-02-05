@@ -10,6 +10,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Paper,
 } from "@mui/material";
 import { collection, getDocs, query } from "firebase/firestore";
 import { db } from "../../utils/firebase";
@@ -21,24 +22,20 @@ import TestStats from "../components/TestStats";
 import PerformanceAnalytics from "../components/PerformanceAnalytics";
 import { motion } from "framer-motion";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
-import { keyframes } from "@mui/system";
-
-const glowAnimation = keyframes`
-  0% { box-shadow: 0 0 5px #3f51b5; }
-  50% { box-shadow: 0 0 20px #3f51b5; }
-  100% { box-shadow: 0 0 5px #3f51b5; }
-`;
+import AddIcon from "@mui/icons-material/Add";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import QuizIcon from "@mui/icons-material/Quiz";
 
 export default function DashboardContent() {
   const { user } = useUser();
   const [totalNotes, setTotalNotes] = useState(0);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [weakTopics, setWeakTopics] = useState([]);
 
   useEffect(() => {
     async function loadStats() {
       if (!user) return;
-
       try {
         const q = query(collection(db, "users", user.id, "flashcardSets"));
         const querySnapshot = await getDocs(q);
@@ -49,7 +46,6 @@ export default function DashboardContent() {
         setLoading(false);
       }
     }
-
     loadStats();
   }, [user]);
 
@@ -62,217 +58,126 @@ export default function DashboardContent() {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 2 }}>
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
         <Typography
-          variant="h4"
+          variant="h5"
           sx={{
-            mb: 4,
-            fontWeight: "bold",
+            mb: 3,
+            fontWeight: 600,
             background: "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
-            textAlign: "center",
           }}
         >
           Your Learning Journey
         </Typography>
       </motion.div>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <Card
-              sx={{
-                height: "100%",
-                bgcolor: "background.paper",
-                borderRadius: 4,
-                position: "relative",
-                overflow: "visible",
-                "&:hover": {
-                  animation: `${glowAnimation} 2s infinite`,
-                },
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-                  <EmojiEventsIcon
-                    sx={{
-                      fontSize: 40,
-                      color: "#FFD700",
-                      filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.2))",
-                      mr: 2,
-                    }}
-                  />
-                  <Typography variant="h5" component="div">
-                    Study Achievement
-                  </Typography>
-                </Box>
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 260,
-                    damping: 20,
-                  }}
-                >
-                  <Typography
-                    variant="h3"
-                    component="div"
-                    sx={{
-                      mb: 2,
-                      textAlign: "center",
-                      color: "#3f51b5",
-                      textShadow: "2px 2px 4px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    {totalNotes}
-                  </Typography>
-                </motion.div>
+      <Grid container spacing={2}>
+        {/* Top Row - Achievement and Quick Actions */}
+        <Grid item xs={12} md={4}>
+          <Card sx={{ height: "100%", borderRadius: 2 }}>
+            <CardContent sx={{ p: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                <EmojiEventsIcon
+                  sx={{ fontSize: 20, color: "#FFD700", mr: 1 }}
+                />
+                <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                  Study Achievement
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "baseline", mt: 1 }}>
                 <Typography
-                  color="text.secondary"
-                  sx={{
-                    textAlign: "center",
-                    fontSize: "1.1rem",
-                    fontWeight: 500,
-                  }}
+                  variant="h4"
+                  sx={{ color: "#3f51b5", fontWeight: 600 }}
+                >
+                  {totalNotes}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ ml: 1, color: "text.secondary" }}
                 >
                   Note Sets Created
                 </Typography>
-              </CardContent>
-            </Card>
-          </motion.div>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <Card
-              sx={{
-                height: "100%",
-                bgcolor: "background.paper",
-                borderRadius: 4,
-                background: "linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)",
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-                  <NoteAddIcon
-                    sx={{
-                      fontSize: 40,
-                      color: "#3f51b5",
-                      filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.2))",
-                      mr: 2,
-                    }}
-                  />
-                  <Typography variant="h5" component="div">
-                    Quick Actions
-                  </Typography>
-                </Box>
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <motion.div whileHover={{ scale: 1.03 }}>
-                      <Button
-                        variant="contained"
-                        fullWidth
-                        size="large"
-                        onClick={() => router.push("/generate")}
-                        sx={{
-                          mb: 2,
-                          background:
-                            "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
-                          boxShadow: "0 3px 5px 2px rgba(63, 81, 181, .3)",
-                          borderRadius: 3,
-                          height: "60px",
-                        }}
-                      >
-                        Create New Notes
-                      </Button>
-                    </motion.div>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <motion.div whileHover={{ scale: 1.03 }}>
-                      <Button
-                        variant="outlined"
-                        fullWidth
-                        size="large"
-                        onClick={() => router.push("/notes")}
-                        sx={{
-                          mb: 2,
-                          borderRadius: 3,
-                          height: "60px",
-                          borderWidth: "2px",
-                          "&:hover": {
-                            borderWidth: "2px",
-                          },
-                        }}
-                      >
-                        View My Notes
-                      </Button>
-                    </motion.div>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <motion.div whileHover={{ scale: 1.03 }}>
-                      <Button
-                        variant="outlined"
-                        fullWidth
-                        size="large"
-                        onClick={() => router.push("/practice")}
-                        sx={{
-                          borderRadius: 3,
-                          height: "60px",
-                          borderWidth: "2px",
-                          "&:hover": {
-                            borderWidth: "2px",
-                          },
-                        }}
-                      >
-                        Take Practice Test
-                      </Button>
-                    </motion.div>
-                  </Grid>
-                  <Grid item xs={12}>
-                    <motion.div whileHover={{ scale: 1.03 }}>
-                      <Button
-                        variant="outlined"
-                        fullWidth
-                        size="large"
-                        onClick={() => router.push("/saved-reviews")}
-                        sx={{
-                          borderRadius: 3,
-                          height: "60px",
-                          borderWidth: "2px",
-                          "&:hover": {
-                            borderWidth: "2px",
-                          },
-                        }}
-                      >
-                        View Saved Reviews
-                      </Button>
-                    </motion.div>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </motion.div>
+        <Grid item xs={12} md={8}>
+          <Card sx={{ height: "100%", borderRadius: 2 }}>
+            <CardContent sx={{ p: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                <NoteAddIcon sx={{ fontSize: 20, color: "#3f51b5", mr: 1 }} />
+                <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                  Quick Actions
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", gap: 2, mt: 1, flexWrap: "wrap" }}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={() => router.push("/generate")}
+                  sx={{
+                    bgcolor: "#3f51b5",
+                    textTransform: "none",
+                    flex: "1 1 auto",
+                    maxWidth: 200,
+                  }}
+                >
+                  Create Notes
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<VisibilityIcon />}
+                  onClick={() => router.push("/notes")}
+                  sx={{
+                    textTransform: "none",
+                    flex: "1 1 auto",
+                    maxWidth: 200,
+                  }}
+                >
+                  View Notes
+                </Button>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<QuizIcon />}
+                  onClick={() => router.push("/practice")}
+                  sx={{
+                    bgcolor: "#4caf50",
+                    textTransform: "none",
+                    flex: "1 1 auto",
+                    maxWidth: 200,
+                    "&:hover": {
+                      bgcolor: "#388e3c",
+                    },
+                  }}
+                >
+                  Take a Quiz
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
 
+        {/* Combined Statistics Section */}
         <Grid item xs={12}>
-          <TestStats />
-        </Grid>
-
-        <Grid item xs={12}>
-          <PerformanceAnalytics />
+          <Card sx={{ borderRadius: 2 }}>
+            <CardContent sx={{ p: 2 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <TestStats />
+                <PerformanceAnalytics />
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
       </Grid>
     </Container>
