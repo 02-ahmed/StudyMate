@@ -18,6 +18,8 @@ import {
   FormControlLabel,
   Checkbox,
   CircularProgress,
+  FormHelperText,
+  Alert,
 } from "@mui/material";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../utils/firebase";
@@ -35,7 +37,8 @@ export default function PracticeContent() {
     trueFalse: true,
     fillInBlank: true,
   });
-  const [numQuestions, setNumQuestions] = useState(10);
+  const [error, setError] = useState(null);
+  const [numQuestions, setNumQuestions] = useState(5);
 
   // Handle URL parameters for pre-configuration
   useEffect(() => {
@@ -109,20 +112,26 @@ export default function PracticeContent() {
     }));
   };
 
-  const handleStartTest = () => {
+  const handleStartTest = async () => {
     if (!selectedSet) return;
 
-    // Store test configuration and navigate to test page
-    const config = {
-      setId: selectedSet,
-      questionTypes: Object.entries(questionTypes)
-        .filter(([_, enabled]) => enabled)
-        .map(([type]) => type),
-      numQuestions,
-      focus: searchParams.get("focus"), // Pass through the focus parameter
-    };
+    try {
+      setError(null);
+      // Store test configuration and navigate to test page
+      const config = {
+        setId: selectedSet,
+        questionTypes: Object.entries(questionTypes)
+          .filter(([_, enabled]) => enabled)
+          .map(([type]) => type),
+        numQuestions,
+        focus: searchParams.get("focus"), // Pass through the focus parameter
+      };
 
-    router.push(`/practice/${selectedSet}?config=${JSON.stringify(config)}`);
+      router.push(`/practice/${selectedSet}?config=${JSON.stringify(config)}`);
+    } catch (error) {
+      setError("Failed to start test. Please try again.");
+      console.error("Error starting test:", error);
+    }
   };
 
   if (loading) {
@@ -241,10 +250,20 @@ export default function PracticeContent() {
                   <MenuItem value={5}>5 questions</MenuItem>
                   <MenuItem value={10}>10 questions</MenuItem>
                   <MenuItem value={15}>15 questions</MenuItem>
-                  <MenuItem value={20}>20 questions</MenuItem>
                 </Select>
+                <FormHelperText>
+                  Maximum 15 questions per test for optimal performance
+                </FormHelperText>
               </FormControl>
             </Grid>
+
+            {error && (
+              <Grid item xs={12}>
+                <Alert severity="error" onClose={() => setError(null)}>
+                  {error}
+                </Alert>
+              </Grid>
+            )}
 
             <Grid item xs={12}>
               <Button

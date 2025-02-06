@@ -3,9 +3,46 @@ import { NextResponse } from "next/server";
 
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
+const MAX_QUESTIONS = 15; // Increased from 10 to 15
+
 export async function POST(request) {
   try {
     const { flashcards, numQuestions, questionTypes } = await request.json();
+
+    // Validate input
+    if (!flashcards || !Array.isArray(flashcards) || flashcards.length === 0) {
+      return NextResponse.json(
+        { error: "Invalid or empty flashcards array" },
+        { status: 400 }
+      );
+    }
+
+    if (!numQuestions || numQuestions < 1) {
+      return NextResponse.json(
+        { error: "Number of questions must be at least 1" },
+        { status: 400 }
+      );
+    }
+
+    if (numQuestions > MAX_QUESTIONS) {
+      return NextResponse.json(
+        {
+          error: `Cannot generate more than ${MAX_QUESTIONS} questions at once`,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !questionTypes ||
+      !Array.isArray(questionTypes) ||
+      questionTypes.length === 0
+    ) {
+      return NextResponse.json(
+        { error: "Invalid question types" },
+        { status: 400 }
+      );
+    }
 
     // Format flashcards into a study material
     const studyMaterial = flashcards
@@ -19,7 +56,7 @@ Study Material:
 ${studyMaterial}
 
 Task:
-Generate ${numQuestions} questions divided among these types: ${questionTypes.join(
+Generate exactly ${numQuestions} questions divided among these types: ${questionTypes.join(
       ", "
     )}
 
@@ -51,91 +88,120 @@ For Fill in Blank:
 }
 
 Requirements:
-1. EVERY question MUST have an explanation field
-2. True/False answers MUST be boolean (true/false), not strings
-3. Multiple choice MUST have exactly 4 options
-4. Return ONLY a JSON array of questions, no markdown or extra text
-5. Make questions test understanding, not just memorization
-6. Keep questions clear and concise`;
+1. Generate EXACTLY ${numQuestions} questions, no more, no less
+2. EVERY question MUST have an explanation field
+3. True/False answers MUST be boolean (true/false), not strings
+4. Multiple choice MUST have exactly 4 options
+5. Return ONLY a JSON array of questions, no markdown or extra text
+6. Make questions test understanding, not just memorization
+7. Keep questions clear and concise
+8. Ensure the response is valid JSON that can be parsed`;
 
     // Get Gemini model
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-    // Generate questions
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    // Generate questions with retry mechanism
+    let attempts = 0;
+    const maxAttempts = 3;
+    let questions;
 
-    // Clean the response text
-    const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim();
+    while (attempts < maxAttempts) {
+      try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
 
-    try {
-      // Parse the cleaned JSON
-      const questions = JSON.parse(cleanedText);
+        // Clean the response text
+        const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim();
 
-      // Validate and fix questions
-      if (!Array.isArray(questions)) {
-        throw new Error("Response is not an array");
+        // Parse the cleaned JSON
+        questions = JSON.parse(cleanedText);
+
+        // Validate array and length
+        if (!Array.isArray(questions)) {
+          throw new Error("Response is not an array");
+        }
+
+        if (questions.length !== numQuestions) {
+          throw new Error(
+            `Expected ${numQuestions} questions but got ${questions.length}`
+          );
+        }
+
+        // Process each question
+        const processedQuestions = questions.map((q, index) => {
+          // Add default explanation if missing
+          if (!q.explanation) {
+            q.explanation = `The correct answer is: ${q.correctAnswer}`;
+          }
+
+          // Process based on type
+          switch (q.type) {
+            case "multipleChoice":
+              if (!Array.isArray(q.options) || q.options.length !== 4) {
+                throw new Error(
+                  `Multiple choice question ${
+                    index + 1
+                  } must have exactly 4 options`
+                );
+              }
+              break;
+
+            case "trueFalse":
+              // Convert string true/false to boolean if needed
+              if (typeof q.correctAnswer === "string") {
+                q.correctAnswer = q.correctAnswer.toLowerCase() === "true";
+              }
+              if (typeof q.correctAnswer !== "boolean") {
+                throw new Error(
+                  `True/False question ${index + 1} must have a boolean answer`
+                );
+              }
+              break;
+
+            case "fillInBlank":
+              if (typeof q.correctAnswer !== "string") {
+                throw new Error(
+                  `Fill in blank question ${
+                    index + 1
+                  } must have a string answer`
+                );
+              }
+              break;
+
+            default:
+              throw new Error(
+                `Question ${index + 1} has invalid type: ${q.type}`
+              );
+          }
+
+          return q;
+        });
+
+        return NextResponse.json({ questions: processedQuestions });
+      } catch (error) {
+        console.error(`Attempt ${attempts + 1} failed:`, error);
+        attempts++;
+
+        if (attempts === maxAttempts) {
+          return NextResponse.json(
+            {
+              error:
+                "Failed to generate valid questions after multiple attempts",
+              details: error.message,
+            },
+            { status: 500 }
+          );
+        }
       }
-
-      // Process each question
-      const processedQuestions = questions.map((q, index) => {
-        // Add default explanation if missing
-        if (!q.explanation) {
-          q.explanation = `The correct answer is: ${q.correctAnswer}`;
-        }
-
-        // Process based on type
-        switch (q.type) {
-          case "multipleChoice":
-            if (!Array.isArray(q.options) || q.options.length !== 4) {
-              throw new Error(
-                `Multiple choice question ${
-                  index + 1
-                } must have exactly 4 options`
-              );
-            }
-            break;
-
-          case "trueFalse":
-            // Convert string true/false to boolean if needed
-            if (typeof q.correctAnswer === "string") {
-              q.correctAnswer = q.correctAnswer.toLowerCase() === "true";
-            }
-            if (typeof q.correctAnswer !== "boolean") {
-              throw new Error(
-                `True/False question ${index + 1} must have a boolean answer`
-              );
-            }
-            break;
-
-          case "fillInBlank":
-            if (typeof q.correctAnswer !== "string") {
-              throw new Error(
-                `Fill in blank question ${index + 1} must have a string answer`
-              );
-            }
-            break;
-
-          default:
-            throw new Error(
-              `Question ${index + 1} has invalid type: ${q.type}`
-            );
-        }
-
-        return q;
-      });
-
-      return NextResponse.json({ questions: processedQuestions });
-    } catch (parseError) {
-      console.error("Error parsing AI response:", parseError);
-      console.error("Raw AI response:", text);
-      throw new Error("Failed to parse AI response");
     }
   } catch (error) {
     console.error("Error generating questions:", error);
     return NextResponse.json(
-      { error: "Failed to generate questions" },
+      {
+        error: "Failed to generate questions",
+        details: error.message,
+      },
       { status: 500 }
     );
   }
