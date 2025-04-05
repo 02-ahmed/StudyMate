@@ -17,7 +17,7 @@ import {
   useTheme,
 } from "@mui/material";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { Suspense, useState } from "react";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -34,6 +34,7 @@ function NavigationBarContent() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const router = useRouter();
 
   const isActive = (path) => pathname === path;
 
@@ -172,12 +173,18 @@ function NavigationBarContent() {
         sx={{ backgroundColor: "#fff", borderBottom: "1px solid #eaeaea" }}
       >
         <Toolbar>
-          <Typography
-            variant="h6"
-            sx={{ flexGrow: 1, color: "#3f51b5", fontWeight: "bold" }}
+          <Link
+            href="/"
+            passHref
+            style={{ textDecoration: "none", color: "inherit" }}
           >
-            StudyMate
-          </Typography>
+            <Typography
+              variant="h6"
+              sx={{ flexGrow: 1, color: "#3f51b5", fontWeight: "bold" }}
+            >
+              StudyMate
+            </Typography>
+          </Link>
           {!isMobile && (
             <Link href="/generate" passHref style={{ textDecoration: "none" }}>
               <Button
@@ -192,12 +199,34 @@ function NavigationBarContent() {
               </Button>
             </Link>
           )}
-          <Button color="inherit" href="/sign-in" sx={{ color: "#3f51b5" }}>
-            Sign In
-          </Button>
-          <Button variant="contained" href="/sign-up" sx={{ ml: 2 }}>
-            Get Started
-          </Button>
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <Button
+              color="inherit"
+              href="/sign-in"
+              sx={{ color: "#3f51b5" }}
+              onClick={(e) => {
+                if (isSignedIn) {
+                  e.preventDefault();
+                  router.push("/dashboard");
+                }
+              }}
+            >
+              Sign In
+            </Button>
+            <Button
+              variant="contained"
+              href="/sign-up"
+              sx={{ ml: 2 }}
+              onClick={(e) => {
+                if (isSignedIn) {
+                  e.preventDefault();
+                  router.push("/dashboard");
+                }
+              }}
+            >
+              Get Started
+            </Button>
+          </Box>
         </Toolbar>
       </AppBar>
     );

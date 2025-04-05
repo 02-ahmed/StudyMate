@@ -98,7 +98,7 @@ export default function ReviewContent() {
       console.log("Topics:", topics);
 
       const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const topicsString = topics.map((t) => t.topic).join(", ");
 

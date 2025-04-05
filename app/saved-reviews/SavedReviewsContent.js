@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
   Container,
@@ -29,13 +29,8 @@ export default function SavedReviewsContent() {
   const [reviews, setReviews] = useState([]);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (user) {
-      loadSavedReviews();
-    }
-  }, [user]);
-
-  const loadSavedReviews = async () => {
+  const loadSavedReviews = useCallback(async () => {
+    if (!user) return;
     try {
       setLoading(true);
       const reviewsRef = collection(db, "users", user.id, "savedReviews");
@@ -54,7 +49,13 @@ export default function SavedReviewsContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadSavedReviews();
+    }
+  }, [user, loadSavedReviews]);
 
   const handleDeleteReview = async (reviewId) => {
     try {

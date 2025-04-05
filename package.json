@@ -12,7 +12,7 @@
     "@clerk/nextjs": "^4.29.3",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@google/generative-ai": "^0.17.0",
+    "@google/generative-ai": "^0.24.0",
     "@mui/icons-material": "^5.16.7",
     "@mui/material": "^5.16.13",
     "@stripe/stripe-js": "^4.3.0",

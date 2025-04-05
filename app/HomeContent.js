@@ -11,6 +11,7 @@ import {
   Box,
   Card,
   CardContent,
+  CircularProgress,
 } from "@mui/material";
 import Image from "next/image";
 
@@ -20,15 +21,27 @@ export default function HomeContent() {
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      router.push("/dashboard");
+      if (window.location.pathname !== "/dashboard") {
+        router.push("/dashboard");
+      }
     }
   }, [isLoaded, isSignedIn, router]);
 
   if (!isLoaded) {
-    return null; // Only show loading state
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
   }
 
-  // Don't show the landing page content if user is signed in
   if (isSignedIn) {
     return null;
   }

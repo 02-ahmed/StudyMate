@@ -28,7 +28,7 @@ export async function POST(request) {
       "Creating Gemini model with API key:",
       process.env.API_KEY ? "[PRESENT]" : "[MISSING]"
     );
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     console.log("Generating content for topic:", topic);
     const prompt = `

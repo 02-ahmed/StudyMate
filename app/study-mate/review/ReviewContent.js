@@ -96,6 +96,10 @@ export default function ReviewContent() {
     }
   };
 
+  const handleTopicChange = (_, newTopic) => {
+    setCurrentTopic(typeof newTopic === "string" ? newTopic : newTopic.topic);
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
@@ -178,7 +182,7 @@ export default function ReviewContent() {
                       mb: 0.5,
                     }}
                   >
-                    {topic}
+                    {typeof topic === "string" ? topic : topic.topic}
                   </Typography>
                   <Typography
                     sx={{
@@ -186,7 +190,8 @@ export default function ReviewContent() {
                       fontSize: "0.875rem",
                     }}
                   >
-                    {topic.questions || 0} questions
+                    {typeof topic === "string" ? "0" : topic.questions || 0}{" "}
+                    questions
                   </Typography>
                 </Box>
                 <Button

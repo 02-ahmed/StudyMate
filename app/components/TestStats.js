@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
   Box,
@@ -38,13 +38,8 @@ export default function TestStats() {
     totalTimePracticed: 0,
   });
 
-  useEffect(() => {
-    if (user) {
-      loadTestHistory();
-    }
-  }, [user]);
-
-  const loadTestHistory = async () => {
+  const loadTestHistory = useCallback(async () => {
+    if (!user) return;
     try {
       const testResultsRef = collection(db, "users", user.id, "testResults");
       const q = query(testResultsRef, orderBy("dateTaken", "desc"), limit(10));
@@ -78,7 +73,13 @@ export default function TestStats() {
       console.error("Error loading test history:", error);
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadTestHistory();
+    }
+  }, [user, loadTestHistory]);
 
   if (loading) {
     return (

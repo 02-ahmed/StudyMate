@@ -98,7 +98,7 @@ Requirements:
 8. Ensure the response is valid JSON that can be parsed`;
 
     // Get Gemini model
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Generate questions with retry mechanism
     let attempts = 0;

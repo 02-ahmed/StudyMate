@@ -23,6 +23,7 @@ import {
   Paper,
   Collapse,
   Grid,
+  Container,
 } from "@mui/material";
 import { collection, query, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "../../utils/firebase";
@@ -42,7 +43,6 @@ import LightbulbIcon from "@mui/icons-material/Lightbulb";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const fireAnimation = keyframes`
   0% { transform: translateY(0) rotate(0deg); }
@@ -374,57 +374,30 @@ export default function PerformanceAnalytics() {
 
   const generateExplanation = async (card) => {
     try {
-      const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const response = await fetch("/api/generate-explanation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: card.question,
+          answer: card.answer,
+          tags: card.tags,
+        }),
+      });
 
-      // Generate explanation prompt
-      const prompt = `
-        I need help understanding this concept:
-        Question: "${card.question}"
-        Correct Answer: "${card.answer}"
-        Topic: ${card.tags.join(", ")}
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-        Please provide:
-        1. A detailed explanation of the concept
-        2. Key points and relationships to other topics
-        3. Common misconceptions and how to avoid them
-        4. Study tips and real-world applications
-        5. Suggested search terms for finding educational videos and articles about this topic
-      `;
+      const data = await response.json();
 
-      const result = await model.generateContent(prompt);
-      const explanation = result.response.text();
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
-      // Parse the AI response to extract explanation and resource suggestions
-      const [mainExplanation, ...resourceSuggestions] = explanation.split(
-        "Suggested search terms:"
-      );
-
-      // Generate search queries for educational content
-      const searchTerms = resourceSuggestions[0]
-        .split(",")
-        .map((term) => term.trim());
-
-      // Structure resources based on search terms
-      const resources = {
-        articles: searchTerms.map((term) => ({
-          title: `Understanding ${term}`,
-          url: `https://scholar.google.com/scholar?q=${encodeURIComponent(
-            term
-          )}`,
-          source: "Google Scholar",
-        })),
-        videos: searchTerms.map((term) => ({
-          title: `${term} Explained`,
-          url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
-            term + " education"
-          )}`,
-          duration: "Various",
-        })),
-      };
-
-      setAiExplanation(mainExplanation);
-      setResources(resources);
+      setAiExplanation(data.explanation);
+      setResources(data.resources);
     } catch (error) {
       console.error("Error generating explanation:", error);
       setAiExplanation(
@@ -439,68 +412,32 @@ export default function PerformanceAnalytics() {
       setReviewLoading(true);
       console.log("=== REVIEW ACTION CLICKED ===");
 
-      const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const response = await fetch("/api/generate-review-content", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ topic: topics.map((t) => t.topic).join(", ") }),
+      });
 
-      // Join all topics for the prompt
-      const topicsString = topics.map((t) => t.topic).join(", ");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      const prompt = `
-        Create a comprehensive study guide for: ${topicsString}
+      const data = await response.json();
 
-        Structure your response as follows:
-
-        1. Detailed Notes:
-        - Core concepts and definitions
-        - Step-by-step explanations
-        - Key formulas or principles
-        - Visual descriptions and examples
-        - Historical context and development
-
-        2. In-Depth Explanations:
-        - Break down complex ideas
-        - Real-world applications and examples
-        - How concepts interconnect
-        - Problem-solving strategies
-        - Common questions answered
-
-        3. Study Resources:
-        - Recommended textbook chapters
-        - Online course recommendations
-        - Key research papers
-        - Interactive learning tools
-        - Practice problem sources
-
-        4. Video Content:
-        - Specific YouTube channels and playlists
-        - Online lecture series
-        - Tutorial recommendations
-        - Visual demonstrations
-        - Expert talks and presentations
-
-        5. Additional Learning Materials:
-        - Practice exercises
-        - Memory aids and mnemonics
-        - Diagrams and charts to create
-        - Study group activities
-        - Self-assessment questions
-
-        Format each section clearly with bullet points and include specific, actionable recommendations.
-      `;
-
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      // Parse the response into sections
-      const sections = text.split(/\d\.\s+/).filter(Boolean);
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       setReviewContent({
-        detailedNotes: sections[0] || "",
-        explanations: sections[1] || "",
-        studyResources: sections[2] || "",
-        videoContent: sections[3] || "",
-        additionalMaterials: sections[4] || "",
+        detailedNotes: data.introduction || "",
+        explanations: data.conceptExplanation || "",
+        studyResources: data.relatedConcepts || "",
+        videoContent:
+          data.resources?.videos?.map((v) => v.title).join("\n") || "",
+        additionalMaterials:
+          data.resources?.articles?.map((a) => a.title).join("\n") || "",
       });
     } catch (error) {
       console.error("Error generating review content:", error);
@@ -871,513 +808,512 @@ export default function PerformanceAnalytics() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Card
-        sx={{
-          borderRadius: 4,
-          background: "rgba(255, 255, 255, 0.9)",
-          backdropFilter: "blur(10px)",
-          boxShadow: "0 8px 32px rgba(63, 81, 181, 0.15)",
-        }}
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
       >
-        <CardContent sx={{ position: "relative" }}>
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background:
-                "linear-gradient(135deg, rgba(63, 81, 181, 0.05) 0%, rgba(121, 134, 203, 0.05) 100%)",
-              borderRadius: 4,
-              zIndex: 0,
-            }}
-          />
-          <Box sx={{ position: "relative", zIndex: 1 }}>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 4 }}>
-              <InsightsIcon
-                sx={{
-                  fontSize: 40,
-                  color: "#3f51b5",
-                  filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.2))",
-                  mr: 2,
-                }}
-              />
-              <Typography
-                variant="h5"
-                sx={{
-                  fontWeight: 600,
-                  background:
-                    "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Performance Insights
-              </Typography>
-            </Box>
-
-            {analytics.studyStreak > 0 && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 260, damping: 20 }}
-              >
-                <Paper
+        <Card
+          sx={{
+            borderRadius: 4,
+            background: "rgba(255, 255, 255, 0.9)",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 8px 32px rgba(63, 81, 181, 0.15)",
+          }}
+        >
+          <CardContent sx={{ position: "relative" }}>
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background:
+                  "linear-gradient(135deg, rgba(63, 81, 181, 0.05) 0%, rgba(121, 134, 203, 0.05) 100%)",
+                borderRadius: 4,
+                zIndex: 0,
+              }}
+            />
+            <Box sx={{ position: "relative", zIndex: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 4 }}>
+                <InsightsIcon
                   sx={{
-                    p: 2,
-                    mb: 3,
-                    borderRadius: 3,
+                    fontSize: 40,
+                    color: "#3f51b5",
+                    filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.2))",
+                    mr: 2,
+                  }}
+                />
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 600,
                     background:
-                      "linear-gradient(135deg, #ff9800 0%, #ff5722 100%)",
-                    color: "white",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 2,
-                    boxShadow: "0 8px 32px rgba(255, 152, 0, 0.3)",
+                      "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
                   }}
                 >
-                  <LocalFireDepartmentIcon
-                    sx={{
-                      fontSize: 40,
-                      animation: `${fireAnimation} 2s infinite`,
-                    }}
-                  />
-                  <Box>
-                    <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                      {analytics.studyStreak} Day Streak!
-                    </Typography>
-                    <Typography variant="body2">
-                      Keep up the great work! You&apos;re on fire! 🔥
-                    </Typography>
-                  </Box>
-                </Paper>
-              </motion.div>
-            )}
+                  Performance Insights
+                </Typography>
+              </Box>
 
-            <Grid container spacing={3}>
-              {analytics.weakTopics.length > 0 && (
-                <Grid item xs={12} md={5}>
-                  <motion.div
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
+              {analytics.studyStreak > 0 && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                >
+                  <Paper
+                    sx={{
+                      p: 2,
+                      mb: 3,
+                      borderRadius: 3,
+                      background:
+                        "linear-gradient(135deg, #ff9800 0%, #ff5722 100%)",
+                      color: "white",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      boxShadow: "0 8px 32px rgba(255, 152, 0, 0.3)",
+                    }}
                   >
-                    <Paper
+                    <LocalFireDepartmentIcon
                       sx={{
-                        p: 3,
-                        height: "100%",
-                        borderRadius: 3,
-                        background: "rgba(255, 255, 255, 0.9)",
-                        backdropFilter: "blur(10px)",
-                        boxShadow: "0 8px 32px rgba(63, 81, 181, 0.1)",
-                        position: "relative",
-                        overflow: "hidden",
-                        maxWidth: "100%",
-                        "&::before": {
-                          content: '""',
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          background:
-                            "linear-gradient(135deg, rgba(63, 81, 181, 0.05) 0%, rgba(121, 134, 203, 0.05) 100%)",
-                          zIndex: 0,
-                        },
-                        "& > *": {
-                          position: "relative",
-                          zIndex: 1,
-                        },
+                        fontSize: 40,
+                        animation: `${fireAnimation} 2s infinite`,
                       }}
-                    >
-                      <Typography
-                        variant="h6"
-                        gutterBottom
-                        sx={{
-                          color: "#1a237e",
-                          fontWeight: 600,
-                          textShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                        }}
-                      >
-                        Areas for Improvement
+                    />
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                        {analytics.studyStreak} Day Streak!
                       </Typography>
-                      <List sx={{ width: "100%" }}>
-                        {analytics.weakTopics.map((topic, index) => (
-                          <motion.div
-                            key={topic.topic}
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: index * 0.1 }}
-                          >
-                            <ListItem
-                              sx={{
-                                mb: 1,
-                                bgcolor: "rgba(255, 255, 255, 0.8)",
-                                borderRadius: 2,
-                                backdropFilter: "blur(10px)",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                                transition:
-                                  "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
-                                "&:hover": {
-                                  transform: "translateY(-2px)",
-                                  boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
-                                  bgcolor: "rgba(255, 255, 255, 0.9)",
-                                },
-                              }}
-                            >
-                              <ListItemText
-                                primary={topic.topic}
-                                secondary={`Accuracy: ${topic.accuracy.toFixed(
-                                  1
-                                )}%`}
-                                primaryTypographyProps={{
-                                  fontWeight: 600,
-                                  color: "#1a237e",
-                                }}
-                                secondaryTypographyProps={{
-                                  color:
-                                    topic.accuracy < 50
-                                      ? "#f44336"
-                                      : topic.accuracy < 70
-                                      ? "#ff9800"
-                                      : "#4caf50",
-                                }}
-                              />
-                              <LinearProgress
-                                variant="determinate"
-                                value={topic.accuracy}
-                                sx={{
-                                  width: 80,
-                                  height: 8,
-                                  borderRadius: 4,
-                                  bgcolor: "rgba(63, 81, 181, 0.1)",
-                                  "& .MuiLinearProgress-bar": {
-                                    bgcolor:
-                                      topic.accuracy < 50
-                                        ? "#f44336"
-                                        : topic.accuracy < 70
-                                        ? "#ff9800"
-                                        : "#4caf50",
-                                    borderRadius: 4,
-                                  },
-                                }}
-                              />
-                            </ListItem>
-                          </motion.div>
-                        ))}
-                      </List>
-                    </Paper>
-                  </motion.div>
-                </Grid>
+                      <Typography variant="body2">
+                        Keep up the great work! You&apos;re on fire! 🔥
+                      </Typography>
+                    </Box>
+                  </Paper>
+                </motion.div>
               )}
 
-              {analytics.recommendations.length > 0 && (
-                <Grid item xs={12} md={7}>
-                  <motion.div
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <Paper
-                      sx={{
-                        p: 3,
-                        height: "100%",
-                        borderRadius: 3,
-                        background:
-                          "linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%)",
-                      }}
+              <Grid container spacing={3}>
+                {analytics.weakTopics.length > 0 && (
+                  <Grid item xs={12} md={5}>
+                    <motion.div
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
                     >
-                      <Typography
-                        variant="h6"
-                        gutterBottom
+                      <Paper
                         sx={{
-                          color: "#3f51b5",
-                          fontWeight: 600,
-                          mb: 3,
-                          textAlign: { xs: "center", sm: "left" },
+                          p: 3,
+                          height: "100%",
+                          borderRadius: 3,
+                          background: "rgba(255, 255, 255, 0.9)",
+                          backdropFilter: "blur(10px)",
+                          boxShadow: "0 8px 32px rgba(63, 81, 181, 0.1)",
+                          position: "relative",
+                          overflow: "hidden",
+                          maxWidth: "100%",
+                          "&::before": {
+                            content: '""',
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background:
+                              "linear-gradient(135deg, rgba(63, 81, 181, 0.05) 0%, rgba(121, 134, 203, 0.05) 100%)",
+                            zIndex: 0,
+                          },
+                          "& > *": {
+                            position: "relative",
+                            zIndex: 1,
+                          },
                         }}
                       >
-                        Personalized Recommendations
-                      </Typography>
-                      <List sx={{ width: "100%" }}>
-                        {analytics.recommendations.map((rec, index) => (
-                          <motion.div
-                            key={index}
-                            initial={{ x: 20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ delay: index * 0.1 }}
-                          >
-                            <ListItem
-                              sx={{
-                                mb: 2,
-                                bgcolor: "rgba(255, 255, 255, 0.9)",
-                                borderRadius: 3,
-                                flexDirection: "column",
-                                alignItems: "stretch",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                                transition:
-                                  "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
-                                "&:hover": {
-                                  transform: "translateY(-2px)",
-                                  boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
-                                },
-                              }}
+                        <Typography
+                          variant="h6"
+                          gutterBottom
+                          sx={{
+                            color: "#1a237e",
+                            fontWeight: 600,
+                            textShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                          }}
+                        >
+                          Areas for Improvement
+                        </Typography>
+                        <List sx={{ width: "100%" }}>
+                          {analytics.weakTopics.map((topic, index) => (
+                            <motion.div
+                              key={topic.topic}
+                              initial={{ x: -20, opacity: 0 }}
+                              animate={{ x: 0, opacity: 1 }}
+                              transition={{ delay: index * 0.1 }}
                             >
-                              <Box
+                              <ListItem
                                 sx={{
-                                  display: "flex",
-                                  flexDirection: { xs: "column", sm: "row" },
-                                  alignItems: { xs: "stretch", sm: "center" },
-                                  justifyContent: "space-between",
-                                  width: "100%",
-                                  gap: 2,
+                                  mb: 1,
+                                  bgcolor: "rgba(255, 255, 255, 0.8)",
+                                  borderRadius: 2,
+                                  backdropFilter: "blur(10px)",
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                                  transition:
+                                    "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+                                  "&:hover": {
+                                    transform: "translateY(-2px)",
+                                    boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
+                                    bgcolor: "rgba(255, 255, 255, 0.9)",
+                                  },
                                 }}
                               >
-                                <ListItemText
-                                  primary={rec.message}
-                                  primaryTypographyProps={{
-                                    fontWeight: 600,
-                                    color: "#1a237e",
-                                    fontSize: "1rem",
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography
+                                    variant="h6"
+                                    sx={{
+                                      color: "#1a237e",
+                                      fontWeight: 600,
+                                      fontSize: "1.1rem",
+                                      mb: 0.5,
+                                    }}
+                                  >
+                                    {topic.topic}
+                                  </Typography>
+                                </Box>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={topic.accuracy}
+                                  sx={{
+                                    width: 80,
+                                    height: 8,
+                                    borderRadius: 4,
+                                    bgcolor: "rgba(63, 81, 181, 0.1)",
+                                    "& .MuiLinearProgress-bar": {
+                                      bgcolor:
+                                        topic.accuracy < 50
+                                          ? "#f44336"
+                                          : topic.accuracy < 70
+                                          ? "#ff9800"
+                                          : "#4caf50",
+                                      borderRadius: 4,
+                                    },
                                   }}
                                 />
-                                {rec.type !== "card" && rec.action && (
-                                  <Button
-                                    variant="contained"
-                                    size="small"
-                                    onClick={rec.action}
-                                    sx={{
-                                      borderRadius: 2,
-                                      background:
-                                        "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
-                                      boxShadow:
-                                        "0 3px 5px 2px rgba(63, 81, 181, .3)",
-                                      minWidth: "100px",
-                                      flexShrink: 0,
-                                      py: 0.5,
-                                      px: 2,
+                              </ListItem>
+                            </motion.div>
+                          ))}
+                        </List>
+                      </Paper>
+                    </motion.div>
+                  </Grid>
+                )}
+
+                {analytics.recommendations.length > 0 && (
+                  <Grid item xs={12} md={7}>
+                    <motion.div
+                      initial={{ x: 20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <Paper
+                        sx={{
+                          p: 3,
+                          height: "100%",
+                          borderRadius: 3,
+                          background:
+                            "linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%)",
+                        }}
+                      >
+                        <Typography
+                          variant="h6"
+                          gutterBottom
+                          sx={{
+                            color: "#3f51b5",
+                            fontWeight: 600,
+                            mb: 3,
+                            textAlign: { xs: "center", sm: "left" },
+                          }}
+                        >
+                          Personalized Recommendations
+                        </Typography>
+                        <List sx={{ width: "100%" }}>
+                          {analytics.recommendations.map((rec, index) => (
+                            <motion.div
+                              key={index}
+                              initial={{ x: 20, opacity: 0 }}
+                              animate={{ x: 0, opacity: 1 }}
+                              transition={{ delay: index * 0.1 }}
+                            >
+                              <ListItem
+                                sx={{
+                                  mb: 2,
+                                  bgcolor: "rgba(255, 255, 255, 0.9)",
+                                  borderRadius: 3,
+                                  flexDirection: "column",
+                                  alignItems: "stretch",
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                                  transition:
+                                    "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+                                  "&:hover": {
+                                    transform: "translateY(-2px)",
+                                    boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
+                                  },
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexDirection: { xs: "column", sm: "row" },
+                                    alignItems: { xs: "stretch", sm: "center" },
+                                    justifyContent: "space-between",
+                                    width: "100%",
+                                    gap: 2,
+                                  }}
+                                >
+                                  <ListItemText
+                                    primary={rec.message}
+                                    primaryTypographyProps={{
+                                      fontWeight: 600,
+                                      color: "#1a237e",
+                                      fontSize: "1rem",
                                     }}
-                                  >
-                                    Take Action
-                                  </Button>
-                                )}
-                              </Box>
-                              {rec.type === "card" && rec.topics && (
-                                <Box sx={{ width: "100%" }}>
-                                  <Typography
-                                    variant="subtitle2"
-                                    color="text.secondary"
-                                    sx={{
-                                      mb: 2,
-                                      textAlign: "left",
-                                      fontWeight: 500,
-                                    }}
-                                  >
-                                    Topics to review:
-                                  </Typography>
-                                  <Grid container spacing={2}>
-                                    {rec.topics.map((topicData, idx) => (
-                                      <Grid item xs={12} sm={6} key={idx}>
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            bgcolor: "rgba(63, 81, 181, 0.04)",
-                                            p: 2,
-                                            borderRadius: 2,
-                                            height: "100%",
-                                            transition:
-                                              "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
-                                            "&:hover": {
-                                              transform: "translateY(-2px)",
-                                              boxShadow:
-                                                "0 4px 12px rgba(63, 81, 181, 0.15)",
-                                              bgcolor:
-                                                "rgba(63, 81, 181, 0.06)",
-                                            },
-                                          }}
-                                        >
-                                          <Box>
-                                            <Typography
-                                              variant="body1"
-                                              sx={{
-                                                fontWeight: 600,
-                                                color: "#1a237e",
-                                                fontSize: "0.95rem",
-                                              }}
-                                            >
-                                              {topicData.topic}
-                                            </Typography>
-                                            <Typography
-                                              variant="body2"
-                                              color="text.secondary"
-                                            >
-                                              {topicData.count || 0} questions
-                                            </Typography>
-                                          </Box>
-                                          <Button
-                                            variant="contained"
-                                            size="small"
-                                            onClick={() => {
-                                              const topicForReview = {
-                                                topic: topicData.topic,
-                                                questions: topicData.questions,
-                                                count: topicData.count,
-                                              };
-                                              router.push(
-                                                `/review?topics=${encodeURIComponent(
-                                                  JSON.stringify([
-                                                    topicForReview,
-                                                  ])
-                                                )}`
-                                              );
-                                            }}
+                                  />
+                                  {rec.type !== "card" && rec.action && (
+                                    <Button
+                                      variant="contained"
+                                      size="small"
+                                      onClick={rec.action}
+                                      sx={{
+                                        borderRadius: 2,
+                                        background:
+                                          "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+                                        boxShadow:
+                                          "0 3px 5px 2px rgba(63, 81, 181, .3)",
+                                        minWidth: "100px",
+                                        flexShrink: 0,
+                                        py: 0.5,
+                                        px: 2,
+                                      }}
+                                    >
+                                      Take Action
+                                    </Button>
+                                  )}
+                                </Box>
+                                {rec.type === "card" && rec.topics && (
+                                  <Box sx={{ width: "100%" }}>
+                                    <Typography
+                                      variant="subtitle2"
+                                      color="text.secondary"
+                                      sx={{
+                                        mb: 2,
+                                        textAlign: "left",
+                                        fontWeight: 500,
+                                      }}
+                                    >
+                                      Topics to review:
+                                    </Typography>
+                                    <Grid container spacing={2}>
+                                      {rec.topics.map((topicData, idx) => (
+                                        <Grid item xs={12} sm={6} key={idx}>
+                                          <Box
                                             sx={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                              justifyContent: "space-between",
+                                              bgcolor:
+                                                "rgba(63, 81, 181, 0.04)",
+                                              p: 2,
                                               borderRadius: 2,
-                                              background:
-                                                "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
-                                              boxShadow:
-                                                "0 3px 5px 2px rgba(63, 81, 181, .3)",
-                                              minWidth: "100px",
-                                              height: "32px",
-                                              whiteSpace: "nowrap",
-                                              ml: 2,
+                                              height: "100%",
+                                              transition:
+                                                "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
                                               "&:hover": {
-                                                background:
-                                                  "linear-gradient(45deg, #303f9f 30%, #5c6bc0 90%)",
+                                                transform: "translateY(-2px)",
+                                                boxShadow:
+                                                  "0 4px 12px rgba(63, 81, 181, 0.15)",
+                                                bgcolor:
+                                                  "rgba(63, 81, 181, 0.06)",
                                               },
                                             }}
                                           >
-                                            Study Now
-                                          </Button>
-                                        </Box>
-                                      </Grid>
-                                    ))}
-                                  </Grid>
-                                </Box>
-                              )}
-                            </ListItem>
-                          </motion.div>
-                        ))}
-                      </List>
-                    </Paper>
-                  </motion.div>
-                </Grid>
-              )}
-            </Grid>
+                                            <Box>
+                                              <Typography
+                                                variant="body1"
+                                                sx={{
+                                                  fontWeight: 600,
+                                                  color: "#1a237e",
+                                                  fontSize: "0.95rem",
+                                                }}
+                                              >
+                                                {topicData.topic}
+                                              </Typography>
+                                            </Box>
+                                            <Button
+                                              variant="contained"
+                                              size="small"
+                                              onClick={() => {
+                                                const topicForReview = {
+                                                  topic: topicData.topic,
+                                                  questions:
+                                                    topicData.questions,
+                                                  count: topicData.count,
+                                                };
+                                                router.push(
+                                                  `/review?topics=${encodeURIComponent(
+                                                    JSON.stringify([
+                                                      topicForReview,
+                                                    ])
+                                                  )}`
+                                                );
+                                              }}
+                                              sx={{
+                                                borderRadius: 2,
+                                                background:
+                                                  "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+                                                boxShadow:
+                                                  "0 3px 5px 2px rgba(63, 81, 181, .3)",
+                                                minWidth: "100px",
+                                                height: "32px",
+                                                whiteSpace: "nowrap",
+                                                ml: 2,
+                                                "&:hover": {
+                                                  background:
+                                                    "linear-gradient(45deg, #303f9f 30%, #5c6bc0 90%)",
+                                                },
+                                              }}
+                                            >
+                                              Study Now
+                                            </Button>
+                                          </Box>
+                                        </Grid>
+                                      ))}
+                                    </Grid>
+                                  </Box>
+                                )}
+                              </ListItem>
+                            </motion.div>
+                          ))}
+                        </List>
+                      </Paper>
+                    </motion.div>
+                  </Grid>
+                )}
+              </Grid>
 
-            {selectedTopic && (
-              <Dialog
-                open={!!selectedTopic}
-                onClose={() => setSelectedTopic(null)}
-                maxWidth="md"
-                fullWidth
-                PaperProps={{
-                  sx: {
-                    borderRadius: 3,
-                    background:
-                      "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
-                  },
-                }}
-              >
-                <DialogTitle
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 2,
-                    background:
-                      "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
-                    color: "white",
+              {selectedTopic && (
+                <Dialog
+                  open={!!selectedTopic}
+                  onClose={() => setSelectedTopic(null)}
+                  maxWidth="md"
+                  fullWidth
+                  PaperProps={{
+                    sx: {
+                      borderRadius: 3,
+                      background:
+                        "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
+                    },
                   }}
                 >
-                  <EmojiEventsIcon />
-                  Topic Details: {selectedTopic}
-                  <IconButton
-                    onClick={() => setSelectedTopic(null)}
+                  <DialogTitle
                     sx={{
-                      position: "absolute",
-                      right: 8,
-                      top: 8,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      background:
+                        "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
                       color: "white",
                     }}
                   >
-                    <CloseIcon />
-                  </IconButton>
-                </DialogTitle>
-                <DialogContent sx={{ mt: 2 }}>
-                  {selectedTopic &&
-                    analytics.topicQuestions.has(selectedTopic) && (
-                      <List>
-                        {analytics.topicQuestions
-                          .get(selectedTopic)
-                          .map((question, index) => (
-                            <ListItem key={index}>
-                              <ListItemText
-                                primary={question.question}
-                                secondary={
-                                  <>
-                                    <Typography
-                                      component="span"
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      Answer: {question.answer}
-                                    </Typography>
-                                    <br />
-                                    <Typography
-                                      component="span"
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      Accuracy:{" "}
-                                      {formatAccuracy(
-                                        question.correctCount,
-                                        question.totalAttempts
-                                      )}
-                                    </Typography>
-                                  </>
-                                }
-                              />
-                            </ListItem>
-                          ))}
-                      </List>
-                    )}
-                  <Box
-                    sx={{ mt: 2, display: "flex", justifyContent: "flex-end" }}
-                  >
-                    <Button
-                      variant="contained"
-                      onClick={() => {
-                        router.push(
-                          `/practice?topic=${encodeURIComponent(selectedTopic)}`
-                        );
-                        setSelectedTopic(null);
-                      }}
+                    <EmojiEventsIcon />
+                    Topic Details: {selectedTopic}
+                    <IconButton
+                      onClick={() => setSelectedTopic(null)}
                       sx={{
-                        background:
-                          "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
-                        boxShadow: "0 3px 5px 2px rgba(63, 81, 181, .3)",
+                        position: "absolute",
+                        right: 8,
+                        top: 8,
+                        color: "white",
                       }}
                     >
-                      Practice This Topic
-                    </Button>
-                  </Box>
-                </DialogContent>
-              </Dialog>
-            )}
+                      <CloseIcon />
+                    </IconButton>
+                  </DialogTitle>
+                  <DialogContent sx={{ mt: 2 }}>
+                    {selectedTopic &&
+                      analytics.topicQuestions.has(selectedTopic) && (
+                        <List>
+                          {analytics.topicQuestions
+                            .get(selectedTopic)
+                            .map((question, index) => (
+                              <ListItem key={index}>
+                                <ListItemText
+                                  primary={question.question}
+                                  secondary={
+                                    <>
+                                      <Typography
+                                        component="span"
+                                        variant="body2"
+                                        color="text.secondary"
+                                      >
+                                        Answer: {question.answer}
+                                      </Typography>
+                                      <br />
+                                      <Typography
+                                        component="span"
+                                        variant="body2"
+                                        color="text.secondary"
+                                      >
+                                        Accuracy:{" "}
+                                        {formatAccuracy(
+                                          question.correctCount,
+                                          question.totalAttempts
+                                        )}
+                                      </Typography>
+                                    </>
+                                  }
+                                />
+                              </ListItem>
+                            ))}
+                        </List>
+                      )}
+                    <Box
+                      sx={{
+                        mt: 2,
+                        display: "flex",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      <Button
+                        variant="contained"
+                        onClick={() => {
+                          router.push(
+                            `/practice?topic=${encodeURIComponent(
+                              selectedTopic
+                            )}`
+                          );
+                          setSelectedTopic(null);
+                        }}
+                        sx={{
+                          background:
+                            "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
+                          boxShadow: "0 3px 5px 2px rgba(63, 81, 181, .3)",
+                        }}
+                      >
+                        Practice This Topic
+                      </Button>
+                    </Box>
+                  </DialogContent>
+                </Dialog>
+              )}
 
-            {renderReviewDialog()}
-            {renderExplanationDialog()}
-          </Box>
-        </CardContent>
-      </Card>
-    </motion.div>
+              {renderReviewDialog()}
+              {renderExplanationDialog()}
+            </Box>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </Container>
   );
 }
