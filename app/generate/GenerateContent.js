@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import "react-quill/dist/quill.snow.css";
+import "quill/dist/quill.snow.css";
 import {
   Grid,
   Card,
@@ -19,6 +19,11 @@ import {
   CircularProgress,
   TextField,
   Chip,
+  Tabs,
+  Tab,
+  Paper,
+  Divider,
+  IconButton,
 } from "@mui/material";
 import {
   collection,
@@ -30,6 +35,11 @@ import {
 import { db } from "../../utils/firebase";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
+import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
+import TextFieldsIcon from "@mui/icons-material/TextFields";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 // Import Quill dynamically to avoid SSR issues
 const ReactQuill = dynamic(() => import("react-quill"), {
@@ -58,6 +68,28 @@ export default function GenerateContent() {
   const [open, setOpen] = useState(false);
   const [tags, setTags] = useState([]);
   const [currentTag, setCurrentTag] = useState("");
+  const [inputMethod, setInputMethod] = useState(0); // 0 for text, 1 for file
+  const [file, setFile] = useState(null);
+  const [fileError, setFileError] = useState(null);
+  
+  // Define allowed file types
+  const allowedTypes = [
+    'application/pdf',                                                  // PDF
+    'text/plain',                                                       // Text
+    'application/vnd.ms-powerpoint',                                    // PPT
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation', // PPTX
+    'application/msword',                                               // DOC
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'  // DOCX
+  ];
+  
+  // Format file size for display
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   const handleOpenDialog = () => {
     if (!isSignedIn) {
@@ -110,35 +142,103 @@ export default function GenerateContent() {
     }
   };
 
-  const handleSubmit = async () => {
-    if (!text.trim()) {
-      alert("Please enter some text to generate summary notes.");
-      return;
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files[0];
+    
+    if (selectedFile) {
+      // Check if file type is supported
+      if (!allowedTypes.includes(selectedFile.type)) {
+        setFileError("Unsupported file type. Please upload a PDF, Word document, or PowerPoint presentation.");
+        event.target.value = null; // Reset file input
+        return;
+      }
+      
+      setFile(selectedFile);
+      setFileError(null);
     }
+  };
+  
+  const handleRemoveFile = () => {
+    setFile(null);
+    // Reset the file input
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) fileInput.value = '';
+  };
 
-    setLoading(true);
-    try {
-      // Strip HTML tags for the API call
-      const plainText = text.replace(/<[^>]+>/g, "");
-
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        body: plainText,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate summary notes");
+  const handleSubmit = async () => {
+    // Check if we're in text mode or file mode
+    if (inputMethod === 0) {
+      // Text mode
+      if (!text.trim()) {
+        alert("Please enter some text to generate summary notes.");
+        return;
       }
 
-      const data = await response.json();
-      setFlashcards(data);
-    } catch (error) {
-      console.error("Error generating summary notes:", error);
-      alert(
-        "An error occurred while generating summary notes. Please try again."
-      );
-    } finally {
-      setLoading(false);
+      setLoading(true);
+      try {
+        // Strip HTML tags for the API call
+        const plainText = text.replace(/<[^>]+>/g, "");
+
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          body: plainText,
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to generate summary notes");
+        }
+
+        const data = await response.json();
+        setFlashcards(data);
+      } catch (error) {
+        console.error("Error generating summary notes:", error);
+        alert(
+          "An error occurred while generating summary notes. Please try again."
+        );
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // File mode
+      if (!file) {
+        alert("Please select a file to upload.");
+        return;
+      }
+
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("File processing failed");
+        }
+
+        const data = await response.json();
+        
+        // Generate flashcards from the summary
+        const summaryResponse = await fetch("/api/generate", {
+          method: "POST",
+          body: data.text,
+        });
+        
+        if (!summaryResponse.ok) {
+          throw new Error("Failed to generate summary notes from file");
+        }
+        
+        const summaryData = await summaryResponse.json();
+        setFlashcards(summaryData);
+      } catch (error) {
+        console.error("Error processing file:", error);
+        alert("An error occurred while processing the file. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -171,23 +271,105 @@ export default function GenerateContent() {
             View Notes
           </Button>
         </Box>
-        <Box sx={{ mb: 2, backgroundColor: "white", borderRadius: 1 }}>
-          <ReactQuill
-            value={text}
-            onChange={setText}
-            modules={modules}
-            formats={formats}
-            placeholder="Enter text..."
-            style={{ height: "200px" }}
-          />
-        </Box>
+        
+        {/* Input Method Tabs */}
+        <Paper sx={{ mb: 3 }}>
+          <Tabs
+            value={inputMethod}
+            onChange={(e, newValue) => setInputMethod(newValue)}
+            variant="fullWidth"
+            sx={{ borderBottom: 1, borderColor: 'divider' }}
+          >
+            <Tab icon={<TextFieldsIcon />} label="Type or Paste" />
+            <Tab icon={<AttachFileIcon />} label="Upload File" />
+          </Tabs>
+          
+          {/* Text Input */}
+          {inputMethod === 0 && (
+            <Box sx={{ mb: 2, backgroundColor: "white", borderRadius: 1 }}>
+              <ReactQuill
+                value={text}
+                onChange={setText}
+                modules={modules}
+                formats={formats}
+                placeholder="Enter text..."
+                style={{ height: "200px" }}
+              />
+            </Box>
+          )}
+          
+          {/* File Upload */}
+          {inputMethod === 1 && (
+            <Box sx={{ p: 3, backgroundColor: "white", borderRadius: 1 }}>
+              <Typography variant="subtitle1" sx={{ mb: 2, textAlign: "center" }}>
+                Supported file types: PDF, Word, PowerPoint
+              </Typography>
+              
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 3, border: '2px dashed #ccc', borderRadius: 2, mb: 3 }}>
+                <CloudUploadIcon sx={{ fontSize: 60, color: '#3f51b5', mb: 2 }} />
+                
+                <input
+                  accept=".pdf,.txt,.ppt,.pptx,.doc,.docx"
+                  style={{ display: 'none' }}
+                  id="file-upload"
+                  type="file"
+                  onChange={handleFileChange}
+                />
+                <label htmlFor="file-upload">
+                  <Button 
+                    variant="contained" 
+                    component="span"
+                    startIcon={<AttachFileIcon />}
+                  >
+                    Select File
+                  </Button>
+                </label>
+                
+                {file && (
+                  <Box sx={{ mt: 2, width: '100%' }}>
+                    <Paper variant="outlined" sx={{ p: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+                          <InsertDriveFileIcon sx={{ mr: 1, color: '#3f51b5' }} />
+                          <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                            {file.name}
+                          </Typography>
+                        </Box>
+                        <IconButton onClick={handleRemoveFile} size="small">
+                          <DeleteIcon />
+                        </IconButton>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                        <Chip label={file.type || 'Unknown type'} size="small" />
+                        <Typography variant="body2" color="textSecondary">
+                          {formatFileSize(file.size)}
+                        </Typography>
+                      </Box>
+                    </Paper>
+                  </Box>
+                )}
+                
+                {fileError && (
+                  <Typography 
+                    variant="body2" 
+                    color="error"
+                    sx={{ mt: 2 }}
+                  >
+                    {fileError}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          )}
+        </Paper>
+        
         <Button
           variant="contained"
           color="primary"
           onClick={handleSubmit}
           fullWidth
           sx={{ py: 1.5, mt: 2 }}
-          disabled={loading}
+          disabled={loading || (inputMethod === 0 && !text.trim()) || (inputMethod === 1 && !file)}
         >
           {loading ? (
             <CircularProgress size={24} color="inherit" />
