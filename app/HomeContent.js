@@ -21,11 +21,16 @@ export default function HomeContent() {
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      if (window.location.pathname !== "/dashboard") {
-        router.push("/dashboard");
+      const path = window.location.pathname;
+      if (path === "/sign-in" || path === "/sign-up" || path === "/") {
+        router.replace("/dashboard", undefined, { shallow: true });
       }
     }
   }, [isLoaded, isSignedIn, router]);
+
+  if (isLoaded && isSignedIn) {
+    return null;
+  }
 
   if (!isLoaded) {
     return (
@@ -40,10 +45,6 @@ export default function HomeContent() {
         <CircularProgress />
       </Box>
     );
-  }
-
-  if (isSignedIn) {
-    return null;
   }
 
   return (
