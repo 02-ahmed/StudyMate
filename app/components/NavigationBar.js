@@ -200,30 +200,10 @@ function NavigationBarContent() {
             </Link>
           )}
           <Box sx={{ display: "flex", gap: 2 }}>
-            <Button
-              color="inherit"
-              href="/sign-in"
-              sx={{ color: "#3f51b5" }}
-              onClick={(e) => {
-                if (isSignedIn) {
-                  e.preventDefault();
-                  router.push("/dashboard");
-                }
-              }}
-            >
+            <Button color="inherit" href="/sign-in" sx={{ color: "#3f51b5" }}>
               Sign In
             </Button>
-            <Button
-              variant="contained"
-              href="/sign-up"
-              sx={{ ml: 2 }}
-              onClick={(e) => {
-                if (isSignedIn) {
-                  e.preventDefault();
-                  router.push("/dashboard");
-                }
-              }}
-            >
+            <Button variant="contained" href="/sign-up" sx={{ ml: 2 }}>
               Get Started
             </Button>
           </Box>
