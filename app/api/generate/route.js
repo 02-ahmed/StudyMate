@@ -169,7 +169,7 @@ export async function POST(req) {
       ],
     });
 
-    const text = result.response.text();
+    const text = await result.response.text();
     console.log("Raw response:", text); // Debug log
 
     try {
@@ -194,7 +194,7 @@ export async function POST(req) {
       ],
     });
 
-    const text = result.response.text();
+    const text = await result.response.text();
     console.log("Raw response:", text); // Debug log
 
     try {
