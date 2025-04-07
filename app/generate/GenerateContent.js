@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import "quill/dist/quill.snow.css";
 import {
@@ -64,6 +64,7 @@ export default function GenerateContent() {
   const [setName, setSetName] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [tags, setTags] = useState([]);
@@ -90,6 +91,36 @@ export default function GenerateContent() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
+
+  // Add loading messages array
+  const loadingMessages = [
+    "Generating your flashcards...",
+    "Breaking down the content into bite-sized pieces...",
+    "Creating comprehensive study materials...",
+    "Did you know? Active recall through flashcards is one of the most effective study methods!",
+    "Almost there! Organizing your flashcards...",
+    "Pro tip: Regular review of flashcards helps move information to long-term memory",
+    "Making sure we capture all the important concepts...",
+    "Fun fact: Spaced repetition can improve retention by up to 200%!",
+    "Still working... Complex topics take time to process properly",
+    "Creating connections between concepts...",
+  ];
+
+  // Add useEffect for rotating messages
+  useEffect(() => {
+    let messageInterval;
+    if (loading) {
+      let index = 0;
+      setLoadingMessage(loadingMessages[0]);
+      messageInterval = setInterval(() => {
+        index = (index + 1) % loadingMessages.length;
+        setLoadingMessage(loadingMessages[index]);
+      }, 3000); // Change message every 3 seconds
+    }
+    return () => {
+      if (messageInterval) clearInterval(messageInterval);
+    };
+  }, [loading]);
 
   const handleOpenDialog = () => {
     if (!isSignedIn) {
@@ -439,7 +470,19 @@ export default function GenerateContent() {
           }
         >
           {loading ? (
-            <CircularProgress size={24} color="inherit" />
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <CircularProgress size={24} color="inherit" />
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                {loadingMessage}
+              </Typography>
+            </Box>
           ) : (
             "Generate Summary Notes"
           )}
