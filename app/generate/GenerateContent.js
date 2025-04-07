@@ -504,152 +504,170 @@ export default function GenerateContent() {
           </Typography>
           <Typography>Tap on a note for more</Typography>
           <Grid container spacing={3}>
-            {flashcards.map((summaryNote, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
-                <Card
-                  onClick={() => {
-                    const newFlipped = [...flipped];
-                    newFlipped[index] = !newFlipped[index];
-                    setFlipped(newFlipped);
-                  }}
-                  sx={{
-                    height: "100%",
-                    borderRadius: 2,
-                    background:
-                      "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
-                    boxShadow: "0 4px 20px rgba(63, 81, 181, 0.15)",
-                    transition:
-                      "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: "0 8px 30px rgba(63, 81, 181, 0.2)",
-                    },
-                  }}
-                >
-                  <CardContent>
-                    <Box sx={{ perspective: "1000px" }}>
-                      <Box
-                        sx={{
-                          width: "100%",
-                          height: "200px",
-                          position: "relative",
-                          transformStyle: "preserve-3d",
-                          transition: "transform 0.6s",
-                          transform: flipped[index]
-                            ? "rotateY(180deg)"
-                            : "rotateY(0deg)",
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            position: "absolute",
-                            width: "100%",
-                            height: "100%",
-                            backfaceVisibility: "hidden",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            backgroundColor: "#fff",
-                            borderRadius: 2,
-                            border: "1px solid rgba(63, 81, 181, 0.1)",
-                            padding: 2,
-                            boxSizing: "border-box",
-                            background:
-                              "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
-                            boxShadow: "inset 0 0 10px rgba(63, 81, 181, 0.05)",
-                            overflowY: "auto",
-                            "&::-webkit-scrollbar": {
-                              width: "6px",
-                            },
-                            "&::-webkit-scrollbar-track": {
-                              background: "#f1f1f1",
-                              borderRadius: "3px",
-                            },
-                            "&::-webkit-scrollbar-thumb": {
-                              background: "#3f51b5",
-                              borderRadius: "3px",
-                              "&:hover": {
-                                background: "#303f9f",
-                              },
-                            },
-                          }}
-                        >
-                          <Typography
-                            variant="h6"
-                            component="div"
-                            sx={{
-                              wordBreak: "break-word",
-                              whiteSpace: "pre-wrap",
-                              maxWidth: "100%",
-                              fontSize: "1rem",
-                              color: "#3f51b5",
-                              fontWeight: 500,
-                              textAlign: "center",
-                              lineHeight: 1.6,
-                            }}
-                          >
-                            {summaryNote.front}
-                          </Typography>
-                        </Box>
+            {flashcards.map((summaryNote, index) => {
+              // Try to clean up any JSON-like content
+              const front =
+                typeof summaryNote.front === "string"
+                  ? summaryNote.front
+                      .replace(/^["']|["']$/g, "")
+                      .replace(/\\"/g, '"')
+                  : summaryNote.front;
+              const back =
+                typeof summaryNote.back === "string"
+                  ? summaryNote.back
+                      .replace(/^["']|["']$/g, "")
+                      .replace(/\\"/g, '"')
+                  : summaryNote.back;
 
+              return (
+                <Grid item xs={12} sm={6} md={4} key={index}>
+                  <Card
+                    onClick={() => {
+                      const newFlipped = [...flipped];
+                      newFlipped[index] = !newFlipped[index];
+                      setFlipped(newFlipped);
+                    }}
+                    sx={{
+                      height: "100%",
+                      borderRadius: 2,
+                      background:
+                        "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
+                      boxShadow: "0 4px 20px rgba(63, 81, 181, 0.15)",
+                      transition:
+                        "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
+                      "&:hover": {
+                        transform: "translateY(-4px)",
+                        boxShadow: "0 8px 30px rgba(63, 81, 181, 0.2)",
+                      },
+                    }}
+                  >
+                    <CardContent>
+                      <Box sx={{ perspective: "1000px" }}>
                         <Box
                           sx={{
-                            position: "absolute",
                             width: "100%",
-                            height: "100%",
-                            backfaceVisibility: "hidden",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            backgroundColor: "#fff",
-                            borderRadius: 2,
-                            border: "1px solid rgba(63, 81, 181, 0.1)",
-                            padding: 2,
-                            boxSizing: "border-box",
-                            transform: "rotateY(180deg)",
-                            background:
-                              "linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%)",
-                            boxShadow: "inset 0 0 10px rgba(63, 81, 181, 0.05)",
-                            overflowY: "auto",
-                            "&::-webkit-scrollbar": {
-                              width: "6px",
-                            },
-                            "&::-webkit-scrollbar-track": {
-                              background: "#f1f1f1",
-                              borderRadius: "3px",
-                            },
-                            "&::-webkit-scrollbar-thumb": {
-                              background: "#3f51b5",
-                              borderRadius: "3px",
-                              "&:hover": {
-                                background: "#303f9f",
-                              },
-                            },
+                            height: "200px",
+                            position: "relative",
+                            transformStyle: "preserve-3d",
+                            transition: "transform 0.6s",
+                            transform: flipped[index]
+                              ? "rotateY(180deg)"
+                              : "rotateY(0deg)",
                           }}
                         >
-                          <Typography
-                            variant="h6"
-                            component="div"
+                          <Box
                             sx={{
-                              wordBreak: "break-word",
-                              whiteSpace: "pre-wrap",
-                              maxWidth: "100%",
-                              fontSize: "1rem",
-                              color: "#3f51b5",
-                              fontWeight: 500,
-                              textAlign: "center",
-                              lineHeight: 1.6,
+                              position: "absolute",
+                              width: "100%",
+                              height: "100%",
+                              backfaceVisibility: "hidden",
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              backgroundColor: "#fff",
+                              borderRadius: 2,
+                              border: "1px solid rgba(63, 81, 181, 0.1)",
+                              padding: 2,
+                              boxSizing: "border-box",
+                              background:
+                                "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
+                              boxShadow:
+                                "inset 0 0 10px rgba(63, 81, 181, 0.05)",
+                              overflowY: "auto",
+                              "&::-webkit-scrollbar": {
+                                width: "6px",
+                              },
+                              "&::-webkit-scrollbar-track": {
+                                background: "#f1f1f1",
+                                borderRadius: "3px",
+                              },
+                              "&::-webkit-scrollbar-thumb": {
+                                background: "#3f51b5",
+                                borderRadius: "3px",
+                                "&:hover": {
+                                  background: "#303f9f",
+                                },
+                              },
                             }}
                           >
-                            {summaryNote.back}
-                          </Typography>
+                            <Typography
+                              variant="h6"
+                              component="div"
+                              sx={{
+                                wordBreak: "break-word",
+                                whiteSpace: "pre-wrap",
+                                maxWidth: "100%",
+                                fontSize: "1rem",
+                                color: "#3f51b5",
+                                fontWeight: 500,
+                                textAlign: "center",
+                                lineHeight: 1.6,
+                              }}
+                            >
+                              {front}
+                            </Typography>
+                          </Box>
+
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              width: "100%",
+                              height: "100%",
+                              backfaceVisibility: "hidden",
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              backgroundColor: "#fff",
+                              borderRadius: 2,
+                              border: "1px solid rgba(63, 81, 181, 0.1)",
+                              padding: 2,
+                              boxSizing: "border-box",
+                              transform: "rotateY(180deg)",
+                              background:
+                                "linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%)",
+                              boxShadow:
+                                "inset 0 0 10px rgba(63, 81, 181, 0.05)",
+                              overflowY: "auto",
+                              "&::-webkit-scrollbar": {
+                                width: "6px",
+                              },
+                              "&::-webkit-scrollbar-track": {
+                                background: "#f1f1f1",
+                                borderRadius: "3px",
+                              },
+                              "&::-webkit-scrollbar-thumb": {
+                                background: "#3f51b5",
+                                borderRadius: "3px",
+                                "&:hover": {
+                                  background: "#303f9f",
+                                },
+                              },
+                            }}
+                          >
+                            <Typography
+                              variant="h6"
+                              component="div"
+                              sx={{
+                                wordBreak: "break-word",
+                                whiteSpace: "pre-wrap",
+                                maxWidth: "100%",
+                                fontSize: "1rem",
+                                color: "#3f51b5",
+                                fontWeight: 500,
+                                textAlign: "center",
+                                lineHeight: 1.6,
+                              }}
+                            >
+                              {back}
+                            </Typography>
+                          </Box>
                         </Box>
                       </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
+                    </CardContent>
+                  </Card>
+                </Grid>
+              );
+            })}
           </Grid>
         </Box>
       )}
