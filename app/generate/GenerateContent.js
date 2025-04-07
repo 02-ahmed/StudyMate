@@ -266,127 +266,162 @@ export default function GenerateContent() {
         <Paper sx={{ mb: 3 }}>
           <Tabs
             value={inputMethod}
-            onChange={(e, newValue) => setInputMethod(newValue)}
+            onChange={(e, newValue) => {
+              if (!isSignedIn && newValue === 1) {
+                alert("Please sign in to use file upload feature");
+                return;
+              }
+              setInputMethod(newValue);
+            }}
             variant="fullWidth"
             sx={{ borderBottom: 1, borderColor: "divider" }}
           >
             <Tab icon={<TextFieldsIcon />} label="Type or Paste" />
-            <Tab icon={<AttachFileIcon />} label="Upload File" />
+            <Tab
+              icon={<AttachFileIcon />}
+              label="Upload File"
+              disabled={!isSignedIn}
+            />
           </Tabs>
 
           {/* Text Input */}
           {inputMethod === 0 && (
-            <Box sx={{ mb: 2, backgroundColor: "white", borderRadius: 1 }}>
-              <ReactQuill
-                value={text}
-                onChange={setText}
-                modules={modules}
-                formats={formats}
-                placeholder="Enter text..."
-                style={{ height: "200px" }}
-              />
+            <Box sx={{ mb: 2 }}>
+              <Box sx={{ backgroundColor: "white", borderRadius: 1 }}>
+                <ReactQuill
+                  value={text}
+                  onChange={setText}
+                  modules={modules}
+                  formats={formats}
+                  placeholder="Enter text..."
+                  style={{ height: "200px" }}
+                />
+              </Box>
+              {!isSignedIn && (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 2, textAlign: "center" }}
+                >
+                  Sign in to unlock all features: file upload, saving cards, and
+                  more!
+                </Typography>
+              )}
             </Box>
           )}
 
           {/* File Upload */}
           {inputMethod === 1 && (
             <Box sx={{ p: 3, backgroundColor: "white", borderRadius: 1 }}>
-              <Typography
-                variant="subtitle1"
-                sx={{ mb: 2, textAlign: "center" }}
-              >
-                Supported file types: PDF, text files, and images (PNG, JPEG,
-                GIF, WebP)
-              </Typography>
-
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  p: 3,
-                  border: "2px dashed #ccc",
-                  borderRadius: 2,
-                  mb: 3,
-                }}
-              >
-                <CloudUploadIcon
-                  sx={{ fontSize: 60, color: "#3f51b5", mb: 2 }}
-                />
-
-                <input
-                  accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp"
-                  style={{ display: "none" }}
-                  id="file-upload"
-                  type="file"
-                  onChange={handleFileChange}
-                />
-                <label htmlFor="file-upload">
-                  <Button
-                    variant="contained"
-                    component="span"
-                    startIcon={<AttachFileIcon />}
-                  >
-                    Select File
-                  </Button>
-                </label>
-
-                {file && (
-                  <Box sx={{ mt: 2, width: "100%" }}>
-                    <Paper variant="outlined" sx={{ p: 2 }}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            flexGrow: 1,
-                          }}
-                        >
-                          <InsertDriveFileIcon
-                            sx={{ mr: 1, color: "#3f51b5" }}
-                          />
-                          <Typography
-                            variant="body1"
-                            sx={{ fontWeight: "medium" }}
-                          >
-                            {file.name}
-                          </Typography>
-                        </Box>
-                        <IconButton onClick={handleRemoveFile} size="small">
-                          <DeleteIcon />
-                        </IconButton>
-                      </Box>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          mt: 1,
-                        }}
-                      >
-                        <Chip
-                          label={file.type || "Unknown type"}
-                          size="small"
-                        />
-                        <Typography variant="body2" color="textSecondary">
-                          {formatFileSize(file.size)}
-                        </Typography>
-                      </Box>
-                    </Paper>
-                  </Box>
-                )}
-
-                {fileError && (
-                  <Typography variant="body2" color="error" sx={{ mt: 2 }}>
-                    {fileError}
+              {!isSignedIn ? (
+                <Box sx={{ textAlign: "center", py: 3 }}>
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    Sign in Required
                   </Typography>
-                )}
-              </Box>
+                  <Typography variant="body1" color="text.secondary">
+                    Please sign in to upload files and access all features.
+                  </Typography>
+                </Box>
+              ) : (
+                <>
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ mb: 2, textAlign: "center" }}
+                  >
+                    Supported file types: PDF, text files, and images (PNG,
+                    JPEG, GIF, WebP)
+                  </Typography>
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      p: 3,
+                      border: "2px dashed #ccc",
+                      borderRadius: 2,
+                      mb: 3,
+                    }}
+                  >
+                    <CloudUploadIcon
+                      sx={{ fontSize: 60, color: "#3f51b5", mb: 2 }}
+                    />
+
+                    <input
+                      accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp"
+                      style={{ display: "none" }}
+                      id="file-upload"
+                      type="file"
+                      onChange={handleFileChange}
+                    />
+                    <label htmlFor="file-upload">
+                      <Button
+                        variant="contained"
+                        component="span"
+                        startIcon={<AttachFileIcon />}
+                      >
+                        Select File
+                      </Button>
+                    </label>
+
+                    {file && (
+                      <Box sx={{ mt: 2, width: "100%" }}>
+                        <Paper variant="outlined" sx={{ p: 2 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                flexGrow: 1,
+                              }}
+                            >
+                              <InsertDriveFileIcon
+                                sx={{ mr: 1, color: "#3f51b5" }}
+                              />
+                              <Typography
+                                variant="body1"
+                                sx={{ fontWeight: "medium" }}
+                              >
+                                {file.name}
+                              </Typography>
+                            </Box>
+                            <IconButton onClick={handleRemoveFile} size="small">
+                              <DeleteIcon />
+                            </IconButton>
+                          </Box>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              mt: 1,
+                            }}
+                          >
+                            <Chip
+                              label={file.type || "Unknown type"}
+                              size="small"
+                            />
+                            <Typography variant="body2" color="textSecondary">
+                              {formatFileSize(file.size)}
+                            </Typography>
+                          </Box>
+                        </Paper>
+                      </Box>
+                    )}
+
+                    {fileError && (
+                      <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+                        {fileError}
+                      </Typography>
+                    )}
+                  </Box>
+                </>
+              )}
             </Box>
           )}
         </Paper>
