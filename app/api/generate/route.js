@@ -110,7 +110,7 @@ export async function POST(req) {
       temperature: 0.7,
       topK: 40,
       topP: 0.95,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 8192,
       responseMimeType: "application/json",
     },
   });
@@ -157,13 +157,13 @@ export async function POST(req) {
         {
           role: "user",
           parts: [
+            { text: systemPrompt },
             {
               inlineData: {
                 data: base64Data,
                 mimeType: file.type,
               },
             },
-            { text: systemPrompt },
           ],
         },
       ],
@@ -177,8 +177,25 @@ export async function POST(req) {
       const flashcards = JSON.parse(text);
       return NextResponse.json(flashcards.flashcards);
     } catch (error) {
-      console.log("Initial JSON parse failed, converting text to flashcards"); // Debug log
-      // Convert the text response into flashcards
+      console.log(
+        "Initial JSON parse failed, attempting to fix truncated JSON"
+      ); // Debug log
+
+      // Try to fix truncated JSON by finding the last complete flashcard
+      const lastCompleteCard = text.lastIndexOf('}, {"front"');
+      if (lastCompleteCard !== -1) {
+        const fixedText = text.substring(0, lastCompleteCard + 1) + "]}";
+        try {
+          const fixedJson = JSON.parse(fixedText);
+          return NextResponse.json(fixedJson.flashcards);
+        } catch (error) {
+          console.log(
+            "Failed to fix truncated JSON, falling back to text conversion"
+          );
+        }
+      }
+
+      // If all else fails, convert text to flashcards
       const processedFlashcards = convertTextToFlashcards(text);
       return NextResponse.json(processedFlashcards.flashcards);
     }
@@ -189,7 +206,7 @@ export async function POST(req) {
       contents: [
         {
           role: "user",
-          parts: [{ text: data }, { text: systemPrompt }],
+          parts: [{ text: systemPrompt }, { text: data }],
         },
       ],
     });
