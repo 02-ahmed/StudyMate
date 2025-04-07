@@ -189,7 +189,7 @@ export async function POST(req) {
       contents: [
         {
           role: "user",
-          parts: [{ text: data }],
+          parts: [{ text: data }, { text: systemPrompt }],
         },
       ],
     });
