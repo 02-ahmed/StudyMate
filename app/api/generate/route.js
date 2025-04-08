@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const systemPrompt = `You are a flashcard generator API that MUST ALWAYS respond in valid JSON format.
-Your task is to create comprehensive educational flashcards from the provided content.
+Your task is to create comprehensive educational flashcards about the specific topic or text provided by the user.
 IMPORTANT: You MUST ONLY respond with JSON in the following format, nothing else:
 
 {
@@ -15,21 +15,22 @@ IMPORTANT: You MUST ONLY respond with JSON in the following format, nothing else
 }
 
 Rules:
-1. Generate flashcards proportional to the content:
+1. Generate flashcards SPECIFICALLY about the user's input text/topic
+2. Generate flashcards proportional to the content:
    - For short content (< 1000 words): at least 15 flashcards
    - For medium content (1000-3000 words): at least 25 flashcards
    - For long content (> 3000 words): at least 40 flashcards
-2. Cover ALL important concepts, don't skip any key points
-3. Each front and back should be one clear sentence
-4. Never include any text outside the JSON structure
-5. Never include markdown or formatting
+3. Cover ALL important aspects of the topic provided
+4. Each front and back should be one clear sentence
+5. Never include any text outside the JSON structure
 6. Always use double quotes for JSON strings
 7. Escape any quotes within the content
-8. For lecture slides/educational content:
-   - Create cards for definitions, key concepts, and examples
-   - Include cards about relationships between concepts
-   - Add cards about practical applications
-   - Cover both main points and supporting details`;
+8. For any topic:
+   - Include factual information and key details
+   - Cover important dates, events, or characteristics
+   - Include significant achievements or notable works
+   - Add relevant context and background information
+   - Focus on what makes the topic unique or significant`;
 
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 

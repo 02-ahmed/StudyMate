@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import {
@@ -18,6 +18,7 @@ import {
   Button,
   Alert,
   Snackbar,
+  Stack,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import SchoolIcon from "@mui/icons-material/School";
@@ -27,7 +28,21 @@ import LightbulbIcon from "@mui/icons-material/Lightbulb";
 import SaveIcon from "@mui/icons-material/Save";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "../../utils/firebase";
-import { doc, setDoc, collection, serverTimestamp } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  collection,
+  serverTimestamp,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+
+// Import the same section components used in the dialog
+import NotesSection from "../components/review/NotesSection";
+import ExplanationsSection from "../components/review/ExplanationsSection";
+import ResourcesSection from "../components/review/ResourcesSection";
+import PracticeSection from "../components/review/PracticeSection";
 
 export default function ReviewContent() {
   const { user } = useUser();
@@ -42,12 +57,93 @@ export default function ReviewContent() {
     severity: "success",
   });
 
+  const loadContent = useCallback(
+    async (topics) => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // First try to find saved content
+        const reviewsRef = collection(db, "users", user.id, "savedReviews");
+        // Query for both old and new data structures
+        const queries = [
+          query(reviewsRef, where("topics", "array-contains", topics[0].topic)),
+          query(reviewsRef, where("topic", "==", topics[0].topic)),
+        ];
+
+        let savedReview = null;
+        for (const q of queries) {
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            // Use the most recently saved review
+            savedReview = querySnapshot.docs
+              .map((doc) => ({ id: doc.id, ...doc.data() }))
+              .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+            break;
+          }
+        }
+
+        if (savedReview) {
+          setContent({ sections: savedReview.content });
+          setLoading(false);
+          return;
+        }
+
+        // If no saved content, generate new content
+        const response = await fetch("/api/generate-review-content", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            topic: topics[0].topic,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setContent(data);
+      } catch (error) {
+        console.error("Error loading review content:", error);
+        setError(error.message || "Failed to load review content");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user]
+  );
+
   useEffect(() => {
     const topicsParam = searchParams.get("topics");
-    if (topicsParam) {
-      generateContent(JSON.parse(decodeURIComponent(topicsParam)));
+    if (!topicsParam) {
+      setError("No topic parameter provided");
+      setLoading(false);
+      return;
     }
-  }, [searchParams]);
+
+    try {
+      const topics = JSON.parse(decodeURIComponent(topicsParam));
+      if (!topics?.[0]?.topic) {
+        setError("Invalid topic format");
+        setLoading(false);
+        return;
+      }
+
+      if (user) {
+        loadContent(topics);
+      } else {
+        setError("Please sign in to view study guides");
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Error parsing topics:", error);
+      setError("Invalid topic parameter");
+      setLoading(false);
+    }
+  }, [searchParams, user, loadContent]);
 
   const handleSaveReview = async () => {
     if (!user || !content) return;
@@ -63,7 +159,7 @@ export default function ReviewContent() {
         : [];
 
       await setDoc(reviewDoc, {
-        content,
+        content: content.sections,
         topics: topics.map((t) => t.topic),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -71,14 +167,14 @@ export default function ReviewContent() {
 
       setSnackbar({
         open: true,
-        message: "Review saved successfully!",
+        message: "Study guide saved successfully!",
         severity: "success",
       });
     } catch (error) {
-      console.error("Error saving review:", error);
+      console.error("Error saving study guide:", error);
       setSnackbar({
         open: true,
-        message: "Failed to save review. Please try again.",
+        message: "Failed to save study guide. Please try again.",
         severity: "error",
       });
     } finally {
@@ -88,94 +184,6 @@ export default function ReviewContent() {
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
-  };
-
-  const generateContent = async (topics) => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log("=== GENERATING REVIEW CONTENT ===");
-      console.log("Topics:", topics);
-
-      const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-      const topicsString = topics.map((t) => t.topic).join(", ");
-
-      const prompt = `
-        Create a comprehensive study guide for these topics: ${topicsString}
-        
-        Provide a clear, well-structured response with the following sections:
-
-        1. Detailed Notes
-        Explain the core concepts, principles, and theories for each topic.
-        Include:
-        - Key definitions and terminology
-        - Main concepts and their relationships
-        - Important formulas or rules
-        - Step-by-step explanations of processes
-        - Examples that illustrate each concept
-
-        2. In-Depth Explanations
-        Break down complex ideas and show their practical applications:
-        - Detailed explanations of challenging concepts
-        - Real-world examples and applications
-        - Common misconceptions and how to avoid them
-        - Problem-solving strategies
-        - Visual descriptions where helpful
-
-        3. Study Resources
-        Recommend specific learning materials:
-        - Names of relevant textbooks and chapters
-        - Online courses (Coursera, edX, Khan Academy)
-        - Academic papers for deeper understanding
-        - Interactive simulations or tools
-        - Practice problem sources
-
-        4. Video Content
-        Suggest specific educational videos:
-        - YouTube channels (with exact channel names)
-        - Specific video series or playlists
-        - Online lecture recordings
-        - Tutorial videos
-        - Educational documentaries
-
-        5. Practice Materials
-        Provide concrete study activities:
-        - Practice problems with solutions
-        - Self-assessment questions
-        - Memory techniques and mnemonics
-        - Group study activities
-        - Project ideas
-
-        Format the response clearly and avoid using asterisks or special characters for formatting.
-        Use clear headings and bullet points with dashes.
-      `;
-
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      // Clean up the text and parse sections
-      const cleanText = text
-        .replace(/\*\*/g, "") // Remove asterisks
-        .replace(/```/g, ""); // Remove code blocks
-
-      const sections = cleanText.split(/\d\.\s+/).filter(Boolean);
-
-      setContent({
-        detailedNotes: sections[0] || "No detailed notes available.",
-        explanations: sections[1] || "No explanations available.",
-        studyResources: sections[2] || "No study resources available.",
-        videoContent: sections[3] || "No video content available.",
-        practiceContent: sections[4] || "No practice materials available.",
-      });
-    } catch (error) {
-      console.error("Error generating review content:", error);
-      setError("Failed to generate review content. Please try again.");
-    } finally {
-      setLoading(false);
-    }
   };
 
   if (loading) {
@@ -252,91 +260,30 @@ export default function ReviewContent() {
               },
             }}
           >
-            {saving ? "Saving..." : "SAVE REVIEW"}
+            {saving ? "Saving..." : "SAVE STUDY GUIDE"}
           </Button>
         </Box>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Card sx={{ mb: 3, borderRadius: 2 }}>
-              <CardContent>
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-                >
-                  <SchoolIcon color="primary" />
-                  <Typography variant="h5">Detailed Notes</Typography>
-                </Box>
-                <Typography sx={{ whiteSpace: "pre-wrap" }}>
-                  {content?.detailedNotes}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            🧪 This feature is in beta. The content generation is experimental
+            and may not always produce perfect results.
+          </Typography>
+        </Alert>
 
-          <Grid item xs={12}>
-            <Card sx={{ mb: 3, borderRadius: 2 }}>
-              <CardContent>
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-                >
-                  <LightbulbIcon color="primary" />
-                  <Typography variant="h5">In-Depth Explanations</Typography>
-                </Box>
-                <Typography sx={{ whiteSpace: "pre-wrap" }}>
-                  {content?.explanations}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Card sx={{ mb: 3, height: "100%", borderRadius: 2 }}>
-              <CardContent>
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-                >
-                  <ArticleIcon color="primary" />
-                  <Typography variant="h5">Study Resources</Typography>
-                </Box>
-                <Typography sx={{ whiteSpace: "pre-wrap" }}>
-                  {content?.studyResources}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <Card sx={{ mb: 3, height: "100%", borderRadius: 2 }}>
-              <CardContent>
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-                >
-                  <YouTubeIcon color="primary" />
-                  <Typography variant="h5">Video Content</Typography>
-                </Box>
-                <Typography sx={{ whiteSpace: "pre-wrap" }}>
-                  {content?.videoContent}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Card sx={{ borderRadius: 2 }}>
-              <CardContent>
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-                >
-                  <SchoolIcon color="primary" />
-                  <Typography variant="h5">Practice Materials</Typography>
-                </Box>
-                <Typography sx={{ whiteSpace: "pre-wrap" }}>
-                  {content?.practiceContent}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <Stack spacing={3}>
+          <NotesSection content={content?.sections?.detailedNotes} />
+          <ExplanationsSection content={content?.sections?.explanations} />
+          <ResourcesSection
+            resources={content?.sections?.studyResources}
+            type="academic"
+          />
+          <ResourcesSection
+            resources={content?.sections?.videoContent}
+            type="video"
+          />
+          <PracticeSection content={content?.sections?.practiceContent} />
+        </Stack>
 
         <Snackbar
           open={snackbar.open}

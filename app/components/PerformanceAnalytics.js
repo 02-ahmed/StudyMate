@@ -43,6 +43,7 @@ import LightbulbIcon from "@mui/icons-material/Lightbulb";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
+import ReviewDialog from "./review/ReviewDialog";
 
 const fireAnimation = keyframes`
   0% { transform: translateY(0) rotate(0deg); }
@@ -72,6 +73,8 @@ export default function PerformanceAnalytics() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [aiExplanation, setAiExplanation] = useState("");
   const [resources, setResources] = useState({ articles: [], videos: [] });
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [topicForReview, setTopicForReview] = useState("");
 
   const loadAnalytics = useCallback(async () => {
     try {
@@ -129,17 +132,9 @@ export default function PerformanceAnalytics() {
 
         lastTestDate = testDate;
 
-        // Get flashcard set details
-        const setRef = doc(
-          db,
-          "users",
-          user.id,
-          "flashcardSets",
-          testData.flashcardSetId
-        );
-        const setSnap = await getDoc(setRef);
-        const setData = setSnap.exists() ? setSnap.data() : null;
-        const tags = setData?.tags || [];
+        // Use set name instead of tags for performance tracking
+        const setName = testData.setName || "Untitled Set";
+        const setId = testData.flashcardSetId;
 
         // Process questions
         testData.questionDetails.forEach((detail) => {
@@ -150,28 +145,26 @@ export default function PerformanceAnalytics() {
             if (detail.isCorrect) typeStats.correct++;
           }
 
-          // Track questions by topic
-          tags.forEach((tag) => {
-            if (!topicQuestions.has(tag)) {
-              topicQuestions.set(tag, []);
-            }
-            const questions = topicQuestions.get(tag);
-            const existingQuestion = questions.find(
-              (q) => q.question === detail.question
-            );
-            if (!existingQuestion) {
-              questions.push({
-                question: detail.question,
-                answer: detail.correctAnswer,
-                type: detail.type,
-                correctCount: detail.isCorrect ? 1 : 0,
-                totalAttempts: 1,
-              });
-            } else {
-              existingQuestion.totalAttempts++;
-              if (detail.isCorrect) existingQuestion.correctCount++;
-            }
-          });
+          // Track questions by set name
+          if (!topicQuestions.has(setName)) {
+            topicQuestions.set(setName, []);
+          }
+          const questions = topicQuestions.get(setName);
+          const existingQuestion = questions.find(
+            (q) => q.question === detail.question
+          );
+          if (!existingQuestion) {
+            questions.push({
+              question: detail.question,
+              answer: detail.correctAnswer,
+              type: detail.type,
+              correctCount: detail.isCorrect ? 1 : 0,
+              totalAttempts: 1,
+            });
+          } else {
+            existingQuestion.totalAttempts++;
+            if (detail.isCorrect) existingQuestion.correctCount++;
+          }
 
           // Track missed questions
           if (!detail.isCorrect) {
@@ -181,39 +174,41 @@ export default function PerformanceAnalytics() {
               answer: detail.correctAnswer,
               count: 0,
               type: detail.type,
-              tags,
+              setName: setName,
+              setId: setId,
             };
             current.count++;
             missedQuestions.set(key, current);
 
-            tags.forEach((tag) => {
-              const tagStats = topicPerformance.get(tag) || {
-                correct: 0,
-                total: 0,
-              };
-              tagStats.total++;
-              topicPerformance.set(tag, tagStats);
-            });
+            // Update set performance
+            const setStats = topicPerformance.get(setName) || {
+              correct: 0,
+              total: 0,
+              setId: setId,
+            };
+            setStats.total++;
+            topicPerformance.set(setName, setStats);
           } else {
-            tags.forEach((tag) => {
-              const tagStats = topicPerformance.get(tag) || {
-                correct: 0,
-                total: 0,
-              };
-              tagStats.total++;
-              tagStats.correct++;
-              topicPerformance.set(tag, tagStats);
-            });
+            // Update set performance for correct answers
+            const setStats = topicPerformance.get(setName) || {
+              correct: 0,
+              total: 0,
+              setId: setId,
+            };
+            setStats.total++;
+            setStats.correct++;
+            topicPerformance.set(setName, setStats);
           }
         });
       }
 
-      // Calculate weak topics
+      // Calculate weak topics (now based on set names)
       const weakTopics = Array.from(topicPerformance.entries())
-        .map(([topic, stats]) => ({
-          topic,
+        .map(([setName, stats]) => ({
+          topic: setName,
+          setId: stats.setId,
           accuracy: (stats.correct / stats.total) * 100,
-          questions: topicQuestions.get(topic) || [],
+          questions: topicQuestions.get(setName) || [],
         }))
         .filter((topic) => topic.accuracy < 70)
         .sort((a, b) => a.accuracy - b.accuracy);
@@ -223,7 +218,7 @@ export default function PerformanceAnalytics() {
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
 
-      // Generate enhanced recommendations
+      // Generate recommendations
       const recommendations = [];
 
       // Question type recommendations
@@ -248,7 +243,7 @@ export default function PerformanceAnalytics() {
         });
       }
 
-      // Topic-based recommendations
+      // Topic-based recommendations (now using set names)
       if (weakTopics.length > 0) {
         recommendations.push({
           type: "topic",
@@ -258,52 +253,54 @@ export default function PerformanceAnalytics() {
           priority: 1,
           action: () =>
             router.push(
-              `/practice?topic=${encodeURIComponent(weakTopics[0].topic)}`
+              `/practice?setId=${encodeURIComponent(weakTopics[0].setId)}`
             ),
           config: {
-            topic: weakTopics[0].topic,
+            setId: weakTopics[0].setId,
           },
         });
       }
 
       // Question-based recommendations
       if (frequentlyMissed.length > 0) {
-        // Group missed questions by topic and combine with weak topics data
-        const missedByTopic = {};
+        // Group missed questions by set name
+        const missedBySet = {};
 
-        // First add all weak topics, even if they don't have frequently missed questions
+        // First add all weak topics
         weakTopics.forEach((topic) => {
-          missedByTopic[topic.topic] = {
+          missedBySet[topic.topic] = {
             questions: [],
             accuracy: topic.accuracy,
+            setId: topic.setId,
           };
         });
 
-        // Then add frequently missed questions to their respective topics
+        // Then add frequently missed questions to their respective sets
         frequentlyMissed.forEach((question) => {
-          question.tags.forEach((tag) => {
-            if (!missedByTopic[tag]) {
-              const topicStats = topicPerformance.get(tag) || {
-                correct: 0,
-                total: 0,
-              };
-              const accuracy =
-                topicStats.total > 0
-                  ? (topicStats.correct / topicStats.total) * 100
-                  : 0;
-              missedByTopic[tag] = {
-                questions: [],
-                accuracy: accuracy,
-              };
-            }
-            missedByTopic[tag].questions.push(question);
-          });
+          if (!missedBySet[question.setName]) {
+            const setStats = topicPerformance.get(question.setName) || {
+              correct: 0,
+              total: 0,
+              setId: question.setId,
+            };
+            const accuracy =
+              setStats.total > 0
+                ? (setStats.correct / setStats.total) * 100
+                : 0;
+            missedBySet[question.setName] = {
+              questions: [],
+              accuracy: accuracy,
+              setId: question.setId,
+            };
+          }
+          missedBySet[question.setName].questions.push(question);
         });
 
-        // Convert to array and sort by accuracy (ascending) to prioritize weakest topics
-        const sortedTopics = Object.entries(missedByTopic)
-          .map(([topic, data]) => ({
-            topic,
+        // Convert to array and sort by accuracy
+        const sortedSets = Object.entries(missedBySet)
+          .map(([setName, data]) => ({
+            topic: setName,
+            setId: data.setId,
             questions: data.questions,
             count: data.questions.length,
             accuracy: data.accuracy,
@@ -314,17 +311,15 @@ export default function PerformanceAnalytics() {
           type: "card",
           message: "Review these frequently missed topics",
           cards: frequentlyMissed.slice(0, 3),
-          topics: sortedTopics,
+          topics: sortedSets,
           priority: 2,
           action: () => {
             router.push(
-              `/review?topics=${encodeURIComponent(
-                JSON.stringify(sortedTopics)
-              )}`
+              `/review?topics=${encodeURIComponent(JSON.stringify(sortedSets))}`
             );
           },
           config: {
-            topics: sortedTopics.map((t) => t.topic),
+            sets: sortedSets.map((s) => ({ name: s.topic, id: s.setId })),
             focusOnMissed: true,
           },
         });
@@ -409,15 +404,23 @@ export default function PerformanceAnalytics() {
 
   const generateReviewContent = async (topics) => {
     try {
+      if (!topics?.[0]?.topic) {
+        console.error("No topic provided to generateReviewContent");
+        return;
+      }
+
       setReviewLoading(true);
-      console.log("=== REVIEW ACTION CLICKED ===");
+      setReviewDialogOpen(true); // Open dialog first to show loading state
+      setTopicForReview(topics[0].topic);
 
       const response = await fetch("/api/generate-review-content", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ topic: topics.map((t) => t.topic).join(", ") }),
+        body: JSON.stringify({
+          topic: topics[0].topic,
+        }),
       });
 
       if (!response.ok) {
@@ -425,25 +428,11 @@ export default function PerformanceAnalytics() {
       }
 
       const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setReviewContent({
-        detailedNotes: data.introduction || "",
-        explanations: data.conceptExplanation || "",
-        studyResources: data.relatedConcepts || "",
-        videoContent:
-          data.resources?.videos?.map((v) => v.title).join("\n") || "",
-        additionalMaterials:
-          data.resources?.articles?.map((a) => a.title).join("\n") || "",
-      });
+      setReviewContent(data);
     } catch (error) {
       console.error("Error generating review content:", error);
-      setReviewContent({
-        error: "Failed to generate review content. Please try again.",
-      });
+      setReviewContent(null);
+      setReviewDialogOpen(false); // Close dialog on error
     } finally {
       setReviewLoading(false);
     }
@@ -668,131 +657,19 @@ export default function PerformanceAnalytics() {
     );
   };
 
-  const renderReviewDialog = () => {
-    if (!reviewContent) return null;
-
-    return (
-      <Dialog
-        open={!!reviewContent}
-        onClose={() => setReviewContent(null)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            background: "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 2,
-            background: "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
-            color: "white",
-          }}
-        >
-          <SchoolIcon />
-          Study Guide
-          <IconButton
-            onClick={() => setReviewContent(null)}
-            sx={{
-              position: "absolute",
-              right: 8,
-              top: 8,
-              color: "white",
-            }}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ mt: 2 }}>
-          {reviewLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", my: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : reviewContent.error ? (
-            <Alert severity="error">{reviewContent.error}</Alert>
-          ) : (
-            <>
-              <Accordion defaultExpanded>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <SchoolIcon color="primary" />
-                    <Typography variant="h6">Detailed Notes</Typography>
-                  </Box>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography sx={{ whiteSpace: "pre-wrap" }}>
-                    {reviewContent.detailedNotes}
-                  </Typography>
-                </AccordionDetails>
-              </Accordion>
-
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <LightbulbIcon color="primary" />
-                    <Typography variant="h6">In-Depth Explanations</Typography>
-                  </Box>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography sx={{ whiteSpace: "pre-wrap" }}>
-                    {reviewContent.explanations}
-                  </Typography>
-                </AccordionDetails>
-              </Accordion>
-
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <ArticleIcon color="primary" />
-                    <Typography variant="h6">Study Resources</Typography>
-                  </Box>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography sx={{ whiteSpace: "pre-wrap" }}>
-                    {reviewContent.studyResources}
-                  </Typography>
-                </AccordionDetails>
-              </Accordion>
-
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <YouTubeIcon color="primary" />
-                    <Typography variant="h6">Video Content</Typography>
-                  </Box>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography sx={{ whiteSpace: "pre-wrap" }}>
-                    {reviewContent.videoContent}
-                  </Typography>
-                </AccordionDetails>
-              </Accordion>
-
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <SchoolIcon color="primary" />
-                    <Typography variant="h6">
-                      Additional Learning Materials
-                    </Typography>
-                  </Box>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Typography sx={{ whiteSpace: "pre-wrap" }}>
-                    {reviewContent.additionalMaterials}
-                  </Typography>
-                </AccordionDetails>
-              </Accordion>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-    );
-  };
+  const renderReviewDialog = () => (
+    <ReviewDialog
+      open={reviewDialogOpen}
+      onClose={() => {
+        setReviewDialogOpen(false);
+        setReviewContent(null);
+        setReviewLoading(false);
+      }}
+      content={reviewContent}
+      loading={reviewLoading}
+      topic={topicForReview}
+    />
+  );
 
   if (loading) {
     return (
@@ -1160,13 +1037,9 @@ export default function PerformanceAnalytics() {
                                                     topicData.questions,
                                                   count: topicData.count,
                                                 };
-                                                router.push(
-                                                  `/review?topics=${encodeURIComponent(
-                                                    JSON.stringify([
-                                                      topicForReview,
-                                                    ])
-                                                  )}`
-                                                );
+                                                generateReviewContent([
+                                                  topicForReview,
+                                                ]);
                                               }}
                                               sx={{
                                                 borderRadius: 2,
