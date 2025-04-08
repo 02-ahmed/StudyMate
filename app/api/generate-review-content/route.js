@@ -9,12 +9,7 @@ const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 export async function POST(request) {
   try {
-    console.log("=== POST REQUEST RECEIVED ===");
-
-    // Log the request body
-    const body = await request.json();
-    console.log("Request body:", body);
-    const { topic } = body;
+    const { topic } = await request.json();
 
     if (!process.env.API_KEY) {
       console.error("API_KEY is missing or undefined!");
@@ -24,90 +19,125 @@ export async function POST(request) {
       );
     }
 
-    console.log(
-      "Creating Gemini model with API key:",
-      process.env.API_KEY ? "[PRESENT]" : "[MISSING]"
-    );
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        temperature: 0.9,
+        maxOutputTokens: 16384,
+      },
+    });
 
-    console.log("Generating content for topic:", topic);
-    const prompt = `
-      I need a comprehensive learning guide about ${topic}.
-      Please provide:
+    const prompt = `Generate a comprehensive study guide about ${topic}.
 
-      1. Introduction:
-      - Basic overview of the field/subject this topic belongs to
-      - Why this topic is important
-      - Prerequisites for understanding this topic
+You are a study guide generator that MUST return a valid JSON object with exactly this structure:
+{
+  "detailedNotes": "Start with a clear introduction to ${topic}, followed by key concepts, definitions, and important points. Do not use headers or bullet points - write in clear, flowing paragraphs.",
+  
+  "explanations": "Provide detailed explanations of complex concepts, real-world examples, and practical applications. Write in clear paragraphs without headers or bullet points.",
+  
+  "studyResources": [
+    {
+      "title": "Specific, descriptive title of the resource",
+      "url": "Direct, working URL to the resource",
+      "description": "2-3 sentence description of what this resource covers"
+    }
+  ],
+  
+  "videoContent": [
+    {
+      "title": "Specific video or channel name",
+      "url": "Direct URL to video or relevant playlist",
+      "description": "Brief description of video content"
+    }
+  ],
+  
+  "practiceContent": "List specific practice exercises, sample problems, or review questions. Write in clear paragraphs without headers or bullet points."
+}
 
-      2. Main Concept Explanation:
-      - Detailed explanation of ${topic}
-      - Key principles and components
-      - Common applications
-      - Visual descriptions (if applicable)
+Critical Requirements:
+1. Response MUST be valid JSON - no markdown, no extra text
+2. Write content in clear, flowing paragraphs
+3. NO headers, bullet points, or section markers in the text
+4. NO phrases like "In this section..." or "Study Resources:"
+5. Include 3-5 highly relevant resources in studyResources and videoContent
+6. All URLs must be real, working URLs (use Google Scholar, YouTube, Coursera, etc.)
+7. Content should be comprehensive but concise
+8. Focus on accuracy and clarity`;
 
-      3. Related Concepts:
-      - Connected topics and their relationships
-      - How this fits into the broader subject
-      - Progressive learning path
-
-      4. Learning Resources:
-      - Key terms for finding educational content
-      - Suggested topics for further reading
-      - Specific concepts to search for in educational videos
-
-      Format the response with clear sections and bullet points.
-    `;
-
-    // Generate content
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
 
-    // Clean the response text
-    const cleanedText = text.replace(/```\w*\n?|\n?```/g, "").trim();
+    // Clean the response text of any markdown code blocks
+    const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim();
 
-    // Parse the response into sections
-    const sections = cleanedText.split(/\d\.\s+/);
+    // Parse the JSON response
+    let content;
+    try {
+      content = JSON.parse(cleanedText);
+    } catch (error) {
+      console.error("Failed to parse AI response as JSON:", error);
+      console.log("Raw response:", text);
+      console.log("Cleaned response:", cleanedText);
 
-    // Structure the content
-    const structuredContent = {
-      introduction: sections[1] || "",
-      conceptExplanation: sections[2] || "",
-      relatedConcepts: sections[3] || "",
-      resources: {
-        articles: [
-          {
-            title: `Introduction to ${topic}`,
-            url: `https://scholar.google.com/scholar?q=introduction+${encodeURIComponent(
-              topic
-            )}`,
-          },
-          {
-            title: `Advanced ${topic} Concepts`,
-            url: `https://scholar.google.com/scholar?q=advanced+${encodeURIComponent(
-              topic
-            )}`,
-          },
-        ],
-        videos: [
-          {
-            title: `${topic} Basics`,
-            url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
-              topic
-            )}+tutorial`,
-          },
-          {
-            title: `${topic} Explained`,
-            url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
-              topic
-            )}+explained`,
-          },
-        ],
-      },
-    };
+      // Attempt to fix common JSON issues
+      try {
+        // Try to fix any remaining formatting issues
+        const furtherCleanedText = cleanedText
+          .replace(/[\u201C\u201D]/g, '"') // Replace smart quotes
+          .replace(/[\u2018\u2019]/g, "'") // Replace smart single quotes
+          .replace(/\n/g, " ") // Remove newlines
+          .trim();
+        content = JSON.parse(furtherCleanedText);
+      } catch (secondError) {
+        console.error("Failed second attempt to parse JSON:", secondError);
+        return NextResponse.json(
+          { error: "Invalid response format from AI" },
+          { status: 500 }
+        );
+      }
+    }
 
-    return NextResponse.json(structuredContent);
+    // Add default resources if none were generated
+    if (!content.studyResources || content.studyResources.length === 0) {
+      content.studyResources = [
+        {
+          title: "Google Scholar Research",
+          url: `https://scholar.google.com/scholar?q=${encodeURIComponent(
+            topic
+          )}`,
+          description: `Latest academic research on ${topic}`,
+        },
+        {
+          title: "Coursera Courses",
+          url: `https://www.coursera.org/search?query=${encodeURIComponent(
+            topic
+          )}`,
+          description: `Online courses related to ${topic}`,
+        },
+      ];
+    }
+
+    if (!content.videoContent || content.videoContent.length === 0) {
+      content.videoContent = [
+        {
+          title: "Educational Lectures",
+          url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
+            topic
+          )}+lecture`,
+          description: `University-level lectures on ${topic}`,
+        },
+        {
+          title: "Tutorial Videos",
+          url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
+            topic
+          )}+tutorial`,
+          description: `Step-by-step tutorials on ${topic}`,
+        },
+      ];
+    }
+
+    return NextResponse.json({ sections: content });
   } catch (error) {
     console.error("Error generating review content:", error);
     return NextResponse.json(

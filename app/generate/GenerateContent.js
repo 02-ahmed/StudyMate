@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import "quill/dist/quill.snow.css";
 import {
@@ -31,6 +31,9 @@ import {
   getDoc,
   writeBatch,
   addDoc,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "../../utils/firebase";
 import { useUser } from "@clerk/nextjs";
@@ -72,6 +75,7 @@ export default function GenerateContent() {
   const [inputMethod, setInputMethod] = useState(0); // 0 for text, 1 for file
   const [file, setFile] = useState(null);
   const [fileError, setFileError] = useState(null);
+  const [savingFlashcards, setSavingFlashcards] = useState(false);
 
   // Define allowed file types
   const allowedTypes = [
@@ -92,19 +96,22 @@ export default function GenerateContent() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  // Add loading messages array
-  const loadingMessages = [
-    "Generating your flashcards...",
-    "Breaking down the content into bite-sized pieces...",
-    "Creating comprehensive study materials...",
-    "Did you know? Active recall through flashcards is one of the most effective study methods!",
-    "Almost there! Organizing your flashcards...",
-    "Pro tip: Regular review of flashcards helps move information to long-term memory",
-    "Making sure we capture all the important concepts...",
-    "Fun fact: Spaced repetition can improve retention by up to 200%!",
-    "Still working... Complex topics take time to process properly",
-    "Creating connections between concepts...",
-  ];
+  // Add loading messages array wrapped in useMemo
+  const loadingMessages = useMemo(
+    () => [
+      "Generating your flashcards...",
+      "Breaking down the content into bite-sized pieces...",
+      "Creating comprehensive study materials...",
+      "Did you know? Active recall through flashcards is one of the most effective study methods!",
+      "Almost there! Organizing your flashcards...",
+      "Pro tip: Regular review of flashcards helps move information to long-term memory",
+      "Making sure we capture all the important concepts...",
+      "Fun fact: Spaced repetition can improve retention by up to 200%!",
+      "Still working... Complex topics take time to process properly",
+      "Creating connections between concepts...",
+    ],
+    []
+  ); // Empty dependency array since these messages never change
 
   // Add useEffect for rotating messages
   useEffect(() => {
@@ -120,7 +127,7 @@ export default function GenerateContent() {
     return () => {
       if (messageInterval) clearInterval(messageInterval);
     };
-  }, [loading]);
+  }, [loading, loadingMessages]);
 
   const handleOpenDialog = () => {
     if (!isSignedIn) {
@@ -139,7 +146,24 @@ export default function GenerateContent() {
     }
 
     try {
+      setSavingFlashcards(true);
       const flashcardsRef = collection(db, "users", user.id, "flashcardSets");
+
+      // Check for existing set with same name (case insensitive)
+      const nameQuery = query(flashcardsRef);
+      const nameQuerySnapshot = await getDocs(nameQuery);
+
+      const nameExists = nameQuerySnapshot.docs.some(
+        (doc) => doc.data().name?.toLowerCase() === setName.trim().toLowerCase()
+      );
+
+      if (nameExists) {
+        alert(
+          "A flashcard set with this name already exists. Please choose a different name."
+        );
+        return;
+      }
+
       const docRef = await addDoc(flashcardsRef, {
         name: setName.trim(),
         createdAt: new Date(),
@@ -157,6 +181,8 @@ export default function GenerateContent() {
     } catch (error) {
       console.error("Error saving summary notes:", error);
       alert("An error occurred while saving summary notes. Please try again.");
+    } finally {
+      setSavingFlashcards(false);
     }
   };
 
@@ -209,11 +235,14 @@ export default function GenerateContent() {
 
       setLoading(true);
       try {
-        // Strip HTML tags for the API call
-        const plainText = text.replace(/<[^>]+>/g, "");
+        // Strip HTML tags and properly format the text
+        const plainText = text.replace(/<[^>]+>/g, "").trim();
 
         const response = await fetch("/api/generate", {
           method: "POST",
+          headers: {
+            "Content-Type": "text/plain",
+          },
           body: plainText,
         });
 
@@ -492,7 +521,9 @@ export default function GenerateContent() {
         <DialogTitle>Save Summary Notes Set</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Please enter a name for your summary notes set.
+            Please enter a descriptive name for your summary notes set. Choose a
+            clear, specific name as it will be used to track your performance
+            and generate reviews.
           </DialogContentText>
           <TextField
             autoFocus
@@ -503,6 +534,7 @@ export default function GenerateContent() {
             value={setName}
             onChange={(e) => setSetName(e.target.value)}
             variant="outlined"
+            helperText="Example: 'React Hooks Fundamentals' or 'World War II Key Events'"
           />
           <Box sx={{ mt: 2 }}>
             <TextField
@@ -529,8 +561,13 @@ export default function GenerateContent() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={saveFlashcards} color="primary">
-            Save
+          <Button
+            onClick={saveFlashcards}
+            color="primary"
+            disabled={savingFlashcards}
+            startIcon={savingFlashcards ? <CircularProgress size={20} /> : null}
+          >
+            {savingFlashcards ? "Saving..." : "Save"}
           </Button>
         </DialogActions>
       </Dialog>
