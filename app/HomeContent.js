@@ -13,6 +13,8 @@ import {
   CardContent,
   useTheme,
   useMediaQuery,
+  CircularProgress,
+
 } from "@mui/material";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -104,10 +106,16 @@ export default function HomeContent() {
             }}
           />
         </Box>
+          minHeight: "100vh",
+        }}
+      >
+        <CircularProgress />
       </Box>
     );
   }
 
+
+  // If user is signed in, don't render anything - Clerk will handle the redirect
   if (isSignedIn) {
     return null;
   }

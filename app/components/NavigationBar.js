@@ -26,6 +26,10 @@ import {
 } from "@mui/material";
 
 // Icons
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useUser, UserButton } from "@clerk/nextjs";
+import { Suspense, useState } from "react";
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import NotesOutlinedIcon from "@mui/icons-material/NotesOutlined";
@@ -41,6 +45,7 @@ function NavigationBarContent() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const router = useRouter();
 
   const isActive = (path) => pathname === path;
 

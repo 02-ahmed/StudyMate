@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
   Container,
@@ -28,13 +28,8 @@ export default function StudyMateContent() {
   const [weakTopics, setWeakTopics] = useState([]);
   const [recentActivity, setRecentActivity] = useState([]);
 
-  useEffect(() => {
-    if (user) {
-      loadStudyData();
-    }
-  }, [user]);
-
-  const loadStudyData = async () => {
+  const loadStudyData = useCallback(async () => {
+    if (!user) return;
     try {
       // Load weak topics from test results
       const testResultsRef = collection(db, "users", user.id, "testResults");
@@ -70,7 +65,13 @@ export default function StudyMateContent() {
       console.error("Error loading study data:", error);
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadStudyData();
+    }
+  }, [user, loadStudyData]);
 
   if (loading) {
     return (
@@ -174,7 +175,13 @@ export default function StudyMateContent() {
                             onClick={() =>
                               router.push(
                                 `/study-mate/review?topics=${encodeURIComponent(
-                                  JSON.stringify([topic.topic])
+                                  JSON.stringify([
+                                    {
+                                      topic: topic.topic,
+                                      questions: topic.questions || 0,
+                                      count: topic.count || 0,
+                                    },
+                                  ])
                                 )}`
                               )
                             }

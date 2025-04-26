@@ -17,6 +17,12 @@ import {
   InputAdornment,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
@@ -40,6 +46,13 @@ export default function NotesContent() {
   const [selectedTags, setSelectedTags] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [allTags, setAllTags] = useState([]);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editTags, setEditTags] = useState([]);
+  const [currentTag, setCurrentTag] = useState("");
+  const [deletingNoteId, setDeletingNoteId] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const loadNotes = useCallback(async () => {
     if (!user) return;
@@ -54,18 +67,21 @@ export default function NotesContent() {
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        // Add tags to the set
-        if (data.tags) {
-          data.tags.forEach((tag) => tagsSet.add(tag));
-        }
+        // Only include non-deleted notes
+        if (!data.isDeleted) {
+          // Add tags to the set
+          if (data.tags) {
+            data.tags.forEach((tag) => tagsSet.add(tag));
+          }
 
-        notesData.push({
-          id: doc.id,
-          name: data.name || doc.id,
-          createdAt: data.createdAt?.toDate(),
-          totalCards: data.flashcards ? data.flashcards.length : 0,
-          tags: data.tags || [], // Include tags in note data
-        });
+          notesData.push({
+            id: doc.id,
+            name: data.name || doc.id,
+            createdAt: data.createdAt?.toDate(),
+            totalCards: data.flashcards ? data.flashcards.length : 0,
+            tags: data.tags || [], // Include tags in note data
+          });
+        }
       });
 
       // Sort by creation date, newest first
@@ -103,47 +119,112 @@ export default function NotesContent() {
 
   const handleDelete = async (id) => {
     if (!user) return;
-    if (!window.confirm("Are you sure you want to delete this note set?"))
+    if (
+      !window.confirm(
+        "Are you sure you want to hide this note set? You can restore it later."
+      )
+    )
       return;
 
     try {
-      // Delete from the new structure
-      await deleteDoc(doc(db, "users", user.id, "flashcardSets", id));
-
-      // Also try to delete from the old structure if it exists
-      const userDocRef = doc(collection(db, "users"), user.id);
-      const userDocSnap = await getDoc(userDocRef);
-
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        if (userData.flashcardSets) {
-          // Remove the set from the array
-          const updatedSets = userData.flashcardSets.filter(
-            (set) => set.name !== id
-          );
-          // Update the user document
-          await updateDoc(userDocRef, {
-            flashcardSets: updatedSets,
-          });
-
-          // Also delete the flashcard set document from the old structure
-          await deleteDoc(doc(collection(userDocRef, "flashcardSets"), id));
-        }
-      }
+      setDeletingNoteId(id);
+      // Soft delete by updating isDeleted flag
+      const docRef = doc(db, "users", user.id, "flashcardSets", id);
+      await updateDoc(docRef, {
+        isDeleted: true,
+        deletedAt: new Date(),
+      });
 
       // Update local state
       setNotes(notes.filter((note) => note.id !== id));
-
-      // Force reload the notes to ensure everything is in sync
-      loadNotes();
     } catch (error) {
-      console.error("Error deleting note:", error);
-      alert("Failed to delete note set");
+      console.error("Error hiding note:", error);
+      alert("Failed to hide note set");
+    } finally {
+      setDeletingNoteId(null);
     }
   };
 
   const handleEdit = (id) => {
-    router.push(`/edit/${id}`);
+    const note = notes.find((n) => n.id === id);
+    if (note) {
+      setEditingNote(note);
+      setEditName(note.name);
+      setEditTags(note.tags || []);
+      setEditDialogOpen(true);
+    }
+  };
+
+  const handleCloseEditDialog = () => {
+    setEditDialogOpen(false);
+    setEditingNote(null);
+    setEditName("");
+    setEditTags([]);
+    setCurrentTag("");
+  };
+
+  const handleTagDelete = (tagToDelete) => {
+    setEditTags(editTags.filter((tag) => tag !== tagToDelete));
+  };
+
+  const handleTagAdd = (event) => {
+    if (event.key === "Enter" && currentTag.trim()) {
+      if (!editTags.includes(currentTag.trim())) {
+        setEditTags([...editTags, currentTag.trim()]);
+      }
+      setCurrentTag("");
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingNote || !editName.trim()) {
+      alert("Please enter a name for your flashcard set.");
+      return;
+    }
+
+    try {
+      setSavingEdit(true);
+      // Check for existing sets with same name (case insensitive)
+      const flashcardsRef = collection(db, "users", user.id, "flashcardSets");
+      const nameQuery = query(flashcardsRef);
+      const nameQuerySnapshot = await getDocs(nameQuery);
+
+      const nameExists = nameQuerySnapshot.docs.some((doc) => {
+        // Skip checking the current note being edited
+        if (doc.id === editingNote.id) return false;
+        // Case insensitive comparison
+        return doc.data().name?.toLowerCase() === editName.trim().toLowerCase();
+      });
+
+      if (nameExists) {
+        alert(
+          "A flashcard set with this name already exists. Please choose a different name."
+        );
+        return;
+      }
+
+      const docRef = doc(db, "users", user.id, "flashcardSets", editingNote.id);
+      await updateDoc(docRef, {
+        name: editName.trim(),
+        tags: editTags,
+      });
+
+      // Update local state
+      setNotes(
+        notes.map((note) =>
+          note.id === editingNote.id
+            ? { ...note, name: editName.trim(), tags: editTags }
+            : note
+        )
+      );
+
+      handleCloseEditDialog();
+    } catch (error) {
+      console.error("Error updating note:", error);
+      alert("Failed to update note. Please try again.");
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const handleNoteClick = (note) => {
@@ -250,12 +331,27 @@ export default function NotesContent() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography
-        variant="h4"
-        sx={{ mb: 4, fontWeight: "bold", color: "#3f51b5" }}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 4,
+        }}
       >
-        My Notes
-      </Typography>
+        <Typography variant="h4" sx={{ fontWeight: "bold", color: "#3f51b5" }}>
+          My Notes
+        </Typography>
+        <Button
+          variant="text"
+          color="primary"
+          size="small"
+          onClick={() => router.push("/notes/deleted")}
+          startIcon={<DeleteIcon />}
+        >
+          View Deleted Notes
+        </Button>
+      </Box>
 
       <Box sx={{ mb: 4 }}>
         <TextField
@@ -323,8 +419,13 @@ export default function NotesContent() {
                           e.stopPropagation();
                           handleDelete(note.id);
                         }}
+                        disabled={deletingNoteId === note.id}
                       >
-                        <DeleteIcon />
+                        {deletingNoteId === note.id ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          <DeleteIcon />
+                        )}
                       </IconButton>
                     </Stack>
                   </Box>
@@ -378,6 +479,58 @@ export default function NotesContent() {
           </Grid>
         )}
       </Grid>
+
+      <Dialog open={editDialogOpen} onClose={handleCloseEditDialog}>
+        <DialogTitle>Edit Flashcard Set</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Update the name and tags for your flashcard set.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Set Name"
+            type="text"
+            fullWidth
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            variant="outlined"
+          />
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              label="Add Tags"
+              placeholder="Type and press Enter"
+              fullWidth
+              value={currentTag}
+              onChange={(e) => setCurrentTag(e.target.value)}
+              onKeyDown={handleTagAdd}
+              variant="outlined"
+            />
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
+              {editTags.map((tag) => (
+                <Chip
+                  key={tag}
+                  label={tag}
+                  onDelete={() => handleTagDelete(tag)}
+                  color="primary"
+                  variant="outlined"
+                />
+              ))}
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEditDialog}>Cancel</Button>
+          <Button
+            onClick={handleSaveEdit}
+            color="primary"
+            disabled={savingEdit}
+            startIcon={savingEdit ? <CircularProgress size={20} /> : null}
+          >
+            {savingEdit ? "Saving..." : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 }

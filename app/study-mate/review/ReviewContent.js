@@ -62,7 +62,6 @@ export default function ReviewContent() {
   const generateContent = async (topic) => {
     try {
       setLoading(true);
-      console.log("Generating content for topic:", topic);
 
       const response = await fetch("/api/generate-review-content", {
         method: "POST",
@@ -72,28 +71,36 @@ export default function ReviewContent() {
         body: JSON.stringify({ topic }),
       });
 
-      console.log("Response status:", response.status);
-      const responseText = await response.text();
-      console.log("Response text:", responseText);
-
       if (!response.ok) {
-        throw new Error(`Server error: ${responseText}`);
+        throw new Error(`Server error: ${await response.text()}`);
       }
 
-      const data = JSON.parse(responseText);
-      console.log("Parsed data:", data);
-      setContent(data);
-      setLoading(false);
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setContent({
+        introduction: data.introduction || "",
+        conceptExplanation: data.conceptExplanation || "",
+        relatedConcepts: data.relatedConcepts || "",
+        resources: data.resources || { articles: [], videos: [] },
+      });
     } catch (error) {
-      console.error("Error generating content:", error);
       setContent({
         introduction: "Error generating content. Please try again later.",
         conceptExplanation: error.message,
         relatedConcepts: "",
         resources: { articles: [], videos: [] },
       });
+    } finally {
       setLoading(false);
     }
+  };
+
+  const handleTopicChange = (_, newTopic) => {
+    setCurrentTopic(typeof newTopic === "string" ? newTopic : newTopic.topic);
   };
 
   if (loading) {
@@ -178,7 +185,7 @@ export default function ReviewContent() {
                       mb: 0.5,
                     }}
                   >
-                    {topic}
+                    {typeof topic === "string" ? topic : topic.topic}
                   </Typography>
                   <Typography
                     sx={{
@@ -186,7 +193,8 @@ export default function ReviewContent() {
                       fontSize: "0.875rem",
                     }}
                   >
-                    {topic.questions || 0} questions
+                    {typeof topic === "string" ? "0" : topic.questions || 0}{" "}
+                    questions
                   </Typography>
                 </Box>
                 <Button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
   Container,
@@ -28,14 +28,10 @@ export default function SavedReviewsContent() {
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState([]);
   const [error, setError] = useState(null);
+  const [deletingReviewId, setDeletingReviewId] = useState(null);
 
-  useEffect(() => {
-    if (user) {
-      loadSavedReviews();
-    }
-  }, [user]);
-
-  const loadSavedReviews = async () => {
+  const loadSavedReviews = useCallback(async () => {
+    if (!user) return;
     try {
       setLoading(true);
       const reviewsRef = collection(db, "users", user.id, "savedReviews");
@@ -54,15 +50,27 @@ export default function SavedReviewsContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadSavedReviews();
+    }
+  }, [user, loadSavedReviews]);
 
   const handleDeleteReview = async (reviewId) => {
+    if (!window.confirm("Are you sure you want to delete this review?")) return;
+
     try {
+      setDeletingReviewId(reviewId);
       const reviewRef = doc(db, "users", user.id, "savedReviews", reviewId);
       await deleteDoc(reviewRef);
       setReviews(reviews.filter((review) => review.id !== reviewId));
     } catch (error) {
       console.error("Error deleting review:", error);
+      alert("Failed to delete review. Please try again.");
+    } finally {
+      setDeletingReviewId(null);
     }
   };
 
@@ -156,15 +164,17 @@ export default function SavedReviewsContent() {
                           <Typography variant="h6">Review Guide</Typography>
                         </Box>
                         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                          {review.topics.map((topic, index) => (
-                            <Chip
-                              key={index}
-                              label={topic}
-                              size="small"
-                              color="primary"
-                              variant="outlined"
-                            />
-                          ))}
+                          {(review.topics || [review.topic] || []).map(
+                            (topic, index) => (
+                              <Chip
+                                key={index}
+                                label={topic}
+                                color="primary"
+                                variant="outlined"
+                                size="small"
+                              />
+                            )
+                          )}
                         </Box>
                       </Box>
                       <Box sx={{ display: "flex", gap: 1 }}>
@@ -181,10 +191,16 @@ export default function SavedReviewsContent() {
                         </Button>
                         <IconButton
                           onClick={() => handleDeleteReview(review.id)}
-                          color="error"
-                          size="small"
+                          disabled={deletingReviewId === review.id}
+                          sx={{
+                            color: "error.main",
+                          }}
                         >
-                          <DeleteIcon />
+                          {deletingReviewId === review.id ? (
+                            <CircularProgress size={24} color="inherit" />
+                          ) : (
+                            <DeleteIcon />
+                          )}
                         </IconButton>
                       </Box>
                     </Box>
