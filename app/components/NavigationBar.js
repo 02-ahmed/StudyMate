@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useUser, UserButton } from "@clerk/nextjs";
 import {
   AppBar,
@@ -22,14 +22,10 @@ import {
   Container,
   Avatar,
   Tooltip,
-  Badge
+  Badge,
 } from "@mui/material";
 
 // Icons
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useUser, UserButton } from "@clerk/nextjs";
-import { Suspense, useState } from "react";
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import NotesOutlinedIcon from "@mui/icons-material/NotesOutlined";
@@ -54,7 +50,11 @@ function NavigationBarContent() {
     { path: "/notes", label: "My Notes", icon: <NotesOutlinedIcon /> },
     { path: "/generate", label: "Generate", icon: <CreateOutlinedIcon /> },
     { path: "/practice", label: "Practice", icon: <QuizOutlinedIcon /> },
-    { path: "/saved-reviews", label: "Saved", icon: <BookmarkBorderOutlinedIcon /> },
+    {
+      path: "/saved-reviews",
+      label: "Saved",
+      icon: <BookmarkBorderOutlinedIcon />,
+    },
   ];
 
   const renderMobileDrawer = () => (
@@ -81,14 +81,17 @@ function NavigationBarContent() {
           borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}
       >
-        <Typography variant="h6" sx={{ color: "#4f46e5", fontWeight: 700, letterSpacing: "-0.02em" }}>
+        <Typography
+          variant="h6"
+          sx={{ color: "#4f46e5", fontWeight: 700, letterSpacing: "-0.02em" }}
+        >
           StudyMate
         </Typography>
-        <IconButton 
+        <IconButton
           onClick={() => setDrawerOpen(false)}
-          sx={{ 
-            bgcolor: 'rgba(79, 70, 229, 0.1)', 
-            '&:hover': { bgcolor: 'rgba(79, 70, 229, 0.2)' } 
+          sx={{
+            bgcolor: "rgba(79, 70, 229, 0.1)",
+            "&:hover": { bgcolor: "rgba(79, 70, 229, 0.2)" },
           }}
         >
           <CloseRoundedIcon sx={{ color: "#4f46e5" }} />
@@ -162,9 +165,7 @@ function NavigationBarContent() {
           justifyContent: "center",
         }}
       >
-        <UserButton 
-          afterSignOutUrl="/"
-        />
+        <UserButton afterSignOutUrl="/" />
       </Box>
     </Drawer>
   );
@@ -174,21 +175,28 @@ function NavigationBarContent() {
       <AppBar
         position="fixed"
         elevation={0}
-        sx={{ 
-          backgroundColor: "#fff", 
+        sx={{
+          backgroundColor: "#fff",
           backdropFilter: "blur(10px)",
-          borderBottom: "1px solid rgba(0,0,0,0.06)"
+          borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}
       >
         <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ height: 70 }}>
             <Typography
               variant="h6"
-              sx={{ flexGrow: 1, color: "#4f46e5", fontWeight: 700, letterSpacing: "-0.02em" }}
+              sx={{
+                flexGrow: 1,
+                color: "#4f46e5",
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+              }}
             >
               StudyMate
             </Typography>
-            <Box sx={{ width: 40, display: "flex", justifyContent: "flex-end" }}>
+            <Box
+              sx={{ width: 40, display: "flex", justifyContent: "flex-end" }}
+            >
               <Box
                 sx={{
                   width: 35,
@@ -210,25 +218,36 @@ function NavigationBarContent() {
       <AppBar
         position="fixed"
         elevation={0}
-        sx={{ 
-          backgroundColor: "rgba(255,255,255,0.8)", 
+        sx={{
+          backgroundColor: "rgba(255,255,255,0.8)",
           backdropFilter: "blur(10px)",
-          borderBottom: "1px solid rgba(0,0,0,0.06)"
+          borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}
       >
         <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ height: 70 }}>
             <Typography
               variant="h6"
-              sx={{ flexGrow: 1, color: "#4f46e5", fontWeight: 700, letterSpacing: "-0.02em" }}
+              sx={{
+                flexGrow: 1,
+                color: "#4f46e5",
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+              }}
             >
               StudyMate
             </Typography>
             {!isMobile && (
-              <Link href="/generate" passHref style={{ textDecoration: "none" }}>
+              <Link
+                href="/generate"
+                passHref
+                style={{ textDecoration: "none" }}
+              >
                 <Button
                   sx={{
-                    color: isActive("/generate") ? "#4f46e5" : "rgba(0,0,0,0.7)",
+                    color: isActive("/generate")
+                      ? "#4f46e5"
+                      : "rgba(0,0,0,0.7)",
                     fontWeight: 500,
                     fontSize: "0.95rem",
                     px: 2,
@@ -236,32 +255,32 @@ function NavigationBarContent() {
                     transition: "all 0.2s ease",
                     "&:hover": {
                       background: "rgba(79, 70, 229, 0.05)",
-                      transform: "translateY(-1px)"
-                    }
+                      transform: "translateY(-1px)",
+                    },
                   }}
                 >
                   Generate Notes
                 </Button>
               </Link>
             )}
-            <Button 
-              color="inherit" 
-              href="/sign-in" 
-              sx={{ 
-                color: "#4f46e5", 
+            <Button
+              color="inherit"
+              href="/sign-in"
+              sx={{
+                color: "#4f46e5",
                 fontSize: "0.9rem",
                 fontWeight: 600,
                 "&:hover": {
                   background: "rgba(79, 70, 229, 0.05)",
-                }
+                },
               }}
             >
               Sign In
             </Button>
-            <Button 
-              variant="contained" 
-              href="/sign-up" 
-              sx={{ 
+            <Button
+              variant="contained"
+              href="/sign-up"
+              sx={{
                 ml: 2,
                 bgcolor: "#4f46e5",
                 fontWeight: 600,
@@ -273,7 +292,7 @@ function NavigationBarContent() {
                 "&:hover": {
                   bgcolor: "#4338ca",
                   boxShadow: "0 4px 12px rgba(79, 70, 229, 0.4)",
-                  transform: "translateY(-1px)"
+                  transform: "translateY(-1px)",
                 },
                 transition: "all 0.2s ease",
               }}
@@ -291,10 +310,10 @@ function NavigationBarContent() {
       <AppBar
         position="fixed"
         elevation={0}
-        sx={{ 
-          backgroundColor: "rgba(255,255,255,0.9)", 
+        sx={{
+          backgroundColor: "rgba(255,255,255,0.9)",
           backdropFilter: "blur(10px)",
-          borderBottom: "1px solid rgba(0,0,0,0.06)"
+          borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}
       >
         <Container maxWidth="xl">
@@ -305,18 +324,23 @@ function NavigationBarContent() {
                   edge="start"
                   aria-label="menu"
                   onClick={() => setDrawerOpen(true)}
-                  sx={{ 
-                    mr: 2, 
+                  sx={{
+                    mr: 2,
                     color: "#4f46e5",
-                    bgcolor: 'rgba(79, 70, 229, 0.1)',
-                    '&:hover': { bgcolor: 'rgba(79, 70, 229, 0.2)' }
+                    bgcolor: "rgba(79, 70, 229, 0.1)",
+                    "&:hover": { bgcolor: "rgba(79, 70, 229, 0.2)" },
                   }}
                 >
                   <MenuIcon />
                 </IconButton>
                 <Typography
                   variant="h6"
-                  sx={{ color: "#4f46e5", fontWeight: 700, letterSpacing: "-0.02em", flexGrow: 1 }}
+                  sx={{
+                    color: "#4f46e5",
+                    fontWeight: 700,
+                    letterSpacing: "-0.02em",
+                    flexGrow: 1,
+                  }}
                 >
                   StudyMate
                 </Typography>
@@ -330,15 +354,15 @@ function NavigationBarContent() {
                 >
                   <Typography
                     variant="h6"
-                    sx={{ 
-                      color: "#4f46e5", 
-                      fontWeight: 700, 
+                    sx={{
+                      color: "#4f46e5",
+                      fontWeight: 700,
                       letterSpacing: "-0.02em",
                       mr: 4,
                       cursor: "pointer",
-                      '&:hover': {
-                        opacity: 0.9
-                      }
+                      "&:hover": {
+                        opacity: 0.9,
+                      },
                     }}
                   >
                     StudyMate
@@ -356,7 +380,9 @@ function NavigationBarContent() {
                       <Button
                         startIcon={item.icon}
                         sx={{
-                          color: isActive(item.path) ? "#4f46e5" : "rgba(0,0,0,0.7)",
+                          color: isActive(item.path)
+                            ? "#4f46e5"
+                            : "rgba(0,0,0,0.7)",
                           fontWeight: isActive(item.path) ? 600 : 500,
                           fontSize: "0.9rem",
                           textTransform: "none",
@@ -368,17 +394,19 @@ function NavigationBarContent() {
                           "&:hover": {
                             backgroundColor: "rgba(79, 70, 229, 0.05)",
                           },
-                          "&::after": isActive(item.path) ? {
-                            content: '""',
-                            position: "absolute",
-                            bottom: 0,
-                            left: "50%",
-                            transform: "translateX(-50%)",
-                            width: "30%",
-                            height: 3,
-                            backgroundColor: "#4f46e5",
-                            borderRadius: "3px 3px 0 0",
-                          } : {},
+                          "&::after": isActive(item.path)
+                            ? {
+                                content: '""',
+                                position: "absolute",
+                                bottom: 0,
+                                left: "50%",
+                                transform: "translateX(-50%)",
+                                width: "30%",
+                                height: 3,
+                                backgroundColor: "#4f46e5",
+                                borderRadius: "3px 3px 0 0",
+                              }
+                            : {},
                           transition: "all 0.2s ease",
                         }}
                       >
@@ -394,13 +422,13 @@ function NavigationBarContent() {
               {!isMobile && (
                 <Tooltip title="Notifications">
                   <IconButton
-                    sx={{ 
+                    sx={{
                       ml: 1,
                       color: "rgba(0,0,0,0.7)",
-                      bgcolor: 'rgba(0, 0, 0, 0.04)',
-                      '&:hover': { 
-                        bgcolor: 'rgba(0, 0, 0, 0.08)',
-                        transform: 'translateY(-1px)'
+                      bgcolor: "rgba(0, 0, 0, 0.04)",
+                      "&:hover": {
+                        bgcolor: "rgba(0, 0, 0, 0.08)",
+                        transform: "translateY(-1px)",
                       },
                       transition: "all 0.2s ease",
                     }}
@@ -411,24 +439,26 @@ function NavigationBarContent() {
                   </IconButton>
                 </Tooltip>
               )}
-              
-              <Box sx={{ 
-                ml: 1,
-                transition: "all 0.2s ease",
-                '&:hover': { 
-                  transform: 'translateY(-1px)'
-                },
-              }}>
-                <UserButton 
+
+              <Box
+                sx={{
+                  ml: 1,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    transform: "translateY(-1px)",
+                  },
+                }}
+              >
+                <UserButton
                   afterSignOutUrl="/"
                   appearance={{
                     elements: {
                       avatarBox: {
                         width: 38,
                         height: 38,
-                        boxShadow: "0 2px 5px rgba(0,0,0,0.1)"
-                      }
-                    }
+                        boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+                      },
+                    },
                   }}
                 />
               </Box>
@@ -436,10 +466,10 @@ function NavigationBarContent() {
           </Toolbar>
         </Container>
       </AppBar>
-      
+
       {/* Add spacing below AppBar */}
       <Box sx={{ height: 70 }} />
-      
+
       {renderMobileDrawer()}
       <style jsx global>{`
         @keyframes pulse {
@@ -465,23 +495,26 @@ export default function NavigationBar() {
         <AppBar
           position="fixed"
           elevation={0}
-          sx={{ 
-            backgroundColor: "rgba(255,255,255,0.9)", 
+          sx={{
+            backgroundColor: "rgba(255,255,255,0.9)",
             backdropFilter: "blur(10px)",
-            borderBottom: "1px solid rgba(0,0,0,0.06)" 
+            borderBottom: "1px solid rgba(0,0,0,0.06)",
           }}
         >
           <Container maxWidth="xl">
             <Toolbar disableGutters sx={{ height: 70 }}>
               <Typography
                 variant="h6"
-                sx={{ flexGrow: 1, color: "#4f46e5", fontWeight: 700, letterSpacing: "-0.02em" }}
+                sx={{
+                  flexGrow: 1,
+                  color: "#4f46e5",
+                  fontWeight: 700,
+                  letterSpacing: "-0.02em",
+                }}
               >
                 StudyMate
               </Typography>
-              <Box
-                sx={{ display: "flex", justifyContent: "flex-end" }}
-              >
+              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                 <CircularProgress size={24} sx={{ color: "#4f46e5" }} />
               </Box>
             </Toolbar>

@@ -14,7 +14,6 @@ import {
   useTheme,
   useMediaQuery,
   CircularProgress,
-
 } from "@mui/material";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -54,7 +53,14 @@ const HeroBackground = () => (
   >
     <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+        <pattern
+          id="dots"
+          x="0"
+          y="0"
+          width="20"
+          height="20"
+          patternUnits="userSpaceOnUse"
+        >
           <circle cx="3" cy="3" r="1.5" fill="#3f51b5" />
         </pattern>
       </defs>
@@ -83,6 +89,7 @@ export default function HomeContent() {
           justifyContent: "center",
           alignItems: "center",
           height: "100vh",
+          minHeight: "100vh",
         }}
       >
         <Box
@@ -106,14 +113,10 @@ export default function HomeContent() {
             }}
           />
         </Box>
-          minHeight: "100vh",
-        }}
-      >
         <CircularProgress />
       </Box>
     );
   }
-
 
   // If user is signed in, don't render anything - Clerk will handle the redirect
   if (isSignedIn) {
@@ -161,7 +164,7 @@ export default function HomeContent() {
         variants={staggerChildren}
       >
         <HeroBackground />
-        
+
         <motion.div variants={fadeInUp}>
           <Typography
             variant="h1"
@@ -174,16 +177,18 @@ export default function HomeContent() {
               letterSpacing: "-0.02em",
             }}
           >
-            Transform Your <GradientText
-            sx={{
-              fontWeight: 800,
-              fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4.5rem" },
-              lineHeight: { xs: 1.2, md: 1.1 },
-              mb: 3,
-              letterSpacing: "-0.02em",
-            }}
+            Transform Your{" "}
+            <GradientText
+              sx={{
+                fontWeight: 800,
+                fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4.5rem" },
+                lineHeight: { xs: 1.2, md: 1.1 },
+                mb: 3,
+                letterSpacing: "-0.02em",
+              }}
             >
-              Study Experience</GradientText>
+              Study Experience
+            </GradientText>
           </Typography>
         </motion.div>
 
@@ -200,8 +205,8 @@ export default function HomeContent() {
               lineHeight: 1.6,
             }}
           >
-            Create smart flashcards, generate study notes, and track your progress
-            with AI-powered learning tools.
+            Create smart flashcards, generate study notes, and track your
+            progress with AI-powered learning tools.
           </Typography>
         </motion.div>
 
@@ -267,7 +272,7 @@ export default function HomeContent() {
             )}
           </Box>
         </motion.div>
-        
+
         <Box
           component={motion.div}
           variants={fadeInUp}
@@ -295,7 +300,8 @@ export default function HomeContent() {
               left: 0,
               right: 0,
               bottom: 0,
-              background: "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(63,81,181,0.05) 100%)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(63,81,181,0.05) 100%)",
             }}
           />
         </Box>
@@ -308,7 +314,7 @@ export default function HomeContent() {
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        sx={{ 
+        sx={{
           py: { xs: 8, sm: 12 },
           position: "relative",
         }}
@@ -336,30 +342,33 @@ export default function HomeContent() {
           />
         </Typography>
 
-        <Grid 
-          container 
-          spacing={{ xs: 3, sm: 4, md: 5 }} 
-          sx={{ 
-            maxWidth: "1200px", 
+        <Grid
+          container
+          spacing={{ xs: 3, sm: 4, md: 5 }}
+          sx={{
+            maxWidth: "1200px",
             mx: "auto",
           }}
         >
           {[
             {
               title: "AI-Powered Notes",
-              description: "Transform any text into organized study materials with our advanced AI technology.",
+              description:
+                "Transform any text into organized study materials with our advanced AI technology.",
               icon: "📝",
               color: "#e3f2fd",
             },
             {
               title: "Smart Review System",
-              description: "Track your progress and review cards at the optimal time for better retention.",
+              description:
+                "Track your progress and review cards at the optimal time for better retention.",
               icon: "🧠",
               color: "#e8eaf6",
             },
             {
               title: "Study Analytics",
-              description: "Get insights into your learning progress and identify areas for improvement.",
+              description:
+                "Get insights into your learning progress and identify areas for improvement.",
               icon: "📊",
               color: "#e1f5fe",
             },
@@ -367,7 +376,7 @@ export default function HomeContent() {
             <Grid item xs={12} md={4} key={index}>
               <Card
                 component={motion.div}
-                whileHover={{ 
+                whileHover={{
                   y: -10,
                   boxShadow: "0 15px 30px rgba(0,0,0,0.1)",
                 }}
@@ -413,7 +422,7 @@ export default function HomeContent() {
                   </Typography>
                   <Typography
                     color="text.secondary"
-                    sx={{ 
+                    sx={{
                       fontSize: { xs: "1rem", sm: "1.1rem" },
                       lineHeight: 1.6,
                     }}
@@ -428,15 +437,16 @@ export default function HomeContent() {
       </Box>
 
       {/* How It Works Section */}
-      <Box 
+      <Box
         component={motion.div}
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        sx={{ 
+        sx={{
           py: { xs: 8, sm: 12 },
-          background: "linear-gradient(180deg, rgba(63,81,181,0.03) 0%, rgba(63,81,181,0.08) 100%)",
+          background:
+            "linear-gradient(180deg, rgba(63,81,181,0.03) 0%, rgba(63,81,181,0.08) 100%)",
           borderRadius: "32px",
           px: { xs: 2, sm: 4, md: 6 },
           position: "relative",
@@ -498,7 +508,8 @@ export default function HomeContent() {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  background: "linear-gradient(0deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 50%)",
+                  background:
+                    "linear-gradient(0deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 50%)",
                 }}
               />
             </Box>
@@ -509,17 +520,20 @@ export default function HomeContent() {
                 {
                   number: "01",
                   title: "Input Your Study Material",
-                  description: "Simply paste your text or upload your notes. Our system accepts various formats including PDFs, text files, or even images with text.",
+                  description:
+                    "Simply paste your text or upload your notes. Our system accepts various formats including PDFs, text files, or even images with text.",
                 },
                 {
                   number: "02",
                   title: "Generate Smart Notes",
-                  description: "Our AI analyzes your content and creates organized flashcards and study materials optimized for retention and understanding.",
+                  description:
+                    "Our AI analyzes your content and creates organized flashcards and study materials optimized for retention and understanding.",
                 },
                 {
                   number: "03",
                   title: "Review and Learn",
-                  description: "Study effectively with our smart review system that adapts to your learning pace and optimizes when to review each concept.",
+                  description:
+                    "Study effectively with our smart review system that adapts to your learning pace and optimizes when to review each concept.",
                 },
               ].map((step, index) => (
                 <Box
@@ -529,7 +543,7 @@ export default function HomeContent() {
                   whileInView={{ x: 0, opacity: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.2, duration: 0.5 }}
-                  sx={{ 
+                  sx={{
                     mb: 5,
                     display: "flex",
                     alignItems: "flex-start",
@@ -540,7 +554,8 @@ export default function HomeContent() {
                       width: "50px",
                       height: "50px",
                       borderRadius: "14px",
-                      background: "linear-gradient(45deg, #3f51b5 30%, #6a7dfe 90%)",
+                      background:
+                        "linear-gradient(45deg, #3f51b5 30%, #6a7dfe 90%)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -549,7 +564,13 @@ export default function HomeContent() {
                       boxShadow: "0 6px 12px rgba(63, 81, 181, 0.2)",
                     }}
                   >
-                    <Typography sx={{ color: "white", fontWeight: 700, fontSize: "1.2rem" }}>
+                    <Typography
+                      sx={{
+                        color: "white",
+                        fontWeight: 700,
+                        fontSize: "1.2rem",
+                      }}
+                    >
                       {step.number}
                     </Typography>
                   </Box>
@@ -589,7 +610,7 @@ export default function HomeContent() {
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        sx={{ 
+        sx={{
           py: { xs: 8, sm: 10 },
           mt: { xs: 4, sm: 6 },
         }}
@@ -615,23 +636,26 @@ export default function HomeContent() {
             }}
           />
         </Typography>
-        
+
         <Grid container spacing={4} sx={{ maxWidth: "1200px", mx: "auto" }}>
           {[
             {
               name: "Jeffrey Mintah",
               role: "Engineering Student",
-              quote: "This app has completely transformed how I study for Egineering exams. The AI-generated notes save me hours of work!",
+              quote:
+                "This app has completely transformed how I study for Egineering exams. The AI-generated notes save me hours of work!",
             },
             {
               name: "Lucy Blay",
               role: "Law Student",
-              quote: "The smart review system helped me memorize complex legal concepts much faster than traditional methods.",
+              quote:
+                "The smart review system helped me memorize complex legal concepts much faster than traditional methods.",
             },
             {
               name: "Duvor William",
               role: "Computer Science Student",
-              quote: "As a CS student, I appreciate how the platform organizes technical information in an easy-to-review format.",
+              quote:
+                "As a CS student, I appreciate how the platform organizes technical information in an easy-to-review format.",
             },
           ].map((testimonial, index) => (
             <Grid item xs={12} md={4} key={index}>
@@ -661,9 +685,7 @@ export default function HomeContent() {
                       fontFamily: "serif",
                       lineHeight: 1,
                     }}
-                  >
-                  
-                  </Box>
+                  ></Box>
                   <Typography
                     sx={{
                       fontSize: { xs: "1.1rem", sm: "1.2rem" },
@@ -682,7 +704,9 @@ export default function HomeContent() {
                         width: 50,
                         height: 50,
                         borderRadius: "50%",
-                        background: `linear-gradient(${index * 60}deg, #3f51b5, #6a7dfe)`,
+                        background: `linear-gradient(${
+                          index * 60
+                        }deg, #3f51b5, #6a7dfe)`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -698,7 +722,9 @@ export default function HomeContent() {
                       <Typography sx={{ fontWeight: 700, color: "#263238" }}>
                         {testimonial.name}
                       </Typography>
-                      <Typography sx={{ color: "text.secondary", fontSize: "0.9rem" }}>
+                      <Typography
+                        sx={{ color: "text.secondary", fontSize: "0.9rem" }}
+                      >
                         {testimonial.role}
                       </Typography>
                     </Box>
@@ -722,7 +748,8 @@ export default function HomeContent() {
           textAlign: "center",
           px: { xs: 2, sm: 3 },
           mb: { xs: 6, sm: 8 },
-          background: "linear-gradient(135deg, rgba(63,81,181,0.08) 0%, rgba(106,125,254,0.12) 100%)",
+          background:
+            "linear-gradient(135deg, rgba(63,81,181,0.08) 0%, rgba(106,125,254,0.12) 100%)",
           borderRadius: "32px",
           position: "relative",
           overflow: "hidden",
@@ -741,14 +768,24 @@ export default function HomeContent() {
         >
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <pattern id="wave" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-                <path d="M0 25C 20 10, 30 10, 50 25, 70 40, 80 40, 100 25L 100 100 L 0 100Z" fill="#3f51b5" />
+              <pattern
+                id="wave"
+                x="0"
+                y="0"
+                width="100"
+                height="100"
+                patternUnits="userSpaceOnUse"
+              >
+                <path
+                  d="M0 25C 20 10, 30 10, 50 25, 70 40, 80 40, 100 25L 100 100 L 0 100Z"
+                  fill="#3f51b5"
+                />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#wave)" />
           </svg>
         </Box>
-        
+
         <Box sx={{ position: "relative", zIndex: 1 }}>
           <Typography
             variant="h3"
@@ -776,10 +813,10 @@ export default function HomeContent() {
               lineHeight: 1.6,
             }}
           >
-            Join thousands of students who are already studying smarter, not harder.
-            Get started today and see the difference!
+            Join thousands of students who are already studying smarter, not
+            harder. Get started today and see the difference!
           </Typography>
-          
+
           <Button
             variant="contained"
             size="large"
@@ -803,7 +840,7 @@ export default function HomeContent() {
           >
             Start Learning Now
           </Button>
-          
+
           <Typography
             variant="body2"
             sx={{
