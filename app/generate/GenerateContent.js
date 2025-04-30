@@ -43,6 +43,7 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import TextFieldsIcon from "@mui/icons-material/TextFields";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { createFlashcardSet } from "../../utils/schemas";
 
 // Import Quill dynamically to avoid SSR issues
 const ReactQuill = dynamic(() => import("react-quill"), {
@@ -95,6 +96,9 @@ export default function GenerateContent() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
+
+  // Constants for file upload
+  const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB in bytes
 
   // Add loading messages array wrapped in useMemo
   const loadingMessages = useMemo(
@@ -164,7 +168,8 @@ export default function GenerateContent() {
         return;
       }
 
-      const docRef = await addDoc(flashcardsRef, {
+      // Create a validated flashcard set using our schema helper
+      const validatedFlashcardSet = createFlashcardSet({
         name: setName.trim(),
         createdAt: new Date(),
         tags: tags,
@@ -174,6 +179,8 @@ export default function GenerateContent() {
           id: index,
         })),
       });
+
+      const docRef = await addDoc(flashcardsRef, validatedFlashcardSet);
 
       alert("Summary notes saved successfully!");
       handleCloseDialog();
@@ -207,6 +214,17 @@ export default function GenerateContent() {
       if (!allowedTypes.includes(selectedFile.type)) {
         setFileError(
           "Unsupported file type. Please upload a PDF, Word document, or PowerPoint presentation."
+        );
+        event.target.value = null; // Reset file input
+        return;
+      }
+
+      // Check file size limit (1MB)
+      if (selectedFile.size > MAX_FILE_SIZE) {
+        setFileError(
+          `File too large. Maximum size is 1MB. Your file is ${formatFileSize(
+            selectedFile.size
+          )}.`
         );
         event.target.value = null; // Reset file input
         return;
@@ -390,6 +408,14 @@ export default function GenerateContent() {
                   >
                     Supported file types: PDF, text files, and images (PNG,
                     JPEG, GIF, WebP)
+                  </Typography>
+
+                  <Typography
+                    variant="subtitle2"
+                    color="primary"
+                    sx={{ mb: 2, textAlign: "center" }}
+                  >
+                    Maximum file size: 1MB (Free Plan)
                   </Typography>
 
                   <Box

@@ -39,6 +39,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import { createTestResult } from "../../../utils/schemas";
 
 export default function PracticeTestContent({ params }) {
   const { user } = useUser();
@@ -324,7 +325,8 @@ export default function PracticeTestContent({ params }) {
       // Only count as a new day if no tests were taken today
       const isNewDay = todayResults.empty;
 
-      const testResults = {
+      // Create test results with schema validation
+      const testResultsData = {
         userId: user.id,
         flashcardSetId: params.id,
         setName: setName,
@@ -351,7 +353,10 @@ export default function PracticeTestContent({ params }) {
         })),
       };
 
-      await addDoc(testResultsRef, testResults);
+      // Validate the test results data using our schema helper
+      const validatedTestResults = createTestResult(testResultsData);
+
+      await addDoc(testResultsRef, validatedTestResults);
     } catch (error) {
       console.error("Error saving test results:", error);
     } finally {

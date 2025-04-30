@@ -17,6 +17,17 @@ import Image from "next/image";
 
 export default function HomeContent() {
   const { isLoaded, isSignedIn } = useUser();
+  const router = useRouter();
+
+  // More cautious redirect approach to avoid potential loops
+  useEffect(() => {
+    // Only redirect if auth is fully loaded and user is signed in
+    // Add a check to ensure we're on the home page to prevent redirect loops
+    if (isLoaded && isSignedIn && window.location.pathname === "/") {
+      // Use replace instead of push to avoid browser history issues
+      router.replace("/dashboard");
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   if (!isLoaded) {
     return (
@@ -31,11 +42,6 @@ export default function HomeContent() {
         <CircularProgress />
       </Box>
     );
-  }
-
-  // If user is signed in, don't render anything - Clerk will handle the redirect
-  if (isSignedIn) {
-    return null;
   }
 
   return (

@@ -27,6 +27,8 @@ import CreateIcon from "@mui/icons-material/Create";
 import QuizIcon from "@mui/icons-material/Quiz";
 import BookmarkIcon from "@mui/icons-material/Bookmark";
 import CloseIcon from "@mui/icons-material/Close";
+import ChatIcon from "@mui/icons-material/Chat";
+import EmojiObjectsIcon from "@mui/icons-material/EmojiObjects";
 
 function NavigationBarContent() {
   const { isSignedIn, isLoaded } = useUser();
@@ -44,6 +46,12 @@ function NavigationBarContent() {
     { path: "/generate", label: "Generate Notes", icon: <CreateIcon /> },
     { path: "/practice", label: "Practice Tests", icon: <QuizIcon /> },
     { path: "/saved-reviews", label: "Saved Reviews", icon: <BookmarkIcon /> },
+    {
+      path: "/study-mate/chat",
+      label: "Study Chat",
+      icon: <ChatIcon />,
+      highlight: pathname.startsWith("/study-mate/chat"),
+    },
   ];
 
   const renderMobileDrawer = () => (
@@ -186,18 +194,36 @@ function NavigationBarContent() {
             </Typography>
           </Link>
           {!isMobile && (
-            <Link href="/generate" passHref style={{ textDecoration: "none" }}>
-              <Button
-                sx={{
-                  color: isActive("/generate") ? "#3f51b5" : "#666",
-                  borderRadius: 0,
-                  px: 2,
-                  mr: 2,
-                }}
+            <>
+              <Link
+                href="/generate"
+                passHref
+                style={{ textDecoration: "none" }}
               >
-                Generate Notes
-              </Button>
-            </Link>
+                <Button
+                  sx={{
+                    color: isActive("/generate") ? "#3f51b5" : "#666",
+                    borderRadius: 0,
+                    px: 2,
+                    mr: 2,
+                  }}
+                >
+                  Generate Notes
+                </Button>
+              </Link>
+              <Link href="/pricing" passHref style={{ textDecoration: "none" }}>
+                <Button
+                  sx={{
+                    color: isActive("/pricing") ? "#3f51b5" : "#666",
+                    borderRadius: 0,
+                    px: 2,
+                    mr: 2,
+                  }}
+                >
+                  Pricing
+                </Button>
+              </Link>
+            </>
           )}
           <Box sx={{ display: "flex", gap: 2 }}>
             <Button color="inherit" href="/sign-in" sx={{ color: "#3f51b5" }}>
@@ -253,7 +279,7 @@ function NavigationBarContent() {
                 </Typography>
               </Link>
 
-              <Box sx={{ flexGrow: 1, display: "flex", gap: 2, ml: 4 }}>
+              <Box sx={{ flexGrow: 1, display: "flex", gap: 0.5, ml: 4 }}>
                 {navigationItems.map((item) => (
                   <Link
                     key={item.path}
@@ -262,13 +288,30 @@ function NavigationBarContent() {
                     style={{ textDecoration: "none" }}
                   >
                     <Button
+                      startIcon={item.icon}
                       sx={{
-                        color: isActive(item.path) ? "#3f51b5" : "#666",
-                        borderBottom: isActive(item.path)
-                          ? "2px solid #3f51b5"
-                          : "none",
+                        color:
+                          isActive(item.path) || item.highlight
+                            ? "#3f51b5"
+                            : "#666",
+                        borderBottom:
+                          isActive(item.path) || item.highlight
+                            ? "2px solid #3f51b5"
+                            : "none",
                         borderRadius: 0,
                         px: 2,
+                        py: 1,
+                        textTransform: "none",
+                        fontSize: "0.9rem",
+                        fontWeight:
+                          isActive(item.path) || item.highlight ? 600 : 400,
+                        opacity:
+                          isActive(item.path) || item.highlight ? 1 : 0.8,
+                        transition: "all 0.2s ease-in-out",
+                        "&:hover": {
+                          backgroundColor: "rgba(63, 81, 181, 0.08)",
+                          opacity: 1,
+                        },
                       }}
                     >
                       {item.label}

@@ -36,7 +36,9 @@ import {
   deleteDoc,
   getDoc,
   updateDoc,
+  where,
 } from "firebase/firestore";
+import { createFlashcardSet, validateFlashcardSet } from "../../utils/schemas";
 
 export default function NotesContent() {
   const { user } = useUser();
@@ -203,7 +205,25 @@ export default function NotesContent() {
         return;
       }
 
+      // Get the current document data
       const docRef = doc(db, "users", user.id, "flashcardSets", editingNote.id);
+      const docSnap = await getDoc(docRef);
+      const currentData = docSnap.data();
+
+      // Create an updated version of the flashcard set
+      const updatedData = {
+        ...currentData,
+        name: editName.trim(),
+        tags: editTags,
+      };
+
+      // Validate the data before updating
+      if (!validateFlashcardSet(updatedData)) {
+        console.error("Invalid flashcard set data:", updatedData);
+        alert("Invalid data format. Please try again.");
+        return;
+      }
+
       await updateDoc(docRef, {
         name: editName.trim(),
         tags: editTags,

@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Base rules for all users
+    match /users/{userId} {
+      // Users can only access their own data
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Flashcard Sets
+      match /flashcardSets/{setId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && 
+                       request.auth.uid == userId && 
+                       validateFlashcardSet(request.resource.data);
+        allow update: if request.auth != null && 
+                       request.auth.uid == userId && 
+                       validateFlashcardSet(request.resource.data);
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Test Results
+      match /testResults/{resultId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && 
+                       request.auth.uid == userId && 
+                       validateTestResult(request.resource.data);
+        allow update: if request.auth != null && 
+                       request.auth.uid == userId && 
+                       validateTestResult(request.resource.data);
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Chat Sessions
+      match /chatSessions/{sessionId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && 
+                       request.auth.uid == userId && 
+                       validateChatSession(request.resource.data);
+        allow update: if request.auth != null && 
+                       request.auth.uid == userId && 
+                       validateChatSession(request.resource.data);
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    
+    // Validation functions for schemas
+    function validateFlashcardSet(data) {
+      return data.keys().hasAll(['name', 'createdAt', 'flashcards']) &&
+             data.name is string &&
+             data.createdAt is timestamp &&
+             data.flashcards is list &&
+             
+             // Optional tags must be an array if present
+             (!('tags' in data) || data.tags is list) &&
+             
+             // Validate each flashcard
+             data.flashcards.size() > 0 &&
+             data.flashcards.every(card => 
+               card.keys().hasAll(['front', 'back', 'id']) &&
+               card.front is string &&
+               card.back is string &&
+               card.id is number
+             );
+    }
+    
+    function validateTestResult(data) {
+      return data.keys().hasAll([
+               'userId', 'flashcardSetId', 'setName', 'dateTaken', 
+               'score', 'totalQuestions', 'correctAnswers', 'questionDetails'
+             ]) &&
+             data.userId is string &&
+             data.flashcardSetId is string &&
+             data.setName is string &&
+             data.dateTaken is timestamp &&
+             data.score is number &&
+             data.totalQuestions is number &&
+             data.correctAnswers is number &&
+             data.questionDetails is list &&
+             
+             // Optional fields validation
+             (!('tags' in data) || data.tags is list) &&
+             (!('type' in data) || data.type is string) &&
+             (!('isNewDay' in data) || data.isNewDay is bool) &&
+             (!('timeSpentSeconds' in data) || data.timeSpentSeconds is number) &&
+             
+             // Validate question details
+             data.questionDetails.size() > 0 &&
+             data.questionDetails.every(q => 
+               q.keys().hasAll(['type', 'question', 'correctAnswer', 'isCorrect']) &&
+               q.type is string &&
+               (q.type == 'multipleChoice' || q.type == 'trueFalse' || q.type == 'fillInBlank') &&
+               q.question is string &&
+               (q.type == 'trueFalse' ? q.correctAnswer is bool : q.correctAnswer is string) &&
+               (!('userAnswer' in q) || (q.type == 'trueFalse' ? q.userAnswer is bool : q.userAnswer is string)) &&
+               q.isCorrect is bool &&
+               (!('tags' in q) || q.tags is list)
+             );
+    }
+    
+    function validateChatSession(data) {
+      return data.keys().hasAll([
+               'name', 'flashcardSetId', 'createdAt', 'updatedAt', 'messages'
+             ]) &&
+             data.name is string &&
+             data.flashcardSetId is string &&
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             data.messages is list &&
+             
+             // Optional fields validation
+             (!('flashcardSetName' in data) || data.flashcardSetName is string) &&
+             (!('tags' in data) || data.tags is list) &&
+             (!('messageCount' in data) || data.messageCount is number) &&
+             
+             // Validate messages
+             data.messages.size() > 0 &&
+             data.messages.every(msg => 
+               msg.keys().hasAll(['role', 'parts', 'timestamp']) &&
+               msg.role is string &&
+               (msg.role == 'user' || msg.role == 'model') &&
+               msg.timestamp is timestamp &&
+               msg.parts is list &&
+               msg.parts.every(part => 
+                 part.keys().hasAll(['text']) &&
+                 part.text is string
+               )
+             );
+    }
+  }
+} 

@@ -44,8 +44,8 @@ const SUPPORTED_MIME_TYPES = {
   "image/webp": true,
 };
 
-// 10MB in bytes - reasonable limit for PDF processing
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+// 1MB in bytes - limit for free plan
+const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
 
 function convertTextToFlashcards(text) {
   // If the text contains bullet points or lists, convert them to flashcards
@@ -129,9 +129,9 @@ export async function POST(req) {
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         {
-          error: `File size too large. Maximum size is ${
+          error: `File size too large. Free plan maximum size is ${
             MAX_FILE_SIZE / (1024 * 1024)
-          }MB`,
+          }MB. Please upgrade for larger file uploads.`,
         },
         { status: 400 }
       );
