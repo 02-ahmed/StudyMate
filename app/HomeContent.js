@@ -225,29 +225,58 @@ export default function HomeContent() {
               mt: 2,
             }}
           >
-            <Button
-              variant="contained"
-              size="large"
-              href="/generate"
-              sx={{
-                px: { xs: 4, sm: 5 },
-                py: { xs: 1.5, sm: 1.75 },
-                fontSize: { xs: "1.1rem", sm: "1.2rem" },
-                width: { xs: "100%", sm: "auto" },
-                borderRadius: "50px",
-                background: "linear-gradient(45deg, #3f51b5 30%, #6a7dfe 90%)",
-                boxShadow: "0 8px 20px rgba(63, 81, 181, 0.25)",
-                textTransform: "none",
-                fontWeight: 600,
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  transform: "translateY(-3px)",
-                  boxShadow: "0 10px 25px rgba(63, 81, 181, 0.4)",
-                },
-              }}
-            >
-              Try Generate Notes
-            </Button>
+            {isSignedIn ? (
+              <Button
+                variant="contained"
+                size="large"
+                href="/generate"
+                sx={{
+                  px: { xs: 4, sm: 5 },
+                  py: { xs: 1.5, sm: 1.75 },
+                  fontSize: { xs: "1.1rem", sm: "1.2rem" },
+                  width: { xs: "100%", sm: "auto" },
+                  borderRadius: "50px",
+                  background:
+                    "linear-gradient(45deg, #3f51b5 30%, #6a7dfe 90%)",
+                  boxShadow: "0 8px 20px rgba(63, 81, 181, 0.25)",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-3px)",
+                    boxShadow: "0 10px 25px rgba(63, 81, 181, 0.4)",
+                  },
+                }}
+              >
+                Generate Notes
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                size="large"
+                href="/sign-up"
+                sx={{
+                  px: { xs: 4, sm: 5 },
+                  py: { xs: 1.5, sm: 1.75 },
+                  fontSize: { xs: "1.1rem", sm: "1.2rem" },
+                  width: { xs: "100%", sm: "auto" },
+                  borderRadius: "50px",
+                  background:
+                    "linear-gradient(45deg, #3f51b5 30%, #6a7dfe 90%)",
+                  boxShadow: "0 8px 20px rgba(63, 81, 181, 0.25)",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  transition: "all 0.3s ease",
+                  "&:hover": {
+                    transform: "translateY(-3px)",
+                    boxShadow: "0 10px 25px rgba(63, 81, 181, 0.4)",
+                  },
+                }}
+              >
+                Get Started
+              </Button>
+            )}
+
             {!isSignedIn && (
               <Button
                 variant="outlined"

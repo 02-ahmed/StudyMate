@@ -251,30 +251,6 @@ function NavigationBarContent() {
             {!isMobile && (
               <>
                 <Link
-                  href="/generate"
-                  passHref
-                  style={{ textDecoration: "none" }}
-                >
-                  <Button
-                    sx={{
-                      color: isActive("/generate")
-                        ? "#4f46e5"
-                        : "rgba(0,0,0,0.7)",
-                      fontWeight: 500,
-                      fontSize: "0.95rem",
-                      px: 2,
-                      mr: 2,
-                      transition: "all 0.2s ease",
-                      "&:hover": {
-                        background: "rgba(79, 70, 229, 0.05)",
-                        transform: "translateY(-1px)",
-                      },
-                    }}
-                  >
-                    Generate Notes
-                  </Button>
-                </Link>
-                <Link
                   href="/pricing"
                   passHref
                   style={{ textDecoration: "none" }}
