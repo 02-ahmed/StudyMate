@@ -34,6 +34,7 @@ import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
 import BookmarkBorderOutlinedIcon from "@mui/icons-material/BookmarkBorderOutlined";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
+import SchoolIcon from '@mui/icons-material/School';
 
 function NavigationBarContent() {
   const { isSignedIn, isLoaded } = useUser();
@@ -213,12 +214,26 @@ function NavigationBarContent() {
       >
         <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ height: 70 }}>
-            <Typography
-              variant="h6"
-              sx={{ flexGrow: 1, color: "#4f46e5", fontWeight: 700, letterSpacing: "-0.02em" }}
-            >
-              StudyMate
-            </Typography>
+            <SchoolIcon sx={{ 
+                            fontSize: "2rem", 
+                            color: "#5065DB",
+                            mr: 1.5,
+                          }} />
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontWeight: 800,
+                              fontSize: "1.5rem",
+                              flexGrow:1,
+                              background: "linear-gradient(45deg, #5065DB 30%, #7C4DFF 90%)",
+                              WebkitBackgroundClip: "text",
+                              WebkitTextFillColor: "transparent",
+                              backgroundClip: "text",
+                              textFillColor: "transparent",
+                            }}
+                          >
+                            StudyMate
+                          </Typography>
             {!isMobile && (
               <Link href="/generate" passHref style={{ textDecoration: "none" }}>
                 <Button
