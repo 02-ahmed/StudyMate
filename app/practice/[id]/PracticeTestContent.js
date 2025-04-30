@@ -298,7 +298,6 @@ export default function PracticeTestContent({ params }) {
         return;
       }
 
-      // Get flashcard set data to include tags
       const setRef = doc(db, "users", user.id, "flashcardSets", params.id);
       const setSnap = await getDoc(setRef);
       const setData = setSnap.exists() ? setSnap.data() : null;

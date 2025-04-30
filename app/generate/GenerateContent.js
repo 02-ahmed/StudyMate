@@ -22,19 +22,11 @@ import {
   Tabs,
   Tab,
   Paper,
-  Divider,
   IconButton,
+  Tooltip,
+  Fade,
 } from "@mui/material";
-import {
-  collection,
-  doc,
-  getDoc,
-  writeBatch,
-  addDoc,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../utils/firebase";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
@@ -43,22 +35,30 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import TextFieldsIcon from "@mui/icons-material/TextFields";
 import DeleteIcon from "@mui/icons-material/Delete";
+import SaveIcon from "@mui/icons-material/Save";
+import ViewListIcon from "@mui/icons-material/ViewList";
+import FlipIcon from "@mui/icons-material/Flip";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { createFlashcardSet } from "../../utils/schemas";
 
 // Import Quill dynamically to avoid SSR issues
 const ReactQuill = dynamic(() => import("react-quill"), {
   ssr: false,
-  loading: () => <CircularProgress />,
+  loading: () => (
+    <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+      <CircularProgress />
+    </Box>
+  ),
 });
 
-// Quill modules configuration
 const modules = {
   toolbar: [
-    ["bold", "italic"], // Only bold and italic for now
+    ["bold", "italic", "underline"],
+    ["blockquote", "code-block"],
   ],
 };
 
-const formats = ["bold", "italic"];
+const formats = ["bold", "italic", "underline", "blockquote", "code-block"];
 
 export default function GenerateContent() {
   const { isLoaded, isSignedIn, user } = useUser();
@@ -70,7 +70,6 @@ export default function GenerateContent() {
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [tags, setTags] = useState([]);
   const [currentTag, setCurrentTag] = useState("");
   const [inputMethod, setInputMethod] = useState(0); // 0 for text, 1 for file
@@ -86,6 +85,10 @@ export default function GenerateContent() {
     "application/vnd.openxmlformats-officedocument.presentationml.presentation", // PPTX
     "application/msword", // DOC
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // DOCX
+    "image/png", // PNG
+    "image/jpeg", // JPG/JPEG
+    "image/gif", // GIF
+    "image/webp", // WebP
   ];
 
   // Format file size for display
@@ -100,7 +103,7 @@ export default function GenerateContent() {
   // Constants for file upload
   const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB in bytes
 
-  // Add loading messages array wrapped in useMemo
+  // Loading messages
   const loadingMessages = useMemo(
     () => [
       "Generating your flashcards...",
@@ -115,7 +118,7 @@ export default function GenerateContent() {
       "Creating connections between concepts...",
     ],
     []
-  ); // Empty dependency array since these messages never change
+  );
 
   // Add useEffect for rotating messages
   useEffect(() => {
@@ -237,13 +240,16 @@ export default function GenerateContent() {
 
   const handleRemoveFile = () => {
     setFile(null);
-    // Reset the file input
     const fileInput = document.querySelector('input[type="file"]');
     if (fileInput) fileInput.value = "";
   };
 
+  const handleFlipAll = () => {
+    const allFlipped = Array(flashcards.length).fill(!flipped[0]);
+    setFlipped(allFlipped);
+  };
+
   const handleSubmit = async () => {
-    // Check if we're in text mode or file mode
     if (inputMethod === 0) {
       // Text mode
       if (!text.trim()) {
@@ -253,7 +259,6 @@ export default function GenerateContent() {
 
       setLoading(true);
       try {
-        // Strip HTML tags and properly format the text
         const plainText = text.replace(/<[^>]+>/g, "").trim();
 
         const response = await fetch("/api/generate", {
@@ -270,6 +275,7 @@ export default function GenerateContent() {
 
         const data = await response.json();
         setFlashcards(data);
+        setFlipped(Array(data.length).fill(false));
       } catch (error) {
         console.error("Error generating summary notes:", error);
         alert(
@@ -319,140 +325,277 @@ export default function GenerateContent() {
   };
 
   return (
-    <Container maxWidth="md">
-      <Box sx={{ my: 4, textAlign: "center" }}>
-        <Typography
-          variant="h4"
-          component="h1"
-          gutterBottom
-          sx={{ fontWeight: "bold", color: "#3f51b5" }}
-        >
-          Generate Summary Notes
-        </Typography>
-        <Box sx={{ mb: 4, display: "flex", justifyContent: "flex-end" }}>
-          <Button
-            variant="contained"
-            sx={{ px: 3, py: 1 }}
-            href="/flashcards"
-            disabled={!isSignedIn}
-          >
-            View Notes
-          </Button>
-        </Box>
-
-        {/* Input Method Tabs */}
-        <Paper sx={{ mb: 3 }}>
-          <Tabs
-            value={inputMethod}
-            onChange={(e, newValue) => {
-              if (!isSignedIn && newValue === 1) {
-                alert("Please sign in to use file upload feature");
-                return;
-              }
-              setInputMethod(newValue);
+    <Container maxWidth="lg" sx={{ py: 5 }}>
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          overflow: "hidden",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.05)",
+          mb: 4,
+          background: "linear-gradient(120deg, #EBF4FF 0%, #F5F8FF 100%)",
+        }}
+      >
+        <Box sx={{ p: { xs: 3, md: 5 } }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 4,
+              flexDirection: { xs: "column", sm: "row" },
+              gap: 2,
             }}
-            variant="fullWidth"
-            sx={{ borderBottom: 1, borderColor: "divider" }}
           >
-            <Tab icon={<TextFieldsIcon />} label="Type or Paste" />
-            <Tab
-              icon={<AttachFileIcon />}
-              label="Upload File"
-              disabled={!isSignedIn}
-            />
-          </Tabs>
-
-          {/* Text Input */}
-          {inputMethod === 0 && (
-            <Box sx={{ mb: 2 }}>
-              <Box sx={{ backgroundColor: "white", borderRadius: 1 }}>
-                <ReactQuill
-                  value={text}
-                  onChange={setText}
-                  modules={modules}
-                  formats={formats}
-                  placeholder="Enter text..."
-                  style={{ height: "200px" }}
-                />
-              </Box>
-              {!isSignedIn && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 2, textAlign: "center" }}
-                >
-                  Sign in to unlock all features: file upload, saving cards, and
-                  more!
-                </Typography>
-              )}
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <AutoAwesomeIcon
+                sx={{ fontSize: 28, mr: 1.5, color: "#3f51b5" }}
+              />
+              <Typography
+                variant="h4"
+                component="h1"
+                sx={{
+                  fontWeight: 700,
+                  color: "#3f51b5",
+                  fontSize: { xs: "1.75rem", md: "2.125rem" },
+                }}
+              >
+                Generate Summary Notes
+              </Typography>
             </Box>
-          )}
+            <Button
+              variant="outlined"
+              startIcon={<ViewListIcon />}
+              onClick={handleViewSavedNotes}
+              disabled={!isSignedIn}
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                py: 1,
+                textTransform: "none",
+                fontWeight: 600,
+                borderColor: "#3f51b5",
+                color: "#3f51b5",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  borderColor: "#3949ab",
+                  backgroundColor: "rgba(63, 81, 181, 0.04)",
+                },
+                "&:disabled": {
+                  borderColor: "#9fa8da",
+                  color: "#9fa8da",
+                },
+              }}
+            >
+              View Notes
+            </Button>
+          </Box>
 
-          {/* File Upload */}
-          {inputMethod === 1 && (
-            <Box sx={{ p: 3, backgroundColor: "white", borderRadius: 1 }}>
-              {!isSignedIn ? (
-                <Box sx={{ textAlign: "center", py: 3 }}>
-                  <Typography variant="h6" color="text.secondary" gutterBottom>
-                    Sign in Required
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary">
-                    Please sign in to upload files and access all features.
-                  </Typography>
-                </Box>
-              ) : (
-                <>
-                  <Typography
-                    variant="subtitle1"
-                    sx={{ mb: 2, textAlign: "center" }}
-                  >
-                    Supported file types: PDF, text files, and images (PNG,
-                    JPEG, GIF, WebP)
-                  </Typography>
+          <Paper
+            elevation={0}
+            sx={{
+              mb: 3,
+              borderRadius: 2,
+              overflow: "hidden",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
+            }}
+          >
+            <Tabs
+              value={inputMethod}
+              onChange={(e, newValue) => {
+                if (!isSignedIn && newValue === 1) {
+                  alert("Please sign in to use file upload feature");
+                  return;
+                }
+                setInputMethod(newValue);
+              }}
+              variant="fullWidth"
+              sx={{
+                borderBottom: 1,
+                borderColor: "divider",
+                "& .MuiTabs-indicator": {
+                  backgroundColor: "#3f51b5",
+                  height: 3,
+                },
+                "& .Mui-selected": {
+                  color: "#3f51b5 !important",
+                  fontWeight: 600,
+                },
+              }}
+            >
+              <Tab
+                icon={<TextFieldsIcon />}
+                label="Type or Paste"
+                sx={{
+                  textTransform: "none",
+                  fontSize: "1rem",
+                  py: 2,
+                }}
+              />
+              <Tab
+                icon={<AttachFileIcon />}
+                label="Upload File"
+                sx={{
+                  textTransform: "none",
+                  fontSize: "1rem",
+                  py: 2,
+                }}
+                disabled={!isSignedIn}
+              />
+            </Tabs>
 
-                  <Typography
-                    variant="subtitle2"
-                    color="primary"
-                    sx={{ mb: 2, textAlign: "center" }}
-                  >
-                    Maximum file size: 1MB (Free Plan)
-                  </Typography>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      p: 3,
-                      border: "2px dashed #ccc",
+            {inputMethod === 0 && (
+              <Box
+                sx={{
+                  p: 3,
+                  backgroundColor: "white",
+                  borderRadius: "0 0 8px 8px",
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  sx={{ mb: 2, fontWeight: 500, color: "#546e7a" }}
+                >
+                  Enter your text below to generate summary notes
+                </Typography>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    border: "1px solid #E0E7FF",
+                    "& .quill": {
                       borderRadius: 2,
-                      mb: 3,
-                    }}
+                      "& .ql-toolbar": {
+                        borderTop: "none",
+                        borderLeft: "none",
+                        borderRight: "none",
+                        borderBottom: "1px solid #E0E7FF",
+                        borderRadius: "8px 8px 0 0",
+                        backgroundColor: "#F8FAFF",
+                      },
+                      "& .ql-container": {
+                        borderBottom: "none",
+                        borderLeft: "none",
+                        borderRight: "none",
+                        minHeight: "200px",
+                        fontSize: "1rem",
+                        "& .ql-editor": {
+                          minHeight: "200px",
+                        },
+                      },
+                    },
+                  }}
+                >
+                  <ReactQuill
+                    value={text}
+                    onChange={setText}
+                    modules={modules}
+                    formats={formats}
+                    placeholder="Enter text..."
+                  />
+                </Paper>
+                {!isSignedIn && (
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mt: 2, textAlign: "center" }}
                   >
-                    <CloudUploadIcon
-                      sx={{ fontSize: 60, color: "#3f51b5", mb: 2 }}
-                    />
+                    Sign in to unlock all features: file upload, saving cards,
+                    and more!
+                  </Typography>
+                )}
+              </Box>
+            )}
 
-                    <input
-                      accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp"
-                      style={{ display: "none" }}
-                      id="file-upload"
-                      type="file"
-                      onChange={handleFileChange}
-                    />
-                    <label htmlFor="file-upload">
-                      <Button
-                        variant="contained"
-                        component="span"
-                        startIcon={<AttachFileIcon />}
-                      >
-                        Select File
-                      </Button>
-                    </label>
+            {inputMethod === 1 && (
+              <Box
+                sx={{
+                  p: 3,
+                  backgroundColor: "white",
+                  borderRadius: "0 0 8px 8px",
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    mb: 2,
+                    textAlign: "center",
+                    fontWeight: 500,
+                    color: "#546e7a",
+                  }}
+                >
+                  Supported file types: PDF, Word, PowerPoint, Text, Images
+                  (PNG, JPEG, GIF, WebP)
+                </Typography>
 
-                    {file && (
-                      <Box sx={{ mt: 2, width: "100%" }}>
-                        <Paper variant="outlined" sx={{ p: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    p: 4,
+                    border: "2px dashed #E0E7FF",
+                    borderRadius: 2,
+                    mb: 3,
+                    backgroundColor: "#F8FAFF",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      borderColor: "#3f51b5",
+                      backgroundColor: "#F5F8FF",
+                    },
+                  }}
+                >
+                  <CloudUploadIcon
+                    sx={{ fontSize: 64, color: "#3f51b5", mb: 2 }}
+                  />
+
+                  <input
+                    accept=".pdf,.txt,.ppt,.pptx,.doc,.docx,.png,.jpg,.jpeg,.gif,.webp"
+                    style={{ display: "none" }}
+                    id="file-upload"
+                    type="file"
+                    onChange={handleFileChange}
+                  />
+                  <label htmlFor="file-upload">
+                    <Button
+                      variant="contained"
+                      component="span"
+                      startIcon={<AttachFileIcon />}
+                      sx={{
+                        mb: 2,
+                        borderRadius: 2,
+                        px: 3,
+                        py: 1.2,
+                        backgroundColor: "#4c5fce",
+                        transition: "all 0.3s ease",
+                        "&:hover": {
+                          backgroundColor: "#3949ab",
+                          transform: "translateY(-2px)",
+                          boxShadow: "0 6px 15px rgba(63, 81, 181, 0.25)",
+                        },
+                      }}
+                    >
+                      Select File
+                    </Button>
+                  </label>
+
+                  <Typography variant="body2" color="textSecondary">
+                    Drag and drop or click to browse
+                  </Typography>
+
+                  {file && (
+                    <Box sx={{ mt: 3, width: "100%", maxWidth: 500 }}>
+                      <Fade in={!!file}>
+                        <Paper
+                          variant="outlined"
+                          sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            borderColor: "#E0E7FF",
+                            backgroundColor: "white",
+                          }}
+                        >
                           <Box
                             sx={{
                               display: "flex",
@@ -468,88 +611,153 @@ export default function GenerateContent() {
                               }}
                             >
                               <InsertDriveFileIcon
-                                sx={{ mr: 1, color: "#3f51b5" }}
+                                sx={{ mr: 1.5, color: "#3f51b5" }}
                               />
                               <Typography
                                 variant="body1"
-                                sx={{ fontWeight: "medium" }}
+                                sx={{
+                                  fontWeight: "medium",
+                                  mr: 2,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                }}
                               >
                                 {file.name}
                               </Typography>
                             </Box>
-                            <IconButton onClick={handleRemoveFile} size="small">
-                              <DeleteIcon />
-                            </IconButton>
+                            <Tooltip title="Remove file">
+                              <IconButton
+                                onClick={handleRemoveFile}
+                                size="small"
+                                sx={{
+                                  color: "#f44336",
+                                  "&:hover": {
+                                    backgroundColor: "rgba(244, 67, 54, 0.08)",
+                                  },
+                                }}
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            </Tooltip>
                           </Box>
                           <Box
                             sx={{
                               display: "flex",
                               justifyContent: "space-between",
-                              mt: 1,
+                              mt: 1.5,
                             }}
                           >
                             <Chip
-                              label={file.type || "Unknown type"}
+                              label={
+                                file.type.split("/")[1]?.toUpperCase() ||
+                                "Unknown"
+                              }
                               size="small"
+                              sx={{
+                                backgroundColor: "#E0E7FF",
+                                color: "#3949ab",
+                                fontWeight: 500,
+                              }}
                             />
                             <Typography variant="body2" color="textSecondary">
                               {formatFileSize(file.size)}
                             </Typography>
                           </Box>
                         </Paper>
-                      </Box>
-                    )}
+                      </Fade>
+                    </Box>
+                  )}
 
-                    {fileError && (
-                      <Typography variant="body2" color="error" sx={{ mt: 2 }}>
-                        {fileError}
-                      </Typography>
-                    )}
-                  </Box>
-                </>
-              )}
-            </Box>
-          )}
-        </Paper>
+                  {fileError && (
+                    <Typography variant="body2" color="error" sx={{ mt: 2 }}>
+                      {fileError}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+            )}
+          </Paper>
 
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleSubmit}
-          fullWidth
-          sx={{ py: 1.5, mt: 2 }}
-          disabled={
-            loading ||
-            (inputMethod === 0 && !text.trim()) ||
-            (inputMethod === 1 && !file)
-          }
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleSubmit}
+            fullWidth
+            sx={{
+              py: 1.5,
+              mt: 2,
+              mb: 2,
+              borderRadius: 2,
+              fontSize: "1.05rem",
+              fontWeight: 600,
+              boxShadow: "0 8px 20px rgba(63, 81, 181, 0.25)",
+              backgroundColor: "#4c5fce",
+              textTransform: "none",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                backgroundColor: "#3949ab",
+                transform: "translateY(-2px)",
+                boxShadow: "0 10px 25px rgba(63, 81, 181, 0.35)",
+              },
+              "&:disabled": {
+                backgroundColor: "#9fa8da",
+                color: "white",
+              },
+            }}
+            disabled={
+              loading ||
+              (inputMethod === 0 && !text.trim()) ||
+              (inputMethod === 1 && !file)
+            }
+            startIcon={loading ? null : <AutoAwesomeIcon />}
+          >
+            {loading ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 1,
+                }}
+              >
+                <CircularProgress size={24} sx={{ color: "white" }} />
+                <Typography variant="body2" sx={{ mt: 1, color: "white" }}>
+                  {loadingMessage}
+                </Typography>
+              </Box>
+            ) : (
+              "Generate Summary Notes"
+            )}
+          </Button>
+        </Box>
+      </Paper>
+
+      <Dialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            padding: 1,
+            boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            fontWeight: 600,
+            color: "#3f51b5",
+            display: "flex",
+            alignItems: "center",
+            padding: 3,
+          }}
         >
-          {loading ? (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              <CircularProgress size={24} color="inherit" />
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                {loadingMessage}
-              </Typography>
-            </Box>
-          ) : (
-            "Generate Summary Notes"
-          )}
-        </Button>
-      </Box>
-      <Dialog open={dialogOpen} onClose={handleCloseDialog}>
-        <DialogTitle>Save Summary Notes Set</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Please enter a descriptive name for your summary notes set. Choose a
-            clear, specific name as it will be used to track your performance
-            and generate reviews.
+          <SaveIcon sx={{ mr: 1 }} /> Save Summary Notes Set
+        </DialogTitle>
+        <DialogContent sx={{ px: 3, pb: 1 }}>
+          <DialogContentText sx={{ mb: 2, color: "#546e7a" }}>
+            Enter a descriptive name for your summary notes set. Choose a clear,
+            specific name to track performance and generate reviews.
           </DialogContentText>
           <TextField
             autoFocus
@@ -561,8 +769,17 @@ export default function GenerateContent() {
             onChange={(e) => setSetName(e.target.value)}
             variant="outlined"
             helperText="Example: 'React Hooks Fundamentals' or 'World War II Key Events'"
+            sx={{
+              mb: 3,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+                "&:hover fieldset": {
+                  borderColor: "#3f51b5",
+                },
+              },
+            }}
           />
-          <Box sx={{ mt: 2 }}>
+          <Box sx={{ mb: 2 }}>
             <TextField
               label="Add Tags"
               placeholder="Type and press Enter"
@@ -571,27 +788,67 @@ export default function GenerateContent() {
               onChange={(e) => setCurrentTag(e.target.value)}
               onKeyDown={handleTagAdd}
               variant="outlined"
+              sx={{
+                mb: 1.5,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                  "&:hover fieldset": {
+                    borderColor: "#3f51b5",
+                  },
+                },
+              }}
             />
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
               {tags.map((tag) => (
                 <Chip
                   key={tag}
                   label={tag}
                   onDelete={() => handleTagDelete(tag)}
                   color="primary"
-                  variant="outlined"
+                  sx={{
+                    borderRadius: "16px",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      backgroundColor: "#3949ab",
+                    },
+                  }}
                 />
               ))}
             </Box>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button
+            onClick={handleCloseDialog}
+            sx={{
+              textTransform: "none",
+              color: "#546e7a",
+              fontWeight: 500,
+              "&:hover": {
+                backgroundColor: "rgba(84, 110, 122, 0.08)",
+              },
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={saveFlashcards}
-            color="primary"
+            variant="contained"
             disabled={savingFlashcards}
-            startIcon={savingFlashcards ? <CircularProgress size={20} /> : null}
+            startIcon={
+              savingFlashcards ? <CircularProgress size={20} /> : <SaveIcon />
+            }
+            sx={{
+              textTransform: "none",
+              borderRadius: 2,
+              px: 3,
+              fontWeight: 600,
+              boxShadow: "0 4px 12px rgba(63, 81, 181, 0.2)",
+              backgroundColor: "#4c5fce",
+              "&:hover": {
+                backgroundColor: "#3949ab",
+              },
+            }}
           >
             {savingFlashcards ? "Saving..." : "Save"}
           </Button>
@@ -599,19 +856,69 @@ export default function GenerateContent() {
       </Dialog>
 
       {flashcards.length > 0 && (
-        <Box sx={{ mt: 4, textAlign: "center" }}>
-          <Typography
-            variant="h5"
-            component="h2"
-            gutterBottom
-            sx={{ fontWeight: "bold", color: "#3f51b5" }}
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 3, md: 5 },
+            borderRadius: 3,
+            boxShadow: "0 10px 40px rgba(0,0,0,0.05)",
+            background: "linear-gradient(120deg, #F5F8FF 0%, #FFFFFF 100%)",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 3,
+            }}
           >
-            Generated Summary Notes
+            <Typography
+              variant="h5"
+              component="h2"
+              sx={{
+                fontWeight: 700,
+                color: "#3f51b5",
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              <AutoAwesomeIcon sx={{ mr: 1, fontSize: 20 }} />
+              Generated Summary Notes
+            </Typography>
+
+            <Tooltip title="Flip all cards">
+              <IconButton
+                onClick={handleFlipAll}
+                sx={{
+                  color: "#3f51b5",
+                  border: "1px solid #E0E7FF",
+                  "&:hover": {
+                    backgroundColor: "#E0E7FF",
+                  },
+                }}
+              >
+                <FlipIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          <Typography
+            sx={{
+              mb: 3,
+              color: "#546e7a",
+              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "0.95rem",
+            }}
+          >
+            <span>📚 Tap on a card to flip and see more details</span>
           </Typography>
-          <Typography>Tap on a note for more</Typography>
+
           <Grid container spacing={3}>
             {flashcards.map((summaryNote, index) => {
-              // Try to clean up any JSON-like content
               const front =
                 typeof summaryNote.front === "string"
                   ? summaryNote.front
@@ -627,184 +934,264 @@ export default function GenerateContent() {
 
               return (
                 <Grid item xs={12} sm={6} md={4} key={index}>
-                  <Card
-                    onClick={() => {
-                      const newFlipped = [...flipped];
-                      newFlipped[index] = !newFlipped[index];
-                      setFlipped(newFlipped);
-                    }}
-                    sx={{
-                      height: "100%",
-                      borderRadius: 2,
-                      background:
-                        "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
-                      boxShadow: "0 4px 20px rgba(63, 81, 181, 0.15)",
-                      transition:
-                        "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
-                      "&:hover": {
-                        transform: "translateY(-4px)",
-                        boxShadow: "0 8px 30px rgba(63, 81, 181, 0.2)",
-                      },
-                    }}
-                  >
-                    <CardContent>
-                      <Box sx={{ perspective: "1000px" }}>
-                        <Box
-                          sx={{
-                            width: "100%",
-                            height: "200px",
-                            position: "relative",
-                            transformStyle: "preserve-3d",
-                            transition: "transform 0.6s",
-                            transform: flipped[index]
-                              ? "rotateY(180deg)"
-                              : "rotateY(0deg)",
-                          }}
-                        >
+                  <Fade in={true} timeout={300 + index * 100}>
+                    <Card
+                      onClick={() => {
+                        const newFlipped = [...flipped];
+                        newFlipped[index] = !newFlipped[index];
+                        setFlipped(newFlipped);
+                      }}
+                      sx={{
+                        height: 240,
+                        borderRadius: 3,
+                        background: "white",
+                        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
+                        transition: "all 0.3s ease",
+                        cursor: "pointer",
+                        "&:hover": {
+                          transform: "translateY(-6px)",
+                          boxShadow: "0 12px 30px rgba(63, 81, 181, 0.15)",
+                        },
+                        position: "relative",
+                        overflow: "visible",
+                        "&::after": {
+                          content: '""',
+                          position: "absolute",
+                          top: 12,
+                          right: 12,
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          backgroundColor: "#3f51b5",
+                          opacity: 0.7,
+                          transition: "all 0.3s ease",
+                        },
+                        "&:hover::after": {
+                          transform: "scale(1.5)",
+                          opacity: 1,
+                        },
+                      }}
+                    >
+                      <CardContent sx={{ height: "100%", p: 0 }}>
+                        <Box sx={{ perspective: "1000px", height: "100%" }}>
                           <Box
                             sx={{
-                              position: "absolute",
                               width: "100%",
                               height: "100%",
-                              backfaceVisibility: "hidden",
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              backgroundColor: "#fff",
-                              borderRadius: 2,
-                              border: "1px solid rgba(63, 81, 181, 0.1)",
-                              padding: 2,
-                              boxSizing: "border-box",
-                              background:
-                                "linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%)",
-                              boxShadow:
-                                "inset 0 0 10px rgba(63, 81, 181, 0.05)",
-                              overflowY: "auto",
-                              "&::-webkit-scrollbar": {
-                                width: "6px",
-                              },
-                              "&::-webkit-scrollbar-track": {
-                                background: "#f1f1f1",
-                                borderRadius: "3px",
-                              },
-                              "&::-webkit-scrollbar-thumb": {
-                                background: "#3f51b5",
-                                borderRadius: "3px",
-                                "&:hover": {
-                                  background: "#303f9f",
-                                },
-                              },
+                              position: "relative",
+                              transformStyle: "preserve-3d",
+                              transition:
+                                "transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                              transform: flipped[index]
+                                ? "rotateY(180deg)"
+                                : "rotateY(0deg)",
                             }}
                           >
-                            <Typography
-                              variant="h6"
-                              component="div"
+                            <Box
                               sx={{
-                                wordBreak: "break-word",
-                                whiteSpace: "pre-wrap",
-                                maxWidth: "100%",
-                                fontSize: "1rem",
-                                color: "#3f51b5",
-                                fontWeight: 500,
-                                textAlign: "center",
-                                lineHeight: 1.6,
+                                position: "absolute",
+                                width: "100%",
+                                height: "100%",
+                                backfaceVisibility: "hidden",
+                                display: "flex",
+                                flexDirection: "column",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                backgroundColor: "#fff",
+                                borderRadius: 3,
+                                border: "1px solid rgba(63, 81, 181, 0.1)",
+                                padding: 3,
+                                boxSizing: "border-box",
+                                background:
+                                  "linear-gradient(135deg, #ffffff 0%, #f8faff 100%)",
+                                overflowY: "auto",
+                                "&::-webkit-scrollbar": {
+                                  width: "6px",
+                                },
+                                "&::-webkit-scrollbar-track": {
+                                  background: "#f1f1f1",
+                                  borderRadius: "3px",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                  background: "#3f51b5",
+                                  borderRadius: "3px",
+                                  "&:hover": {
+                                    background: "#303f9f",
+                                  },
+                                },
                               }}
                             >
-                              {front}
-                            </Typography>
-                          </Box>
+                              <Typography
+                                variant="overline"
+                                sx={{
+                                  color: "#3f51b5",
+                                  opacity: 0.7,
+                                  mb: 1,
+                                  letterSpacing: 1,
+                                }}
+                              >
+                                CONCEPT
+                              </Typography>
+                              <Typography
+                                variant="body1"
+                                component="div"
+                                sx={{
+                                  wordBreak: "break-word",
+                                  whiteSpace: "pre-wrap",
+                                  maxWidth: "100%",
+                                  fontSize: "1.1rem",
+                                  color: "#37474f",
+                                  fontWeight: 500,
+                                  textAlign: "center",
+                                  lineHeight: 1.5,
+                                }}
+                              >
+                                {front}
+                              </Typography>
+                            </Box>
 
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              width: "100%",
-                              height: "100%",
-                              backfaceVisibility: "hidden",
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              backgroundColor: "#fff",
-                              borderRadius: 2,
-                              border: "1px solid rgba(63, 81, 181, 0.1)",
-                              padding: 2,
-                              boxSizing: "border-box",
-                              transform: "rotateY(180deg)",
-                              background:
-                                "linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%)",
-                              boxShadow:
-                                "inset 0 0 10px rgba(63, 81, 181, 0.05)",
-                              overflowY: "auto",
-                              "&::-webkit-scrollbar": {
-                                width: "6px",
-                              },
-                              "&::-webkit-scrollbar-track": {
-                                background: "#f1f1f1",
-                                borderRadius: "3px",
-                              },
-                              "&::-webkit-scrollbar-thumb": {
-                                background: "#3f51b5",
-                                borderRadius: "3px",
-                                "&:hover": {
-                                  background: "#303f9f",
-                                },
-                              },
-                            }}
-                          >
-                            <Typography
-                              variant="h6"
-                              component="div"
+                            <Box
                               sx={{
-                                wordBreak: "break-word",
-                                whiteSpace: "pre-wrap",
-                                maxWidth: "100%",
-                                fontSize: "1rem",
-                                color: "#3f51b5",
-                                fontWeight: 500,
-                                textAlign: "center",
-                                lineHeight: 1.6,
+                                position: "absolute",
+                                width: "100%",
+                                height: "100%",
+                                backfaceVisibility: "hidden",
+                                display: "flex",
+                                flexDirection: "column",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                backgroundColor: "#fff",
+                                borderRadius: 3,
+                                border: "1px solid rgba(63, 81, 181, 0.1)",
+                                padding: 3,
+                                boxSizing: "border-box",
+                                transform: "rotateY(180deg)",
+                                background:
+                                  "linear-gradient(135deg, #EBF4FF 0%, #F8FBFF 100%)",
+                                overflowY: "auto",
+                                "&::-webkit-scrollbar": {
+                                  width: "6px",
+                                },
+                                "&::-webkit-scrollbar-track": {
+                                  background: "#f1f1f1",
+                                  borderRadius: "3px",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                  background: "#3f51b5",
+                                  borderRadius: "3px",
+                                  "&:hover": {
+                                    background: "#303f9f",
+                                  },
+                                },
                               }}
                             >
-                              {back}
-                            </Typography>
+                              <Typography
+                                variant="overline"
+                                sx={{
+                                  color: "#3f51b5",
+                                  opacity: 0.7,
+                                  mb: 1,
+                                  letterSpacing: 1,
+                                }}
+                              >
+                                DETAILS
+                              </Typography>
+                              <Typography
+                                variant="body1"
+                                component="div"
+                                sx={{
+                                  wordBreak: "break-word",
+                                  whiteSpace: "pre-wrap",
+                                  maxWidth: "100%",
+                                  fontSize: "1rem",
+                                  color: "#37474f",
+                                  fontWeight: 400,
+                                  textAlign: "center",
+                                  lineHeight: 1.6,
+                                }}
+                              >
+                                {back}
+                              </Typography>
+                            </Box>
                           </Box>
                         </Box>
-                      </Box>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </Fade>
                 </Grid>
               );
             })}
           </Grid>
-        </Box>
-      )}
 
-      {flashcards.length > 0 && (
-        <Box
-          sx={{
-            mt: 4,
-            display: "flex",
-            justifyContent: "center",
-            marginBottom: "40px",
-          }}
-        >
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleOpenDialog}
-            sx={{ mr: 2 }}
-            disabled={!isSignedIn} // Disable if user is not signed in
+          <Box
+            sx={{
+              mt: 5,
+              display: "flex",
+              justifyContent: "center",
+              gap: 2,
+              flexWrap: { xs: "wrap", sm: "nowrap" },
+            }}
           >
-            Save Summary Notes
-          </Button>
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={handleViewSavedNotes}
-            disabled={!isSignedIn} // Disable if user is not signed in
-          >
-            View Saved Summary Notes
-          </Button>
-        </Box>
+            <Button
+              variant="contained"
+              onClick={handleOpenDialog}
+              startIcon={<SaveIcon />}
+              disabled={!isSignedIn}
+              sx={{
+                borderRadius: 2,
+                px: 4,
+                py: 1.2,
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "1rem",
+                boxShadow: "0 6px 15px rgba(63, 81, 181, 0.2)",
+                backgroundColor: "#4c5fce",
+                transition: "all 0.3s ease",
+                flex: { xs: "1 1 100%", sm: "initial" },
+                mb: { xs: 2, sm: 0 },
+                "&:hover": {
+                  backgroundColor: "#3949ab",
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 8px 20px rgba(63, 81, 181, 0.3)",
+                },
+                "&:disabled": {
+                  backgroundColor: "#9fa8da",
+                  color: "white",
+                },
+              }}
+            >
+              Save Summary Notes
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleViewSavedNotes}
+              startIcon={<ViewListIcon />}
+              disabled={!isSignedIn}
+              sx={{
+                borderRadius: 2,
+                px: 4,
+                py: 1.2,
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "1rem",
+                borderColor: "#3f51b5",
+                color: "#3f51b5",
+                transition: "all 0.3s ease",
+                flex: { xs: "1 1 100%", sm: "initial" },
+                "&:hover": {
+                  borderColor: "#3949ab",
+                  backgroundColor: "rgba(63, 81, 181, 0.04)",
+                },
+                "&:disabled": {
+                  borderColor: "#9fa8da",
+                  color: "#9fa8da",
+                },
+              }}
+            >
+              View Saved Notes
+            </Button>
+          </Box>
+        </Paper>
       )}
     </Container>
   );
