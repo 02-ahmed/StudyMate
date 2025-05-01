@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
   Container,
@@ -71,13 +71,7 @@ export default function PracticeContent() {
     }
   }, [searchParams, flashcardSets]);
 
-  useEffect(() => {
-    if (user) {
-      loadFlashcardSets();
-    }
-  }, [user]);
-
-  const loadFlashcardSets = async () => {
+  const loadFlashcardSets = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -103,7 +97,13 @@ export default function PracticeContent() {
       console.error("Error loading flashcard sets:", error);
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      loadFlashcardSets();
+    }
+  }, [user, loadFlashcardSets]);
 
   const handleQuestionTypeChange = (type) => {
     setQuestionTypes((prev) => ({

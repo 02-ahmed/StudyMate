@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -30,12 +30,16 @@ import {
   collection,
   addDoc,
   serverTimestamp,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "../../../utils/firebase";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import { createTestResult } from "../../../utils/schemas";
 
 export default function PracticeTestContent({ params }) {
   const { user } = useUser();
@@ -49,6 +53,7 @@ export default function PracticeTestContent({ params }) {
   const [error, setError] = useState(null);
   const [startTime, setStartTime] = useState(null);
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const [savingResults, setSavingResults] = useState(false);
 
   // Add navigation warning when quiz is in progress
   useEffect(() => {
@@ -72,20 +77,24 @@ export default function PracticeTestContent({ params }) {
     };
   }, [questions.length, showResults]);
 
-  // Handle in-app navigation
-  const handleNavigation = (e) => {
-    if (questions.length > 0 && !showResults) {
-      const wantsToLeave = window.confirm(
-        "Are you sure you want to leave? Your progress will be lost."
-      );
-      if (!wantsToLeave) {
-        e.preventDefault();
-        e.stopPropagation();
-        return true; // Navigation was prevented
+  const handleNavigation = useCallback(
+    (e) => {
+      if (questions.length > 0 && !showResults) {
+        const wantsToLeave = window.confirm(
+          "Are you sure you want to leave? Your progress will be lost."
+        );
+        if (!wantsToLeave) {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          return true;
+        }
       }
-    }
-    return false; // Navigation can proceed
-  };
+      return false;
+    },
+    [questions.length, showResults]
+  );
 
   // Add click handler to navigation elements
   useEffect(() => {
@@ -98,7 +107,7 @@ export default function PracticeTestContent({ params }) {
 
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
-  }, [questions.length, showResults, params.id]);
+  }, [questions.length, showResults, params.id, handleNavigation]);
 
   // Add back button handler
   useEffect(() => {
@@ -110,7 +119,7 @@ export default function PracticeTestContent({ params }) {
 
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [questions.length, showResults]);
+  }, [questions.length, showResults, handleNavigation]);
 
   // Add handler for Next.js navigation
   useEffect(() => {
@@ -153,48 +162,7 @@ export default function PracticeTestContent({ params }) {
     router.push("/practice");
   };
 
-  // Load saved state from localStorage on initial mount
-  useEffect(() => {
-    if (user) {
-      const savedState = localStorage.getItem(`practice_test_${params.id}`);
-      if (savedState) {
-        const { questions, answers, currentIndex, startTime } =
-          JSON.parse(savedState);
-        setQuestions(questions);
-        setAnswers(answers);
-        setCurrentQuestionIndex(currentIndex);
-        setStartTime(new Date(startTime));
-        setLoading(false);
-      } else {
-        loadTest();
-      }
-    }
-  }, [user]);
-
-  // Save state to localStorage whenever it changes
-  useEffect(() => {
-    if (questions.length > 0) {
-      const stateToSave = {
-        questions,
-        answers,
-        currentIndex: currentQuestionIndex,
-        startTime: startTime?.toISOString(),
-      };
-      localStorage.setItem(
-        `practice_test_${params.id}`,
-        JSON.stringify(stateToSave)
-      );
-    }
-  }, [questions, answers, currentQuestionIndex, startTime, params.id]);
-
-  // Clear localStorage when test is completed
-  useEffect(() => {
-    if (showResults) {
-      localStorage.removeItem(`practice_test_${params.id}`);
-    }
-  }, [showResults, params.id]);
-
-  const generateAIQuestions = async (flashcards, config) => {
+  const generateAIQuestions = useCallback(async (flashcards, config) => {
     try {
       setGeneratingQuestions(true);
       const response = await fetch("/api/generate-questions", {
@@ -221,10 +189,15 @@ export default function PracticeTestContent({ params }) {
     } finally {
       setGeneratingQuestions(false);
     }
-  };
+  }, []);
 
-  const loadTest = async () => {
+  const loadTest = useCallback(async () => {
     try {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       const config = JSON.parse(searchParams.get("config"));
       const docRef = doc(db, "users", user.id, "flashcardSets", params.id);
       const docSnap = await getDoc(docRef);
@@ -236,9 +209,6 @@ export default function PracticeTestContent({ params }) {
           setLoading(false);
           return;
         }
-
-        // Clear any existing saved state
-        localStorage.removeItem(`practice_test_${params.id}`);
 
         const questionTypes = Array.isArray(config.questionTypes)
           ? config.questionTypes
@@ -264,7 +234,18 @@ export default function PracticeTestContent({ params }) {
       setError("Error loading test");
       setLoading(false);
     }
-  };
+  }, [params.id, user, searchParams, generateAIQuestions]);
+
+  // Load saved state from localStorage on initial mount
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    // Always clear any existing saved state to ensure fresh test
+    localStorage.removeItem(`practice_test_${params.id}`);
+    loadTest();
+  }, [user, params.id, loadTest]);
 
   const handleAnswer = (answer) => {
     setAnswers((prev) => ({
@@ -311,28 +292,51 @@ export default function PracticeTestContent({ params }) {
 
   const saveTestResults = async (score) => {
     try {
+      setSavingResults(true);
       if (!startTime) {
         console.error("Start time not set");
         return;
       }
 
+      const setRef = doc(db, "users", user.id, "flashcardSets", params.id);
+      const setSnap = await getDoc(setRef);
+      const setData = setSnap.exists() ? setSnap.data() : null;
+      const tags = setData?.tags || [];
+      const setName = setData?.name || "Untitled Set";
+
       const endTime = new Date();
-      const timeSpent = Math.max(1, Math.round((endTime - startTime) / 1000)); // ensure at least 1 second
+      const timeSpent = Math.max(1, Math.round((endTime - startTime) / 1000));
 
-      console.log("Test time:", {
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        timeSpent,
-      });
+      // Check if user has already taken a test today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const testResults = {
+      const testResultsRef = collection(db, "users", user.id, "testResults");
+      const todayQuery = query(
+        testResultsRef,
+        where("dateTaken", ">=", today),
+        where("dateTaken", "<", tomorrow)
+      );
+      const todayResults = await getDocs(todayQuery);
+
+      // Only count as a new day if no tests were taken today
+      const isNewDay = todayResults.empty;
+
+      // Create test results with schema validation
+      const testResultsData = {
         userId: user.id,
         flashcardSetId: params.id,
+        setName: setName,
         dateTaken: serverTimestamp(),
         score: score,
         timeSpentSeconds: timeSpent,
         totalQuestions: questions.length,
         correctAnswers: Math.round((score * questions.length) / 100),
+        tags: tags,
+        type: "practice_test",
+        isNewDay: isNewDay,
         questionDetails: questions.map((question, index) => ({
           type: question.type,
           question: question.question,
@@ -348,20 +352,24 @@ export default function PracticeTestContent({ params }) {
         })),
       };
 
-      const testResultsRef = collection(db, "users", user.id, "testResults");
-      await addDoc(testResultsRef, testResults);
+      // Validate the test results data using our schema helper
+      const validatedTestResults = createTestResult(testResultsData);
+
+      await addDoc(testResultsRef, validatedTestResults);
     } catch (error) {
       console.error("Error saving test results:", error);
+    } finally {
+      setSavingResults(false);
     }
   };
 
   // Add a function to handle starting over
   const handleStartOver = () => {
-    localStorage.removeItem(`practice_test_${params.id}`);
     setQuestions([]);
     setAnswers({});
     setCurrentQuestionIndex(0);
     setShowResults(false);
+    setStartTime(new Date()); // Reset start time when starting over
     loadTest();
   };
 
@@ -609,6 +617,7 @@ export default function PracticeTestContent({ params }) {
                         transform: "scale(1.05)",
                       },
                     }}
+                    disabled={savingResults}
                   >
                     Retry Test
                   </Button>

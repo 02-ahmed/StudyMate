@@ -56,11 +56,24 @@ Study Material:
 ${studyMaterial}
 
 Task:
-Generate exactly ${numQuestions} questions divided among these types: ${questionTypes.join(
+Generate exactly ${numQuestions} questions using these question types: ${questionTypes.join(
       ", "
     )}
 
-IMPORTANT - Each question MUST follow this EXACT format:
+IMPORTANT REQUIREMENTS:
+1. Generate EXACTLY ${numQuestions} questions total - this is mandatory
+2. Randomly mix the question types - do not try to distribute them evenly
+3. Each question should be unique and different from previous generations
+4. 80% of questions should be directly from the study material
+5. 20% of questions should test broader understanding by:
+   - Making connections to related concepts
+   - Testing practical applications
+   - Asking about implications or consequences
+   - Encouraging critical thinking beyond the material
+6. Vary the difficulty level of questions
+7. Make questions engaging and thought-provoking
+
+Each question MUST follow this EXACT format:
 
 For Multiple Choice:
 {
@@ -87,18 +100,23 @@ For Fill in Blank:
   "explanation": "explanation of why this is the correct answer"
 }
 
-Requirements:
-1. Generate EXACTLY ${numQuestions} questions, no more, no less
-2. EVERY question MUST have an explanation field
-3. True/False answers MUST be boolean (true/false), not strings
-4. Multiple choice MUST have exactly 4 options
-5. Return ONLY a JSON array of questions, no markdown or extra text
-6. Make questions test understanding, not just memorization
-7. Keep questions clear and concise
-8. Ensure the response is valid JSON that can be parsed`;
+Additional Rules:
+1. EVERY question MUST have an explanation field
+2. True/False answers MUST be boolean (true/false), not strings
+3. Multiple choice MUST have exactly 4 options
+4. Return ONLY a JSON array of questions, no markdown or extra text
+5. Ensure the response is valid JSON that can be parsed`;
 
-    // Get Gemini model
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Update the model configuration to increase creativity
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        temperature: 0.9, // Increase randomness
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 8192,
+      },
+    });
 
     // Generate questions with retry mechanism
     let attempts = 0;

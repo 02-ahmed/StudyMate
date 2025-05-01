@@ -35,7 +35,7 @@ export async function POST(request) {
       Format the response with clear sections and bullet points.
     `;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(prompt);
     const response = result.response.text();
 
