@@ -147,31 +147,38 @@ export default function HomeContent() {
               animate="visible"
               variants={stagger}
             >
-              <motion.div variants={fadeIn}>
-                <Typography
-                  variant="h1"
-                  gutterBottom
-                  sx={{
-                    fontWeight: 900,
-                    fontSize: { xs: "3.5rem", sm: "4.5rem", md: "6rem" },
-                    lineHeight: 1.1,
-                    mb: 4,
-                    letterSpacing: "-0.03em",
-                    color: "text.primary",
-                  }}
-                >
-                  Revolutionize Your{" "}
-                  <GradientText
-                    sx={{
-                      fontWeight: 900,
-                      fontSize: { xs: "3.5rem", sm: "4.5rem", md: "6rem" },
-                      lineHeight: 1.1,
-                    }}
-                  >
-                    Learning Journey
-                  </GradientText>
-                </Typography>
-              </motion.div>
+<motion.div variants={fadeIn}>
+  <Typography
+    variant="h1"
+    gutterBottom
+    sx={{
+      fontWeight: 900,
+      fontSize: { xs: "2.5rem", sm: "3.5rem", md: "3.5rem" },
+      lineHeight: 1.1,
+      mb: 4,
+      letterSpacing: "-0.03em",
+      background: "linear-gradient(90deg,rgb(182, 52, 214) 0%, #4f46e5 100%)",
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      backgroundClip: "text",
+      color: "transparent",
+    }}
+  >
+    Memorize Anything{" "}
+    <span
+      style={{
+        fontWeight: 900,
+        background: "linear-gradient(90deg,rgb(182, 52, 214) 0%,rgb(44, 34, 240) 100%)",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        backgroundClip: "text",
+        color: "transparent",
+      }}
+    >
+      With Ease
+    </span>
+  </Typography>
+</motion.div>
 
               <motion.div variants={fadeIn}>
                 <Typography
@@ -180,7 +187,7 @@ export default function HomeContent() {
                     color: "text.secondary",
                     mb: 6,
                     maxWidth: "600px",
-                    fontSize: { xs: "1.3rem", sm: "1.5rem", md: "1.8rem" },
+                    fontSize: { xs: "1.3rem", sm: "1.5rem", md: "1.5rem" },
                     lineHeight: 1.8,
                   }}
                 >
