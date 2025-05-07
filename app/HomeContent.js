@@ -9,64 +9,80 @@ import {
   Button,
   Grid,
   Box,
-  Card,
-  CardContent,
   useTheme,
   useMediaQuery,
   CircularProgress,
+  Avatar,
+  Divider,
 } from "@mui/material";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import LightbulbIcon from '@mui/icons-material/Lightbulb';
+import SpeedIcon from '@mui/icons-material/Speed';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
-// Custom components
-const GradientText = ({ children, ...props }) => {
-  return (
-    <Typography
-      component="span"
-      sx={{
-        background: "linear-gradient(90deg, #3f51b5 0%, #6a7dfe 100%)",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        backgroundClip: "text",
-        textFillColor: "transparent",
-      }}
-      {...props}
-    >
-      {children}
-    </Typography>
-  );
+// Animation variants
+const fadeIn = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
 };
 
-// Hero background component
-const HeroBackground = () => (
+const stagger = {
+  visible: {
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+// Custom components
+const GradientText = ({ children, ...props }) => (
+  <Typography
+    component="span"
+    sx={{
+      background: "linear-gradient(90deg, #3B82F6 0%, #EC4899 100%)",
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      backgroundClip: "text",
+      textFillColor: "transparent",
+    }}
+    {...props}
+  >
+    {children}
+  </Typography>
+);
+
+const GlassCard = ({ children, ...props }) => (
   <Box
     sx={{
-      position: "absolute",
-      top: 0,
-      left: 0,
-      right: 0,
-      height: "100%",
-      zIndex: -1,
+      background: "rgba(255, 255, 255, 0.95)",
+      backdropFilter: "blur(15px)",
+      borderRadius: "24px",
+      border: "1px solid rgba(255, 255, 255, 0.2)",
+      boxShadow: "0 15px 50px rgba(0, 0, 0, 0.1)",
       overflow: "hidden",
-      opacity: 0.05,
+      ...props.sx
     }}
+    {...props}
   >
-    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern
-          id="dots"
-          x="0"
-          y="0"
-          width="20"
-          height="20"
-          patternUnits="userSpaceOnUse"
-        >
-          <circle cx="3" cy="3" r="1.5" fill="#3f51b5" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#dots)" />
-    </svg>
+    {children}
   </Box>
+);
+
+const GradientDivider = () => (
+  <Box
+    sx={{
+      width: "120px",
+      height: "6px",
+      background: "linear-gradient(90deg, #3B82F6 0%, #EC4899 100%)",
+      mx: "auto",
+      mt: 4,
+      mb: 8,
+      borderRadius: "4px",
+    }}
+  />
 );
 
 export default function HomeContent() {
@@ -74,13 +90,10 @@ export default function HomeContent() {
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMedium = useMediaQuery(theme.breakpoints.down("md"));
 
-  // More cautious redirect approach to avoid potential loops
   useEffect(() => {
-    // Only redirect if auth is fully loaded and user is signed in
-    // Add a check to ensure we're on the home page to prevent redirect loops
     if (isLoaded && isSignedIn && window.location.pathname === "/") {
-      // Use replace instead of push to avoid browser history issues
       router.replace("/dashboard");
     }
   }, [isLoaded, isSignedIn, router]);
@@ -93,696 +106,605 @@ export default function HomeContent() {
           justifyContent: "center",
           alignItems: "center",
           height: "100vh",
-          minHeight: "100vh",
+          bgcolor: "background.default",
         }}
       >
-        <Box
-          component={motion.div}
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.5, 1, 0.5],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        >
-          <Box
-            sx={{
-              width: 80,
-              height: 80,
-              borderRadius: "50%",
-              background: "linear-gradient(45deg, #3f51b5, #6a7dfe)",
-            }}
-          />
-        </Box>
-        <CircularProgress />
+        <CircularProgress sx={{ color: "#3B82F6" }} />
       </Box>
     );
   }
 
-  // If user is signed in, don't render anything - Clerk will handle the redirect
   if (isSignedIn) {
     return null;
   }
 
-  // Animation variants
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
-
-  const staggerChildren = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-      },
-    },
-  };
-
   return (
     <Container
-      maxWidth="lg"
+      maxWidth="xl"
       sx={{
-        px: { xs: 2, sm: 3 },
+        px: { xs: 4, sm: 6 },
         overflow: "hidden",
+        bgcolor: "background.default",
+        position: "relative",
       }}
     >
       {/* Hero Section */}
       <Box
         sx={{
-          py: { xs: 8, sm: 10, md: 14 },
-          textAlign: "center",
-          minHeight: { xs: "auto", md: "90vh" },
+          py: { xs: 12, sm: 16, md: 20 },
+          minHeight: { xs: "auto", md: "100vh" },
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
+          alignItems: "center",
           position: "relative",
         }}
-        component={motion.div}
-        initial="hidden"
-        animate="visible"
-        variants={staggerChildren}
       >
-        <HeroBackground />
-
-        <motion.div variants={fadeInUp}>
-          <Typography
-            variant="h1"
-            gutterBottom
-            sx={{
-              fontWeight: 800,
-              fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4.5rem" },
-              lineHeight: { xs: 1.2, md: 1.1 },
-              mb: 3,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Transform Your{" "}
-            <GradientText
-              sx={{
-                fontWeight: 800,
-                fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4.5rem" },
-                lineHeight: { xs: 1.2, md: 1.1 },
-                mb: 3,
-                letterSpacing: "-0.02em",
-              }}
+        <Grid container spacing={4} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={stagger}
             >
-              Study Experience
-            </GradientText>
-          </Typography>
-        </motion.div>
+<motion.div variants={fadeIn}>
+  <Typography
+    variant="h1"
+    gutterBottom
+    sx={{
+      fontWeight: 900,
+      fontSize: { xs: "2.5rem", sm: "3.5rem", md: "3.5rem" },
+      lineHeight: 1.1,
+      mb: 4,
+      letterSpacing: "-0.03em",
+      background: "linear-gradient(90deg,rgb(182, 52, 214) 0%, #4f46e5 100%)",
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      backgroundClip: "text",
+      color: "transparent",
+    }}
+  >
+    Memorize Anything{" "}
+    <span
+      style={{
+        fontWeight: 900,
+        background: "linear-gradient(90deg,rgb(182, 52, 214) 0%,rgb(44, 34, 240) 100%)",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+        backgroundClip: "text",
+        color: "transparent",
+      }}
+    >
+      With Ease
+    </span>
+  </Typography>
+</motion.div>
 
-        <motion.div variants={fadeInUp}>
-          <Typography
-            variant="h5"
-            sx={{
-              color: "text.secondary",
-              mb: { xs: 4, md: 5 },
-              maxWidth: "800px",
-              mx: "auto",
-              fontSize: { xs: "1.1rem", sm: "1.3rem", md: "1.5rem" },
-              px: { xs: 2, sm: 0 },
-              lineHeight: 1.6,
-            }}
-          >
-            Create smart flashcards, generate study notes, and track your
-            progress with AI-powered learning tools.
-          </Typography>
-        </motion.div>
+              <motion.div variants={fadeIn}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    color: "text.secondary",
+                    mb: 6,
+                    maxWidth: "600px",
+                    fontSize: { xs: "1.3rem", sm: "1.5rem", md: "1.5rem" },
+                    lineHeight: 1.8,
+                  }}
+                >
+                  Unleash your potential with AI-powered flashcards, smart notes, and personalized learning analytics.
+                </Typography>
+              </motion.div>
 
-        <motion.div variants={fadeInUp}>
-          <Box
-            sx={{
-              display: "flex",
-              gap: { xs: 2, sm: 3 },
-              justifyContent: "center",
-              flexDirection: { xs: "column", sm: "row" },
-              px: { xs: 2, sm: 0 },
-              mt: 2,
-            }}
-          >
-            {isSignedIn ? (
-              <Button
-                variant="contained"
-                size="large"
-                href="/generate"
+              <motion.div variants={fadeIn}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 3,
+                    flexDirection: { xs: "column", sm: "row" },
+                    mt: 4,
+                  }}
+                >
+                  <Button
+                    variant="contained"
+                    href="/sign-up"
+                    sx={{
+                      px: 6,
+                      py: 2,
+                      fontSize: "1.2rem",
+                      borderRadius: "50px",
+                      background: "linear-gradient(45deg, #3B82F6 30%, #EC4899 90%)",
+                      boxShadow: "0 12px 40px rgba(59, 130, 246, 0.4)",
+                      textTransform: "none",
+                      fontWeight: 700,
+                      "&:hover": {
+                        boxShadow: "0 20px 50px rgba(59, 130, 246, 0.5)",
+                        transform: "scale(1.05)",
+                      },
+                    }}
+                    
+                  >
+                    Get Started
+                  </Button>
+
+                  <Button
+                    variant="outlined"
+                    size="medium"
+                    href="/sign-up"
+                    sx={{
+                      px: 6,
+                      py: 2,
+                      fontSize: "1.2rem",
+                      borderRadius: "50px",
+                      borderWidth: "2px",
+                      borderColor: "#3B82F6",
+                      color: "#3B82F6",
+                      textTransform: "none",
+                      fontWeight: 700,
+                      "&:hover": {
+                        boxShadow: "0 10px 30px rgba(59, 130, 246, 0.3)",
+                        transform: "scale(1.05)",
+                      },
+                    }}
+                    
+                  >
+                    Sign Up For Free
+                  </Button>
+                </Box>
+              </motion.div>
+            </motion.div>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
+              <Box
                 sx={{
-                  px: { xs: 4, sm: 5 },
-                  py: { xs: 1.5, sm: 1.75 },
-                  fontSize: { xs: "1.1rem", sm: "1.2rem" },
-                  width: { xs: "100%", sm: "auto" },
-                  borderRadius: "50px",
-                  background:
-                    "linear-gradient(45deg, #3f51b5 30%, #6a7dfe 90%)",
-                  boxShadow: "0 8px 20px rgba(63, 81, 181, 0.25)",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  transition: "all 0.3s ease",
+                  position: "relative",
+                  height: { xs: "300px", sm: "450px", md: "550px" },
+                  borderRadius: "32px",
+                  overflow: "hidden",
+                  boxShadow: "0 25px 60px rgba(0, 0, 0, 0.2)",
                   "&:hover": {
-                    transform: "translateY(-3px)",
-                    boxShadow: "0 10px 25px rgba(63, 81, 181, 0.4)",
+                    transform: "scale(1.03)",
                   },
                 }}
               >
-                Generate Notes
-              </Button>
-            ) : (
-              <Button
-                variant="contained"
-                size="large"
-                href="/sign-up"
-                sx={{
-                  px: { xs: 4, sm: 5 },
-                  py: { xs: 1.5, sm: 1.75 },
-                  fontSize: { xs: "1.1rem", sm: "1.2rem" },
-                  width: { xs: "100%", sm: "auto" },
-                  borderRadius: "50px",
-                  background:
-                    "linear-gradient(45deg, #3f51b5 30%, #6a7dfe 90%)",
-                  boxShadow: "0 8px 20px rgba(63, 81, 181, 0.25)",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    transform: "translateY(-3px)",
-                    boxShadow: "0 10px 25px rgba(63, 81, 181, 0.4)",
-                  },
-                }}
-              >
-                Get Started
-              </Button>
-            )}
-
-            {!isSignedIn && (
-              <Button
-                variant="outlined"
-                size="large"
-                href="/sign-up"
-                sx={{
-                  px: { xs: 4, sm: 5 },
-                  py: { xs: 1.5, sm: 1.75 },
-                  fontSize: { xs: "1.1rem", sm: "1.2rem" },
-                  width: { xs: "100%", sm: "auto" },
-                  borderRadius: "50px",
-                  borderWidth: "2px",
-                  borderColor: "#3f51b5",
-                  textTransform: "none",
-                  fontWeight: 600,
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    borderWidth: "2px",
-                    transform: "translateY(-3px)",
-                    boxShadow: "0 6px 15px rgba(63, 81, 181, 0.15)",
-                  },
-                }}
-              >
-                Sign Up Free
-              </Button>
-            )}
-          </Box>
-        </motion.div>
-
-        <Box
-          component={motion.div}
-          variants={fadeInUp}
-          sx={{
-            position: "relative",
-            width: "100%",
-            height: { xs: "250px", sm: "350px", md: "400px" },
-            mt: 8,
-            borderRadius: "24px",
-            overflow: "hidden",
-            boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <Image
-            src="/images/group.png"
-            alt="Group image"
-            layout="fill"
-            objectFit="cover"
-            priority
-          />
-          <Box
-            sx={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(63,81,181,0.05) 100%)",
-            }}
-          />
-        </Box>
+                <Image
+                  src="/images/pis.jpg"
+                  alt="Collaborative study"
+                  layout="fill"
+                  objectFit="cover"
+                  priority
+                />
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(59,130,246,0.15) 100%)",
+                  }}
+                />
+              </Box>
+            </motion.div>
+          </Grid>
+        </Grid>
       </Box>
 
       {/* Features Section */}
       <Box
-        component={motion.div}
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
         sx={{
-          py: { xs: 8, sm: 12 },
+          py: { xs: 12, sm: 16 },
+          bgcolor: "background.paper",
+          borderRadius: "32px",
           position: "relative",
         }}
       >
-        <Typography
-          variant="h2"
-          sx={{
-            textAlign: "center",
-            fontWeight: 700,
-            fontSize: { xs: "2rem", sm: "2.75rem", md: "3.5rem" },
-            mb: { xs: 6, sm: 8 },
-            position: "relative",
-          }}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={stagger}
         >
-          <GradientText>Powerful Features</GradientText>
-          <Box
-            sx={{
-              width: "60px",
-              height: "4px",
-              background: "linear-gradient(90deg, #3f51b5 0%, #6a7dfe 100%)",
-              mx: "auto",
-              mt: 2,
-              borderRadius: "2px",
-            }}
-          />
-        </Typography>
+          <motion.div variants={fadeIn}>
+            <Typography
+              variant="h2"
+              sx={{
+                textAlign: "center",
+                fontWeight: 800,
+                fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4rem" },
+                mb: 4,
+                color: "text.primary",
+              }}
+            >
+              Cutting-Edge Features
+            </Typography>
+          </motion.div>
+          
+          <motion.div variants={fadeIn}>
+            <GradientDivider />
+          </motion.div>
 
-        <Grid
-          container
-          spacing={{ xs: 3, sm: 4, md: 5 }}
-          sx={{
-            maxWidth: "1200px",
-            mx: "auto",
-          }}
-        >
-          {[
-            {
-              title: "AI-Powered Notes",
-              description:
-                "Transform any text into organized study materials with our advanced AI technology.",
-              icon: "📝",
-              color: "#e3f2fd",
-            },
-            {
-              title: "Smart Review System",
-              description:
-                "Track your progress and review cards at the optimal time for better retention.",
-              icon: "🧠",
-              color: "#e8eaf6",
-            },
-            {
-              title: "Study Analytics",
-              description:
-                "Get insights into your learning progress and identify areas for improvement.",
-              icon: "📊",
-              color: "#e1f5fe",
-            },
-          ].map((feature, index) => (
-            <Grid item xs={12} md={4} key={index}>
-              <Card
-                component={motion.div}
-                whileHover={{
-                  y: -10,
-                  boxShadow: "0 15px 30px rgba(0,0,0,0.1)",
-                }}
-                transition={{ type: "spring", stiffness: 300 }}
-                sx={{
-                  height: "100%",
-                  p: { xs: 3, sm: 4 },
-                  borderRadius: "24px",
-                  boxShadow: "0 8px 20px rgba(0,0,0,0.06)",
-                  overflow: "visible",
-                  background: `linear-gradient(145deg, white 0%, ${feature.color} 100%)`,
-                  border: "1px solid rgba(63, 81, 181, 0.08)",
-                }}
-              >
-                <CardContent sx={{ p: 0 }}>
-                  <Box
+          <Grid
+            container
+            spacing={{ xs: 4, sm: 5 }}
+            sx={{ maxWidth: "1400px", mx: "auto" }}
+          >
+            {[
+              {
+                title: "Smart Notes",
+                description: "AI-driven note generation creates concise, impactful study materials.",
+                icon: <LightbulbIcon sx={{ fontSize: 36, color: "#3B82F6" }} />,
+                color: "#EFF6FF",
+              },
+              {
+                title: "Adaptive Review",
+                description: "Personalized learning schedules maximize retention and efficiency.",
+                icon: <SpeedIcon sx={{ fontSize: 36, color: "#3B82F6" }} />,
+                color: "#F5F3FF",
+              },
+              {
+                title: "Deep Analytics",
+                description: "Actionable insights track progress and optimize study focus.",
+                icon: <AssessmentIcon sx={{ fontSize: 36, color: "#3B82F6" }} />,
+                color: "#F0F9FF",
+              },
+            ].map((feature, index) => (
+              <Grid item xs={12} md={4} key={index}>
+                <motion.div
+                  variants={fadeIn}
+                  whileHover={{ scale: 1.03 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <GlassCard
                     sx={{
-                      width: "60px",
-                      height: "60px",
-                      borderRadius: "16px",
-                      background: "white",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "2rem",
-                      mb: 2,
-                      boxShadow: "0 8px 16px rgba(0,0,0,0.06)",
+                      height: "100%",
+                      p: { xs: 5, sm: 6 },
+                      transition: "all 0.3s ease",
                     }}
                   >
-                    {feature.icon}
-                  </Box>
-                  <Typography
-                    variant="h5"
-                    gutterBottom
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: { xs: "1.4rem", sm: "1.6rem" },
-                      mb: 2,
-                      color: "#263238",
-                    }}
-                  >
-                    {feature.title}
-                  </Typography>
-                  <Typography
-                    color="text.secondary"
-                    sx={{
-                      fontSize: { xs: "1rem", sm: "1.1rem" },
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {feature.description}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                    <Box
+                      sx={{
+                        width: "72px",
+                        height: "72px",
+                        borderRadius: "20px",
+                        background: feature.color,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        mb: 4,
+                        boxShadow: "0 10px 20px rgba(0,0,0,0.15)",
+                      }}
+                    >
+                      {feature.icon}
+                    </Box>
+                    <Typography
+                      variant="h5"
+                      gutterBottom
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: { xs: "1.6rem", sm: "1.8rem" },
+                        mb: 3,
+                        color: "text.primary",
+                      }}
+                    >
+                      {feature.title}
+                    </Typography>
+                    <Typography
+                      color="text.secondary"
+                      sx={{
+                        fontSize: { xs: "1.2rem", sm: "1.3rem" },
+                        lineHeight: 1.8,
+                      }}
+                    >
+                      {feature.description}
+                    </Typography>
+                  </GlassCard>
+                </motion.div>
+              </Grid>
+            ))}
+          </Grid>
+        </motion.div>
       </Box>
 
       {/* How It Works Section */}
       <Box
-        component={motion.div}
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
         sx={{
-          py: { xs: 8, sm: 12 },
-          background:
-            "linear-gradient(180deg, rgba(63,81,181,0.03) 0%, rgba(63,81,181,0.08) 100%)",
+          py: { xs: 12, sm: 16 },
+          background: "linear-gradient(180deg, #F0F9FF 0%, #FCE7F3 100%)",
           borderRadius: "32px",
-          px: { xs: 2, sm: 4, md: 6 },
+          px: { xs: 4, sm: 6, md: 10 },
+          mt: { xs: 10, sm: 14 },
+          mb: { xs: 10, sm: 14 },
           position: "relative",
-          overflow: "hidden",
-          mt: { xs: 6, sm: 10 },
-          mb: { xs: 6, sm: 10 },
         }}
       >
-        <Typography
-          variant="h2"
-          sx={{
-            textAlign: "center",
-            fontWeight: 700,
-            color: "#263238",
-            mb: { xs: 6, sm: 8 },
-            fontSize: { xs: "2rem", sm: "2.75rem", md: "3.5rem" },
-            position: "relative",
-          }}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={stagger}
         >
-          How It <GradientText>Works</GradientText>
-          <Box
-            sx={{
-              width: "60px",
-              height: "4px",
-              background: "linear-gradient(90deg, #3f51b5 0%, #6a7dfe 100%)",
-              mx: "auto",
-              mt: 2,
-              borderRadius: "2px",
-            }}
-          />
-        </Typography>
-
-        <Grid container spacing={{ xs: 5, sm: 8 }} alignItems="center">
-          <Grid item xs={12} md={6}>
-            <Box
-              component={motion.div}
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300 }}
+          <motion.div variants={fadeIn}>
+            <Typography
+              variant="h2"
               sx={{
-                position: "relative",
-                height: { xs: "280px", sm: "400px", md: "450px" },
-                borderRadius: "24px",
-                overflow: "hidden",
-                boxShadow: "0 20px 40px rgba(0, 0, 0, 0.15)",
-                transform: "perspective(1000px) rotateY(-5deg)",
+                textAlign: "center",
+                fontWeight: 800,
+                color: "text.primary",
+                mb: 4,
+                fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4rem" },
               }}
             >
-              <Image
-                src="/images/study.jpg"
-                alt="Study process"
-                layout="fill"
-                objectFit="cover"
-                priority
-              />
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background:
-                    "linear-gradient(0deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 50%)",
-                }}
-              />
-            </Box>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Box sx={{ pl: { md: 4 } }}>
-              {[
-                {
-                  number: "01",
-                  title: "Input Your Study Material",
-                  description:
-                    "Simply paste your text or upload your notes. Our system accepts various formats including PDFs, text files, or even images with text.",
-                },
-                {
-                  number: "02",
-                  title: "Generate Smart Notes",
-                  description:
-                    "Our AI analyzes your content and creates organized flashcards and study materials optimized for retention and understanding.",
-                },
-                {
-                  number: "03",
-                  title: "Review and Learn",
-                  description:
-                    "Study effectively with our smart review system that adapts to your learning pace and optimizes when to review each concept.",
-                },
-              ].map((step, index) => (
+              Your Learning Blueprint
+            </Typography>
+          </motion.div>
+          
+          <motion.div variants={fadeIn}>
+            <GradientDivider />
+          </motion.div>
+
+          <Grid container spacing={{ xs: 6, sm: 8 }} alignItems="center">
+            <Grid item xs={12} md={6} order={{ xs: 2, md: 1 }}>
+              <motion.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={stagger}
+              >
+                {[
+                  {
+                    number: "01",
+                    title: "Input Content",
+                    description: "Upload text, PDFs, or images effortlessly with our intuitive interface.",
+                  },
+                  {
+                    number: "02",
+                    title: "AI Transformation",
+                    description: "Advanced AI converts your content into optimized study resources.",
+                  },
+                  {
+                    number: "03",
+                    title: "Master Concepts",
+                    description: "Learn smarter with adaptive, personalized review sessions.",
+                  },
+                ].map((step, index) => (
+                  <motion.div
+                    key={index}
+                    variants={fadeIn}
+                    whileHover={{ x: 10 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Box
+                      sx={{
+                        mb: 6,
+                        display: "flex",
+                        alignItems: "flex-start",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: "64px",
+                          height: "64px",
+                          borderRadius: "20px",
+                          background: "linear-gradient(45deg, #3B82F6 30%, #EC4899 90%)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flexShrink: 0,
+                          mr: 4,
+                          boxShadow: "0 10px 25px rgba(59, 130, 246, 0.4)",
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            color: "white",
+                            fontWeight: 700,
+                            fontSize: "1.4rem",
+                          }}
+                        >
+                          {step.number}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography
+                          variant="h5"
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: { xs: "1.5rem", sm: "1.7rem" },
+                            mb: 2,
+                            color: "text.primary",
+                          }}
+                        >
+                          {step.title}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            color: "text.secondary",
+                            fontSize: { xs: "1.2rem", sm: "1.3rem" },
+                            lineHeight: 1.8,
+                          }}
+                        >
+                          {step.description}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </Grid>
+            <Grid item xs={12} md={6} order={{ xs: 1, md: 2 }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+              >
                 <Box
-                  key={index}
-                  component={motion.div}
-                  initial={{ x: 50, opacity: 0 }}
-                  whileInView={{ x: 0, opacity: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.2, duration: 0.5 }}
                   sx={{
-                    mb: 5,
-                    display: "flex",
-                    alignItems: "flex-start",
+                    position: "relative",
+                    height: { xs: "320px", sm: "480px", md: "560px" },
+                    borderRadius: "32px",
+                    overflow: "hidden",
+                    boxShadow: "0 25px 60px rgba(0, 0, 0, 0.2)",
+                    transition: "all 0.3s ease",
                   }}
                 >
+                  <Image
+                    src="/images/mis.jpg"
+                    alt="Study visualization"
+                    layout="fill"
+                    objectFit="cover"
+                    priority
+                  />
                   <Box
                     sx={{
-                      width: "50px",
-                      height: "50px",
-                      borderRadius: "14px",
-                      background:
-                        "linear-gradient(45deg, #3f51b5 30%, #6a7dfe 90%)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      mr: 3,
-                      boxShadow: "0 6px 12px rgba(63, 81, 181, 0.2)",
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: "linear-gradient(0deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 50%)",
                     }}
-                  >
-                    <Typography
-                      sx={{
-                        color: "white",
-                        fontWeight: 700,
-                        fontSize: "1.2rem",
-                      }}
-                    >
-                      {step.number}
-                    </Typography>
-                  </Box>
-                  <Box>
-                    <Typography
-                      variant="h5"
-                      sx={{
-                        fontWeight: 700,
-                        fontSize: { xs: "1.3rem", sm: "1.5rem" },
-                        mb: 1,
-                        color: "#263238",
-                      }}
-                    >
-                      {step.title}
-                    </Typography>
-                    <Typography
-                      sx={{
-                        color: "text.secondary",
-                        fontSize: { xs: "1rem", sm: "1.1rem" },
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {step.description}
-                    </Typography>
-                  </Box>
+                  />
                 </Box>
-              ))}
-            </Box>
+              </motion.div>
+            </Grid>
           </Grid>
-        </Grid>
+        </motion.div>
       </Box>
 
       {/* Testimonial Section */}
       <Box
-        component={motion.div}
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
         sx={{
-          py: { xs: 8, sm: 10 },
-          mt: { xs: 4, sm: 6 },
+          py: { xs: 12, sm: 16 },
+          bgcolor: "background.paper",
+          borderRadius: "32px",
+          mt: { xs: 8, sm: 12 },
         }}
       >
-        <Typography
-          variant="h2"
-          sx={{
-            textAlign: "center",
-            fontWeight: 700,
-            fontSize: { xs: "2rem", sm: "2.75rem", md: "3.5rem" },
-            mb: { xs: 6, sm: 8 },
-          }}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={stagger}
         >
-          What Our Users Say
-          <Box
-            sx={{
-              width: "60px",
-              height: "4px",
-              background: "linear-gradient(90deg, #3f51b5 0%, #6a7dfe 100%)",
-              mx: "auto",
-              mt: 2,
-              borderRadius: "2px",
-            }}
-          />
-        </Typography>
+          <motion.div variants={fadeIn}>
+            <Typography
+              variant="h2"
+              sx={{
+                textAlign: "center",
+                fontWeight: 800,
+                fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4rem" },
+                mb: 4,
+                color: "text.primary",
+              }}
+            >
+              Voices of Success
+            </Typography>
+          </motion.div>
+          
+          <motion.div variants={fadeIn}>
+            <GradientDivider />
+          </motion.div>
 
-        <Grid container spacing={4} sx={{ maxWidth: "1200px", mx: "auto" }}>
-          {[
-            {
-              name: "Jeffrey Mintah",
-              role: "Engineering Student",
-              quote:
-                "This app has completely transformed how I study for Egineering exams. The AI-generated notes save me hours of work!",
-            },
-            {
-              name: "Lucy Blay",
-              role: "Law Student",
-              quote:
-                "The smart review system helped me memorize complex legal concepts much faster than traditional methods.",
-            },
-            {
-              name: "Duvor William",
-              role: "Computer Science Student",
-              quote:
-                "As a CS student, I appreciate how the platform organizes technical information in an easy-to-review format.",
-            },
-          ].map((testimonial, index) => (
-            <Grid item xs={12} md={4} key={index}>
-              <Card
-                component={motion.div}
-                whileHover={{ y: -8 }}
-                sx={{
-                  height: "100%",
-                  p: { xs: 3, sm: 4 },
-                  borderRadius: "24px",
-                  boxShadow: "0 8px 30px rgba(0,0,0,0.08)",
-                  border: "1px solid rgba(63, 81, 181, 0.06)",
-                  background: "white",
-                  position: "relative",
-                  overflow: "visible",
-                }}
-              >
-                <CardContent sx={{ p: 0 }}>
-                  <Box
+          <Grid container spacing={4} sx={{ maxWidth: "1400px", mx: "auto" }}>
+            {[
+              {
+                name: "James Blay",
+                role: "Engineering Student",
+                quote: "This platform transformed my study routine, doubling my efficiency!",
+              },
+              {
+                name: "Gina Lucy",
+                role: "HR Manager of a Company",
+                quote: "“AI flashcards streamlined our employee training process, making onboarding faster and more engaging.”"
+              },
+              {
+                name: "Duvor William",
+                role: "Working Professional",
+                quote: "“Balancing work and upskilling was tough, but this tool made learning efficient and flexible.”"
+              }
+            ].map((testimonial, index) => (
+              <Grid item xs={12} md={4} key={index}>
+                <motion.div
+                  variants={fadeIn}
+                  whileHover={{ scale: 1.03 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <GlassCard
                     sx={{
-                      position: "absolute",
-                      top: -20,
-                      left: 30,
-                      fontSize: "4rem",
-                      color: "#3f51b5",
-                      opacity: 0.2,
-                      fontFamily: "serif",
-                      lineHeight: 1,
-                    }}
-                  ></Box>
-                  <Typography
-                    sx={{
-                      fontSize: { xs: "1.1rem", sm: "1.2rem" },
-                      lineHeight: 1.7,
-                      mb: 4,
-                      color: "#455a64",
+                      height: "100%",
+                      p: { xs: 5, sm: 6 },
                       position: "relative",
-                      fontStyle: "italic",
+                      transition: "all 0.3s ease",
                     }}
                   >
-                    {testimonial.quote}
-                  </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Box
+                    <FormatQuoteIcon 
+                      sx={{ 
+                        color: "#3B82F6", 
+                        opacity: 0.3, 
+                        fontSize: "4rem",
+                        position: "absolute",
+                        top: 20,
+                        left: 20
+                      }} 
+                    />
+                    <Typography
                       sx={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: "50%",
-                        background: `linear-gradient(${
-                          index * 60
-                        }deg, #3f51b5, #6a7dfe)`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "white",
-                        fontWeight: 700,
-                        fontSize: "1.2rem",
-                        mr: 2,
+                        fontSize: { xs: "1.3rem", sm: "1.4rem" },
+                        lineHeight: 1.9,
+                        mb: 6,
+                        color: "text.secondary",
+                        fontStyle: "italic",
+                        pl: 4,
                       }}
                     >
-                      {testimonial.name.charAt(0)}
-                    </Box>
-                    <Box>
-                      <Typography sx={{ fontWeight: 700, color: "#263238" }}>
-                        {testimonial.name}
-                      </Typography>
-                      <Typography
-                        sx={{ color: "text.secondary", fontSize: "0.9rem" }}
+                      {testimonial.quote}
+                    </Typography>
+                    <Divider sx={{ mb: 5, borderColor: "rgba(59, 130, 246, 0.15)" }} />
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Avatar
+                        sx={{
+                          background: `linear-gradient(${index * 60}deg, #3B82F6, #EC4899)`,
+                          color: "white",
+                          fontWeight: 700,
+                          mr: 3,
+                          width: 56,
+                          height: 56,
+                        }}
                       >
-                        {testimonial.role}
-                      </Typography>
+                        {testimonial.name.charAt(0)}
+                      </Avatar>
+                      <Box>
+                        <Typography sx={{ fontWeight: 700, color: "text.primary", fontSize: "1.2rem" }}>
+                          {testimonial.name}
+                        </Typography>
+                        <Typography sx={{ color: "text.secondary", fontSize: "1rem" }}>
+                          {testimonial.role}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                  </GlassCard>
+                </motion.div>
+              </Grid>
+            ))}
+          </Grid>
+        </motion.div>
       </Box>
 
       {/* CTA Section */}
       <Box
-        component={motion.div}
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
         sx={{
-          py: { xs: 8, sm: 10 },
+          py: { xs: 12, sm: 16 },
           textAlign: "center",
-          px: { xs: 2, sm: 3 },
-          mb: { xs: 6, sm: 8 },
-          background:
-            "linear-gradient(135deg, rgba(63,81,181,0.08) 0%, rgba(106,125,254,0.12) 100%)",
+          px: { xs: 4, sm: 6 },
+          mb: { xs: 10, sm: 14 },
+          background: "linear-gradient(135deg, #DBEAFE 0%, #FCE7F3 100%)",
           borderRadius: "32px",
           position: "relative",
           overflow: "hidden",
@@ -795,96 +717,78 @@ export default function HomeContent() {
             left: 0,
             width: "100%",
             height: "100%",
-            opacity: 0.05,
+            opacity: 0.1,
             zIndex: 0,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%233B82F6' fill-opacity='0.4'%3E%3Cpath d='M50 50c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10zM10 10c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10S0 25.523 0 20s4.477-10 10-10zm10 8c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8zm40 40c4.418 0 8-3.582 8-8s-3.582-8-8-8-8 3.582-8 8 3.582 8 8 8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           }}
+        />
+
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={stagger}
         >
-          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern
-                id="wave"
-                x="0"
-                y="0"
-                width="100"
-                height="100"
-                patternUnits="userSpaceOnUse"
-              >
-                <path
-                  d="M0 25C 20 10, 30 10, 50 25, 70 40, 80 40, 100 25L 100 100 L 0 100Z"
-                  fill="#3f51b5"
-                />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#wave)" />
-          </svg>
-        </Box>
+          <motion.div variants={fadeIn}>
+            <Typography
+              variant="h3"
+              gutterBottom
+              sx={{
+                fontWeight: 900,
+                fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4rem" },
+                mb: 5,
+                background: "linear-gradient(45deg, #3B82F6 30%, #EC4899 90%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                textFillColor: "transparent",
+              }}
+            >
+              Ignite Your Academic Journey
+            </Typography>
+          </motion.div>
 
-        <Box sx={{ position: "relative", zIndex: 1 }}>
-          <Typography
-            variant="h3"
-            gutterBottom
-            sx={{
-              fontWeight: 800,
-              fontSize: { xs: "2rem", sm: "2.5rem", md: "3rem" },
-              mb: 3,
-              background: "linear-gradient(45deg, #3f51b5 30%, #6a7dfe 90%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-              textFillColor: "transparent",
-            }}
-          >
-            Ready to Transform Your Study Habits?
-          </Typography>
-          <Typography
-            sx={{
-              mb: { xs: 4, sm: 5 },
-              maxWidth: "700px",
-              mx: "auto",
-              color: "#455a64",
-              fontSize: { xs: "1.1rem", sm: "1.2rem" },
-              lineHeight: 1.6,
-            }}
-          >
-            Join thousands of students who are already studying smarter, not
-            harder. Get started today and see the difference!
-          </Typography>
+          <motion.div variants={fadeIn}>
+            <Typography
+              sx={{
+                mb: 6,
+                maxWidth: "900px",
+                mx: "auto",
+                color: "text.secondary",
+                fontSize: { xs: "1.3rem", sm: "1.4rem" },
+                lineHeight: 1.9,
+              }}
+            >
+              Join thousands of students revolutionizing their studies with our cutting-edge AI tools. Start today and unlock your full potential!
+            </Typography>
+          </motion.div>
 
-          <Button
-            variant="contained"
-            size="large"
-            href="/sign-up"
-            sx={{
-              px: { xs: 5, sm: 6 },
-              py: { xs: 1.5, sm: 2 },
-              width: { xs: "100%", sm: "auto" },
-              borderRadius: "50px",
-              background: "linear-gradient(45deg, #3f51b5 30%, #6a7dfe 90%)",
-              boxShadow: "0 10px 30px rgba(63, 81, 181, 0.3)",
-              fontSize: "1.2rem",
-              textTransform: "none",
-              fontWeight: 600,
-              transition: "all 0.3s ease",
-              "&:hover": {
-                transform: "translateY(-3px) scale(1.05)",
-                boxShadow: "0 15px 35px rgba(63, 81, 181, 0.4)",
-              },
-            }}
-          >
-            Start Learning Now
-          </Button>
-
-          <Typography
-            variant="body2"
-            sx={{
-              color: "text.secondary",
-              mt: 3,
-              fontSize: "0.9rem",
-            }}
-          >
-            No credit card required • Free plan available
-          </Typography>
-        </Box>
+          <motion.div variants={fadeIn}>
+            <Button
+              variant="contained"
+              size="large"
+              href="/sign-up"
+              endIcon={<ArrowForwardIcon />}
+              sx={{
+                px: 7,
+                py: 2.5,
+                borderRadius: "50px",
+                background: "linear-gradient(45deg, #3B82F6 30%, #EC4899 90%)",
+                boxShadow: "0 15px 50px rgba(59, 130, 246, 0.5)",
+                fontSize: "1.4rem",
+                textTransform: "none",
+                fontWeight: 700,
+                "&:hover": {
+                  boxShadow: "0 25px 60px rgba(59, 130, 246, 0.6)",
+                  transform: "scale(1.05)",
+                },
+              }}
+              
+            >
+              Launch Your Success
+            </Button>
+          </motion.div>
+        </motion.div>
       </Box>
     </Container>
   );
