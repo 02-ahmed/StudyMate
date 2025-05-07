@@ -17,24 +17,24 @@ import {
 } from "@mui/material";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import LightbulbIcon from '@mui/icons-material/Lightbulb';
-import SpeedIcon from '@mui/icons-material/Speed';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
+import SpeedIcon from "@mui/icons-material/Speed";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
 // Animation variants
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } },
 };
 
 const stagger = {
   visible: {
     transition: {
-      staggerChildren: 0.2
-    }
-  }
+      staggerChildren: 0.2,
+    },
+  },
 };
 
 // Custom components
@@ -63,7 +63,7 @@ const GlassCard = ({ children, ...props }) => (
       border: "1px solid rgba(255, 255, 255, 0.2)",
       boxShadow: "0 15px 50px rgba(0, 0, 0, 0.1)",
       overflow: "hidden",
-      ...props.sx
+      ...props.sx,
     }}
     {...props}
   >
@@ -122,7 +122,7 @@ export default function HomeContent() {
     <Container
       maxWidth="xl"
       sx={{
-        px: { xs: 4, sm: 6 },
+        px: { xs: 2, sm: 6 },
         overflow: "hidden",
         bgcolor: "background.default",
         position: "relative",
@@ -131,67 +131,70 @@ export default function HomeContent() {
       {/* Hero Section */}
       <Box
         sx={{
-          py: { xs: 12, sm: 16, md: 20 },
-          minHeight: { xs: "auto", md: "100vh" },
+          py: { xs: 8, sm: 16, md: 20 },
+          minHeight: { xs: "100vh", md: "100vh" },
           display: "flex",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
           position: "relative",
+          mt: { xs: 6, sm: 0 },
         }}
       >
-        <Grid container spacing={4} alignItems="center">
+        <Grid container spacing={{ xs: 6, sm: 4 }} alignItems="center">
           <Grid item xs={12} md={6}>
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={stagger}
-            >
-<motion.div variants={fadeIn}>
-  <Typography
-    variant="h1"
-    gutterBottom
-    sx={{
-      fontWeight: 900,
-      fontSize: { xs: "2.5rem", sm: "3.5rem", md: "3.5rem" },
-      lineHeight: 1.1,
-      mb: 4,
-      letterSpacing: "-0.03em",
-      background: "linear-gradient(90deg,rgb(182, 52, 214) 0%, #4f46e5 100%)",
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-      backgroundClip: "text",
-      color: "transparent",
-    }}
-  >
-    Memorize Anything{" "}
-    <span
-      style={{
-        fontWeight: 900,
-        background: "linear-gradient(90deg,rgb(182, 52, 214) 0%,rgb(44, 34, 240) 100%)",
-        WebkitBackgroundClip: "text",
-        WebkitTextFillColor: "transparent",
-        backgroundClip: "text",
-        color: "transparent",
-      }}
-    >
-      With Ease
-    </span>
-  </Typography>
-</motion.div>
+            <motion.div initial="hidden" animate="visible" variants={stagger}>
+              <motion.div variants={fadeIn}>
+                <Typography
+                  variant="h1"
+                  gutterBottom
+                  sx={{
+                    fontWeight: 900,
+                    fontSize: { xs: "2.8rem", sm: "3.5rem", md: "3.5rem" },
+                    lineHeight: 1.1,
+                    mb: { xs: 3, sm: 4 },
+                    letterSpacing: "-0.03em",
+                    background:
+                      "linear-gradient(90deg,rgb(182, 52, 214) 0%, #4f46e5 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                    color: "transparent",
+                    textAlign: { xs: "center", sm: "left" },
+                  }}
+                >
+                  Memorize Anything{" "}
+                  <span
+                    style={{
+                      fontWeight: 900,
+                      background:
+                        "linear-gradient(90deg,rgb(182, 52, 214) 0%,rgb(44, 34, 240) 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      color: "transparent",
+                    }}
+                  >
+                    With Ease
+                  </span>
+                </Typography>
+              </motion.div>
 
               <motion.div variants={fadeIn}>
                 <Typography
                   variant="h5"
                   sx={{
                     color: "text.secondary",
-                    mb: 6,
+                    mb: { xs: 4, sm: 6 },
                     maxWidth: "600px",
                     fontSize: { xs: "1.3rem", sm: "1.5rem", md: "1.5rem" },
                     lineHeight: 1.8,
+                    textAlign: { xs: "center", sm: "left" },
+                    mx: { xs: "auto", sm: 0 },
                   }}
                 >
-                  Unleash your potential with AI-powered flashcards, smart notes, and personalized learning analytics.
+                  Unleash your potential with AI-powered flashcards, smart
+                  notes, personalized learning analytics & more
                 </Typography>
               </motion.div>
 
@@ -199,29 +202,32 @@ export default function HomeContent() {
                 <Box
                   sx={{
                     display: "flex",
-                    gap: 3,
+                    gap: { xs: 2, sm: 3 },
                     flexDirection: { xs: "column", sm: "row" },
-                    mt: 4,
+                    mt: { xs: 3, sm: 4 },
+                    width: "100%",
+                    justifyContent: { xs: "center", sm: "flex-start" },
                   }}
                 >
                   <Button
                     variant="contained"
                     href="/sign-up"
                     sx={{
-                      px: 6,
-                      py: 2,
-                      fontSize: "1.2rem",
+                      px: { xs: 4, sm: 6 },
+                      py: { xs: 1.5, sm: 2 },
+                      fontSize: { xs: "1.1rem", sm: "1.2rem" },
                       borderRadius: "50px",
-                      background: "linear-gradient(45deg, #3B82F6 30%, #EC4899 90%)",
+                      background:
+                        "linear-gradient(45deg, #3B82F6 30%, #EC4899 90%)",
                       boxShadow: "0 12px 40px rgba(59, 130, 246, 0.4)",
                       textTransform: "none",
                       fontWeight: 700,
+                      width: { xs: "100%", sm: "auto" },
                       "&:hover": {
                         boxShadow: "0 20px 50px rgba(59, 130, 246, 0.5)",
                         transform: "scale(1.05)",
                       },
                     }}
-                    
                   >
                     Get Started
                   </Button>
@@ -231,21 +237,21 @@ export default function HomeContent() {
                     size="medium"
                     href="/sign-up"
                     sx={{
-                      px: 6,
-                      py: 2,
-                      fontSize: "1.2rem",
+                      px: { xs: 4, sm: 6 },
+                      py: { xs: 1.5, sm: 2 },
+                      fontSize: { xs: "1.1rem", sm: "1.2rem" },
                       borderRadius: "50px",
                       borderWidth: "2px",
                       borderColor: "#3B82F6",
                       color: "#3B82F6",
                       textTransform: "none",
                       fontWeight: 700,
+                      width: { xs: "100%", sm: "auto" },
                       "&:hover": {
                         boxShadow: "0 10px 30px rgba(59, 130, 246, 0.3)",
                         transform: "scale(1.05)",
                       },
                     }}
-                    
                   >
                     Sign Up For Free
                   </Button>
@@ -263,17 +269,19 @@ export default function HomeContent() {
               <Box
                 sx={{
                   position: "relative",
-                  height: { xs: "300px", sm: "450px", md: "550px" },
-                  borderRadius: "32px",
+                  height: { xs: "280px", sm: "450px", md: "550px" },
+                  borderRadius: { xs: "24px", sm: "32px" },
                   overflow: "hidden",
                   boxShadow: "0 25px 60px rgba(0, 0, 0, 0.2)",
                   "&:hover": {
                     transform: "scale(1.03)",
                   },
+                  mx: { xs: "auto", sm: 0 },
+                  maxWidth: { xs: "100%", sm: "none" },
                 }}
               >
                 <Image
-                  src="/images/pis.jpg"
+                  src="/images/1st image.jpg"
                   alt="Collaborative study"
                   layout="fill"
                   objectFit="cover"
@@ -286,7 +294,8 @@ export default function HomeContent() {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(59,130,246,0.15) 100%)",
+                    background:
+                      "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(59,130,246,0.15) 100%)",
                   }}
                 />
               </Box>
@@ -298,10 +307,11 @@ export default function HomeContent() {
       {/* Features Section */}
       <Box
         sx={{
-          py: { xs: 12, sm: 16 },
+          py: { xs: 8, sm: 16 },
           bgcolor: "background.paper",
-          borderRadius: "32px",
+          borderRadius: { xs: "24px", sm: "32px" },
           position: "relative",
+          mt: { xs: 6, sm: 10 },
         }}
       >
         <motion.div
@@ -317,40 +327,50 @@ export default function HomeContent() {
                 textAlign: "center",
                 fontWeight: 800,
                 fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4rem" },
-                mb: 4,
-                color: "text.primary",
+                mb: { xs: 2, sm: 4 },
+                background:
+                  "linear-gradient(90deg,rgb(182, 52, 214) 0%, #4f46e5 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                color: "transparent",
               }}
             >
               Cutting-Edge Features
             </Typography>
           </motion.div>
-          
+
           <motion.div variants={fadeIn}>
             <GradientDivider />
           </motion.div>
 
           <Grid
             container
-            spacing={{ xs: 4, sm: 5 }}
-            sx={{ maxWidth: "1400px", mx: "auto" }}
+            spacing={{ xs: 3, sm: 5 }}
+            sx={{ maxWidth: "1400px", mx: "auto", px: { xs: 2, sm: 0 } }}
           >
             {[
               {
                 title: "Smart Notes",
-                description: "AI-driven note generation creates concise, impactful study materials.",
+                description:
+                  "AI-driven note generation creates concise, impactful study materials.",
                 icon: <LightbulbIcon sx={{ fontSize: 36, color: "#3B82F6" }} />,
                 color: "#EFF6FF",
               },
               {
                 title: "Adaptive Review",
-                description: "Personalized learning schedules maximize retention and efficiency.",
+                description:
+                  "Personalized learning schedules maximize retention and efficiency.",
                 icon: <SpeedIcon sx={{ fontSize: 36, color: "#3B82F6" }} />,
                 color: "#F5F3FF",
               },
               {
                 title: "Deep Analytics",
-                description: "Actionable insights track progress and optimize study focus.",
-                icon: <AssessmentIcon sx={{ fontSize: 36, color: "#3B82F6" }} />,
+                description:
+                  "Actionable insights track progress and optimize study focus.",
+                icon: (
+                  <AssessmentIcon sx={{ fontSize: 36, color: "#3B82F6" }} />
+                ),
                 color: "#F0F9FF",
               },
             ].map((feature, index) => (
@@ -414,12 +434,12 @@ export default function HomeContent() {
       {/* How It Works Section */}
       <Box
         sx={{
-          py: { xs: 12, sm: 16 },
+          py: { xs: 8, sm: 16 },
           background: "linear-gradient(180deg, #F0F9FF 0%, #FCE7F3 100%)",
-          borderRadius: "32px",
-          px: { xs: 4, sm: 6, md: 10 },
-          mt: { xs: 10, sm: 14 },
-          mb: { xs: 10, sm: 14 },
+          borderRadius: { xs: "24px", sm: "32px" },
+          px: { xs: 2, sm: 6, md: 10 },
+          mt: { xs: 6, sm: 14 },
+          mb: { xs: 6, sm: 14 },
           position: "relative",
         }}
       >
@@ -436,19 +456,25 @@ export default function HomeContent() {
                 textAlign: "center",
                 fontWeight: 800,
                 color: "text.primary",
-                mb: 4,
+                mb: { xs: 2, sm: 4 },
                 fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4rem" },
+                background:
+                  "linear-gradient(90deg,rgb(182, 52, 214) 0%, #4f46e5 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                color: "transparent",
               }}
             >
               Your Learning Blueprint
             </Typography>
           </motion.div>
-          
+
           <motion.div variants={fadeIn}>
             <GradientDivider />
           </motion.div>
 
-          <Grid container spacing={{ xs: 6, sm: 8 }} alignItems="center">
+          <Grid container spacing={{ xs: 4, sm: 8 }} alignItems="center">
             <Grid item xs={12} md={6} order={{ xs: 2, md: 1 }}>
               <motion.div
                 initial="hidden"
@@ -460,17 +486,20 @@ export default function HomeContent() {
                   {
                     number: "01",
                     title: "Input Content",
-                    description: "Upload text, PDFs, or images effortlessly with our intuitive interface.",
+                    description:
+                      "Upload text, PDFs, or images effortlessly with our intuitive interface.",
                   },
                   {
                     number: "02",
                     title: "AI Transformation",
-                    description: "Advanced AI converts your content into optimized study resources.",
+                    description:
+                      "Advanced AI converts your content into optimized study resources.",
                   },
                   {
                     number: "03",
                     title: "Master Concepts",
-                    description: "Learn smarter with adaptive, personalized review sessions.",
+                    description:
+                      "Learn smarter with adaptive, personalized review sessions.",
                   },
                 ].map((step, index) => (
                   <motion.div
@@ -481,22 +510,26 @@ export default function HomeContent() {
                   >
                     <Box
                       sx={{
-                        mb: 6,
+                        mb: { xs: 4, sm: 6 },
                         display: "flex",
-                        alignItems: "flex-start",
+                        alignItems: { xs: "center", sm: "flex-start" },
+                        flexDirection: { xs: "column", sm: "row" },
+                        textAlign: { xs: "center", sm: "left" },
                       }}
                     >
                       <Box
                         sx={{
-                          width: "64px",
-                          height: "64px",
+                          width: { xs: "60px", sm: "64px" },
+                          height: { xs: "60px", sm: "64px" },
                           borderRadius: "20px",
-                          background: "linear-gradient(45deg, #3B82F6 30%, #EC4899 90%)",
+                          background:
+                            "linear-gradient(45deg, #3B82F6 30%, #EC4899 90%)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           flexShrink: 0,
-                          mr: 4,
+                          mr: { xs: 0, sm: 4 },
+                          mb: { xs: 2, sm: 0 },
                           boxShadow: "0 10px 25px rgba(59, 130, 246, 0.4)",
                         }}
                       >
@@ -515,8 +548,8 @@ export default function HomeContent() {
                           variant="h5"
                           sx={{
                             fontWeight: 700,
-                            fontSize: { xs: "1.5rem", sm: "1.7rem" },
-                            mb: 2,
+                            fontSize: { xs: "1.4rem", sm: "1.7rem" },
+                            mb: { xs: 1, sm: 2 },
                             color: "text.primary",
                           }}
                         >
@@ -525,7 +558,7 @@ export default function HomeContent() {
                         <Typography
                           sx={{
                             color: "text.secondary",
-                            fontSize: { xs: "1.2rem", sm: "1.3rem" },
+                            fontSize: { xs: "1.1rem", sm: "1.3rem" },
                             lineHeight: 1.8,
                           }}
                         >
@@ -547,15 +580,16 @@ export default function HomeContent() {
                 <Box
                   sx={{
                     position: "relative",
-                    height: { xs: "320px", sm: "480px", md: "560px" },
-                    borderRadius: "32px",
+                    height: { xs: "280px", sm: "480px", md: "560px" },
+                    borderRadius: { xs: "24px", sm: "32px" },
                     overflow: "hidden",
                     boxShadow: "0 25px 60px rgba(0, 0, 0, 0.2)",
                     transition: "all 0.3s ease",
+                    mb: { xs: 4, sm: 0 },
                   }}
                 >
                   <Image
-                    src="/images/mis.jpg"
+                    src="/images/2nd image.jpg"
                     alt="Study visualization"
                     layout="fill"
                     objectFit="cover"
@@ -568,7 +602,8 @@ export default function HomeContent() {
                       left: 0,
                       right: 0,
                       bottom: 0,
-                      background: "linear-gradient(0deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 50%)",
+                      background:
+                        "linear-gradient(0deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 50%)",
                     }}
                   />
                 </Box>
@@ -581,10 +616,11 @@ export default function HomeContent() {
       {/* Testimonial Section */}
       <Box
         sx={{
-          py: { xs: 12, sm: 16 },
+          py: { xs: 8, sm: 16 },
           bgcolor: "background.paper",
-          borderRadius: "32px",
-          mt: { xs: 8, sm: 12 },
+          borderRadius: { xs: "24px", sm: "32px" },
+          mt: { xs: 6, sm: 12 },
+          px: { xs: 2, sm: 0 },
         }}
       >
         <motion.div
@@ -600,37 +636,49 @@ export default function HomeContent() {
                 textAlign: "center",
                 fontWeight: 800,
                 fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4rem" },
-                mb: 4,
-                color: "text.primary",
+                mb: { xs: 2, sm: 4 },
+                background:
+                  "linear-gradient(90deg,rgb(182, 52, 214) 0%, #4f46e5 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                color: "transparent",
               }}
             >
               Voices of Success
             </Typography>
           </motion.div>
-          
+
           <motion.div variants={fadeIn}>
             <GradientDivider />
           </motion.div>
 
-          <Grid container spacing={4} sx={{ maxWidth: "1400px", mx: "auto" }}>
+          <Grid
+            container
+            spacing={{ xs: 3, sm: 4 }}
+            sx={{ maxWidth: "1400px", mx: "auto" }}
+          >
             {[
               {
                 name: "James Blay",
                 role: "Engineering Student",
-                quote: "This platform transformed my study routine, doubling my efficiency!",
+                quote:
+                  "This platform transformed my study routine, doubling my efficiency!",
               },
               {
                 name: "Gina Lucy",
                 role: "HR Manager of a Company",
-                quote: "“AI flashcards streamlined our employee training process, making onboarding faster and more engaging.”"
+                quote:
+                  "AI flashcards streamlined our employee training process, making onboarding faster and more engaging.",
               },
               {
                 name: "Duvor William",
                 role: "Working Professional",
-                quote: "“Balancing work and upskilling was tough, but this tool made learning efficient and flexible.”"
-              }
+                quote:
+                  "Balancing work and upskilling was tough, but this tool made learning efficient and flexible.",
+              },
             ].map((testimonial, index) => (
-              <Grid item xs={12} md={4} key={index}>
+              <Grid item xs={12} sm={6} md={4} key={index}>
                 <motion.div
                   variants={fadeIn}
                   whileHover={{ scale: 1.03 }}
@@ -639,52 +687,70 @@ export default function HomeContent() {
                   <GlassCard
                     sx={{
                       height: "100%",
-                      p: { xs: 5, sm: 6 },
+                      p: { xs: 4, sm: 6 },
                       position: "relative",
                       transition: "all 0.3s ease",
                     }}
                   >
-                    <FormatQuoteIcon 
-                      sx={{ 
-                        color: "#3B82F6", 
-                        opacity: 0.3, 
-                        fontSize: "4rem",
+                    <FormatQuoteIcon
+                      sx={{
+                        color: "#3B82F6",
+                        opacity: 0.3,
+                        fontSize: { xs: "3rem", sm: "4rem" },
                         position: "absolute",
                         top: 20,
-                        left: 20
-                      }} 
+                        left: 20,
+                      }}
                     />
                     <Typography
                       sx={{
-                        fontSize: { xs: "1.3rem", sm: "1.4rem" },
+                        fontSize: { xs: "1.1rem", sm: "1.4rem" },
                         lineHeight: 1.9,
-                        mb: 6,
+                        mb: { xs: 4, sm: 6 },
                         color: "text.secondary",
                         fontStyle: "italic",
-                        pl: 4,
+                        pl: { xs: 3, sm: 4 },
                       }}
                     >
                       {testimonial.quote}
                     </Typography>
-                    <Divider sx={{ mb: 5, borderColor: "rgba(59, 130, 246, 0.15)" }} />
+                    <Divider
+                      sx={{
+                        mb: { xs: 3, sm: 5 },
+                        borderColor: "rgba(59, 130, 246, 0.15)",
+                      }}
+                    />
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Avatar
                         sx={{
-                          background: `linear-gradient(${index * 60}deg, #3B82F6, #EC4899)`,
+                          background: `linear-gradient(${
+                            index * 60
+                          }deg, #3B82F6, #EC4899)`,
                           color: "white",
                           fontWeight: 700,
                           mr: 3,
-                          width: 56,
-                          height: 56,
+                          width: { xs: 48, sm: 56 },
+                          height: { xs: 48, sm: 56 },
                         }}
                       >
                         {testimonial.name.charAt(0)}
                       </Avatar>
                       <Box>
-                        <Typography sx={{ fontWeight: 700, color: "text.primary", fontSize: "1.2rem" }}>
+                        <Typography
+                          sx={{
+                            fontWeight: 700,
+                            color: "text.primary",
+                            fontSize: { xs: "1.1rem", sm: "1.2rem" },
+                          }}
+                        >
                           {testimonial.name}
                         </Typography>
-                        <Typography sx={{ color: "text.secondary", fontSize: "1rem" }}>
+                        <Typography
+                          sx={{
+                            color: "text.secondary",
+                            fontSize: { xs: "0.9rem", sm: "1rem" },
+                          }}
+                        >
                           {testimonial.role}
                         </Typography>
                       </Box>
@@ -700,12 +766,12 @@ export default function HomeContent() {
       {/* CTA Section */}
       <Box
         sx={{
-          py: { xs: 12, sm: 16 },
+          py: { xs: 8, sm: 16 },
           textAlign: "center",
-          px: { xs: 4, sm: 6 },
-          mb: { xs: 10, sm: 14 },
+          px: { xs: 2, sm: 6 },
+          mb: { xs: 8, sm: 14 },
           background: "linear-gradient(135deg, #DBEAFE 0%, #FCE7F3 100%)",
-          borderRadius: "32px",
+          borderRadius: { xs: "24px", sm: "32px" },
           position: "relative",
           overflow: "hidden",
         }}
@@ -735,8 +801,8 @@ export default function HomeContent() {
               gutterBottom
               sx={{
                 fontWeight: 900,
-                fontSize: { xs: "2.5rem", sm: "3.5rem", md: "4rem" },
-                mb: 5,
+                fontSize: { xs: "2.3rem", sm: "3.5rem", md: "4rem" },
+                mb: { xs: 3, sm: 5 },
                 background: "linear-gradient(45deg, #3B82F6 30%, #EC4899 90%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -751,15 +817,17 @@ export default function HomeContent() {
           <motion.div variants={fadeIn}>
             <Typography
               sx={{
-                mb: 6,
+                mb: { xs: 4, sm: 6 },
                 maxWidth: "900px",
                 mx: "auto",
                 color: "text.secondary",
-                fontSize: { xs: "1.3rem", sm: "1.4rem" },
+                fontSize: { xs: "1.1rem", sm: "1.4rem" },
                 lineHeight: 1.9,
+                px: { xs: 2, sm: 0 },
               }}
             >
-              Join thousands of students revolutionizing their studies with our cutting-edge AI tools. Start today and unlock your full potential!
+              Join thousands of students revolutionizing their studies with our
+              cutting-edge AI tools. Start today and unlock your full potential!
             </Typography>
           </motion.div>
 
@@ -770,20 +838,20 @@ export default function HomeContent() {
               href="/sign-up"
               endIcon={<ArrowForwardIcon />}
               sx={{
-                px: 7,
-                py: 2.5,
+                px: { xs: 5, sm: 7 },
+                py: { xs: 1.8, sm: 2.5 },
                 borderRadius: "50px",
                 background: "linear-gradient(45deg, #3B82F6 30%, #EC4899 90%)",
                 boxShadow: "0 15px 50px rgba(59, 130, 246, 0.5)",
-                fontSize: "1.4rem",
+                fontSize: { xs: "1.2rem", sm: "1.4rem" },
                 textTransform: "none",
                 fontWeight: 700,
+                width: { xs: "90%", sm: "auto" },
                 "&:hover": {
                   boxShadow: "0 25px 60px rgba(59, 130, 246, 0.6)",
                   transform: "scale(1.05)",
                 },
               }}
-              
             >
               Launch Your Success
             </Button>

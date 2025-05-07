@@ -24,6 +24,7 @@ import {
   Tooltip,
   Badge,
 } from "@mui/material";
+import Image from "next/image";
 
 // Icons
 import MenuIcon from "@mui/icons-material/Menu";
@@ -34,7 +35,6 @@ import QuizOutlinedIcon from "@mui/icons-material/QuizOutlined";
 import BookmarkBorderOutlinedIcon from "@mui/icons-material/BookmarkBorderOutlined";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
-import SchoolIcon from '@mui/icons-material/School';
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
 
 function NavigationBarContent() {
@@ -67,6 +67,11 @@ function NavigationBarContent() {
       icon: <ChatOutlinedIcon />,
       highlight: pathname.startsWith("/study-mate/chat"),
     },
+    {
+      path: "/pricing",
+      label: "Pricing",
+      icon: <BookmarkBorderOutlinedIcon />,
+    },
   ];
 
   const renderMobileDrawer = () => (
@@ -93,12 +98,17 @@ function NavigationBarContent() {
           borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{ color: "#4f46e5", fontWeight: 700, letterSpacing: "-0.02em" }}
-        >
-          StudyMate
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Box sx={{ position: "relative", width: 320, height: 85 }}>
+            <Image
+              src="/images/logo.png"
+              alt="StudyMate Logo"
+              layout="fill"
+              objectFit="contain"
+              priority
+            />
+          </Box>
+        </Box>
         <IconButton
           onClick={() => setDrawerOpen(false)}
           sx={{
@@ -195,19 +205,24 @@ function NavigationBarContent() {
       >
         <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ height: 70 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                flexGrow: 1,
-                color: "#4f46e5",
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              StudyMate
-            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Box sx={{ position: "relative", width: 320, height: 85 }}>
+                <Image
+                  src="/images/logo.png"
+                  alt="StudyMate Logo"
+                  layout="fill"
+                  objectFit="contain"
+                  priority
+                />
+              </Box>
+            </Box>
             <Box
-              sx={{ width: 40, display: "flex", justifyContent: "flex-end" }}
+              sx={{
+                width: 40,
+                display: "flex",
+                justifyContent: "flex-end",
+                ml: "auto",
+              }}
             >
               <Box
                 sx={{
@@ -238,90 +253,108 @@ function NavigationBarContent() {
       >
         <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ height: 70 }}>
-            <SchoolIcon sx={{ 
-                            fontSize: "2rem", 
-                            color: "#5065DB",
-                            mr: 1.5,
-                          }} />
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              fontWeight: 800,
-                              fontSize: "1.5rem",
-                              flexGrow:1,
-                              background: "linear-gradient(45deg, #5065DB 30%, #7C4DFF 90%)",
-                              WebkitBackgroundClip: "text",
-                              WebkitTextFillColor: "transparent",
-                              backgroundClip: "text",
-                              textFillColor: "transparent",
-                            }}
-                          >
-                            StudyMate
-                          </Typography>
-            {!isMobile && (
-              <>
-                <Link
-                  href="/pricing"
-                  passHref
-                  style={{ textDecoration: "none" }}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                flexGrow: { xs: 0, sm: 1 },
+                mr: { xs: 2, sm: 0 },
+              }}
+            >
+              <Box
+                sx={{
+                  position: "relative",
+                  width: { xs: 160, sm: 320 },
+                  height: { xs: 45, sm: 85 },
+                }}
+              >
+                <Image
+                  src="/images/logo.png"
+                  alt="StudyMate Logo"
+                  layout="fill"
+                  objectFit="contain"
+                  priority
+                />
+              </Box>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                ml: "auto",
+                gap: { xs: 0.5, sm: 2 },
+                flexWrap: { xs: "wrap", sm: "nowrap" },
+                justifyContent: { xs: "flex-end", sm: "flex-start" },
+              }}
+            >
+              <Link href="/pricing" passHref style={{ textDecoration: "none" }}>
+                <Button
+                  sx={{
+                    color: isActive("/pricing") ? "#4f46e5" : "rgba(0,0,0,0.7)",
+                    fontWeight: 500,
+                    fontSize: { xs: "0.75rem", sm: "0.9rem" },
+                    padding: { xs: "4px 6px", sm: "6px 16px" },
+                    whiteSpace: "nowrap",
+                    minWidth: { xs: "auto", sm: "auto" },
+                    marginRight: { xs: 0.5, sm: 0 },
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      background: "rgba(79, 70, 229, 0.05)",
+                      transform: "translateY(-1px)",
+                    },
+                  }}
                 >
-                  <Button
-                    sx={{
-                      color: isActive("/pricing")
-                        ? "#4f46e5"
-                        : "rgba(0,0,0,0.7)",
-                      fontWeight: 500,
-                      fontSize: "0.95rem",
-                      px: 2,
-                      mr: 2,
-                      transition: "all 0.2s ease",
-                      "&:hover": {
-                        background: "rgba(79, 70, 229, 0.05)",
-                        transform: "translateY(-1px)",
-                      },
-                    }}
-                  >
-                    Pricing
-                  </Button>
-                </Link>
-              </>
-            )}
-            <Button
-              color="inherit"
-              href="/sign-in"
-              sx={{
-                color: "#4f46e5",
-                fontSize: "0.9rem",
-                fontWeight: 600,
-                "&:hover": {
-                  background: "rgba(79, 70, 229, 0.05)",
-                },
-              }}
-            >
-              Sign In
-            </Button>
-            <Button
-              variant="contained"
-              href="/sign-up"
-              sx={{
-                ml: 2,
-                bgcolor: "#4f46e5",
-                fontWeight: 600,
-                fontSize: "0.9rem",
-                borderRadius: "8px",
-                textTransform: "none",
-                boxShadow: "0 2px 10px rgba(79, 70, 229, 0.3)",
-                px: 3,
-                "&:hover": {
-                  bgcolor: "#4338ca",
-                  boxShadow: "0 4px 12px rgba(79, 70, 229, 0.4)",
-                  transform: "translateY(-1px)",
-                },
-                transition: "all 0.2s ease",
-              }}
-            >
-              Get Started
-            </Button>
+                  Pricing
+                </Button>
+              </Link>
+
+              <Button
+                color="inherit"
+                href="/sign-in"
+                sx={{
+                  color: "#4f46e5",
+                  fontSize: { xs: "0.75rem", sm: "0.9rem" },
+                  fontWeight: 600,
+                  whiteSpace: "nowrap",
+                  minWidth: { xs: "auto", sm: 80 },
+                  padding: { xs: "4px 6px", sm: "6px 16px" },
+                  marginRight: { xs: 0.5, sm: 0 },
+                  "&:hover": {
+                    background: "rgba(79, 70, 229, 0.05)",
+                  },
+                }}
+              >
+                Sign In
+              </Button>
+
+              {/* Only show Get Started button on larger screens */}
+              <Box sx={{ display: { xs: "none", sm: "block" } }}>
+                <Button
+                  variant="contained"
+                  href="/sign-up"
+                  sx={{
+                    bgcolor: "#4f46e5",
+                    fontWeight: 600,
+                    fontSize: { xs: "0.75rem", sm: "0.9rem" },
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    boxShadow: "0 2px 10px rgba(79, 70, 229, 0.3)",
+                    padding: { xs: "4px 6px", sm: "6px 16px" },
+                    minWidth: { xs: "auto", sm: 100 },
+                    whiteSpace: "nowrap",
+                    "&:hover": {
+                      bgcolor: "#4338ca",
+                      boxShadow: "0 4px 12px rgba(79, 70, 229, 0.4)",
+                      transform: "translateY(-1px)",
+                    },
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  Get Started
+                </Button>
+              </Box>
+            </Box>
           </Toolbar>
         </Container>
       </AppBar>
@@ -348,7 +381,7 @@ function NavigationBarContent() {
                   aria-label="menu"
                   onClick={() => setDrawerOpen(true)}
                   sx={{
-                    mr: 2,
+                    mr: 1,
                     color: "#4f46e5",
                     bgcolor: "rgba(79, 70, 229, 0.1)",
                     "&:hover": { bgcolor: "rgba(79, 70, 229, 0.2)" },
@@ -356,17 +389,30 @@ function NavigationBarContent() {
                 >
                   <MenuIcon />
                 </IconButton>
-                <Typography
-                  variant="h6"
+                <Box
                   sx={{
-                    color: "#4f46e5",
-                    fontWeight: 700,
-                    letterSpacing: "-0.02em",
+                    display: "flex",
+                    alignItems: "center",
                     flexGrow: 1,
+                    justifyContent: "center",
                   }}
                 >
-                  StudyMate
-                </Typography>
+                  <Box
+                    sx={{
+                      position: "relative",
+                      width: { xs: 130, sm: 320 },
+                      height: { xs: 40, sm: 85 },
+                    }}
+                  >
+                    <Image
+                      src="/images/logo.png"
+                      alt="StudyMate Logo"
+                      layout="fill"
+                      objectFit="contain"
+                      priority
+                    />
+                  </Box>
+                </Box>
               </>
             ) : (
               <>
@@ -375,21 +421,30 @@ function NavigationBarContent() {
                   passHref
                   style={{ textDecoration: "none", color: "inherit" }}
                 >
-                  <Typography
-                    variant="h6"
+                  <Box
                     sx={{
-                      color: "#4f46e5",
-                      fontWeight: 700,
-                      letterSpacing: "-0.02em",
+                      display: "flex",
+                      alignItems: "center",
                       mr: 4,
                       cursor: "pointer",
-                      "&:hover": {
-                        opacity: 0.9,
-                      },
                     }}
                   >
-                    StudyMate
-                  </Typography>
+                    <Box
+                      sx={{
+                        position: "relative",
+                        width: 320,
+                        height: 85,
+                      }}
+                    >
+                      <Image
+                        src="/images/logo.png"
+                        alt="StudyMate Logo"
+                        layout="fill"
+                        objectFit="contain"
+                        priority
+                      />
+                    </Box>
+                  </Box>
                 </Link>
 
                 <Box sx={{ flexGrow: 1, display: "flex", gap: 1 }}>
@@ -538,7 +593,21 @@ export default function NavigationBar() {
                   letterSpacing: "-0.02em",
                 }}
               >
-                StudyMate
+                <Box
+                  sx={{
+                    position: "relative",
+                    width: 320,
+                    height: 85,
+                  }}
+                >
+                  <Image
+                    src="/images/logo.png"
+                    alt="StudyMate Logo"
+                    layout="fill"
+                    objectFit="contain"
+                    priority
+                  />
+                </Box>
               </Typography>
               <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                 <CircularProgress size={24} sx={{ color: "#4f46e5" }} />
