@@ -49,28 +49,23 @@ function NavigationBarContent() {
 
   const navigationItems = [
     { path: "/dashboard", label: "Dashboard", icon: <DashboardOutlinedIcon /> },
-    { path: "/notes", label: "My Notes", icon: <NotesOutlinedIcon /> },
+    { path: "/notes", label: "Notes", icon: <NotesOutlinedIcon /> },
     {
       path: "/generate",
-      label: "Generate Notes",
+      label: "Generate",
       icon: <CreateOutlinedIcon />,
     },
-    { path: "/practice", label: "Practice Tests", icon: <QuizOutlinedIcon /> },
+    { path: "/practice", label: "Practice", icon: <QuizOutlinedIcon /> },
     {
       path: "/saved-reviews",
-      label: "Saved Reviews",
+      label: "Saved",
       icon: <BookmarkBorderOutlinedIcon />,
     },
     {
       path: "/study-mate/chat",
-      label: "Study Chat",
+      label: "Chat",
       icon: <ChatOutlinedIcon />,
       highlight: pathname.startsWith("/study-mate/chat"),
-    },
-    {
-      path: "/pricing",
-      label: "Pricing",
-      icon: <BookmarkBorderOutlinedIcon />,
     },
   ];
 
@@ -99,9 +94,9 @@ function NavigationBarContent() {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Box sx={{ position: "relative", width: 320, height: 85 }}>
+          <Box sx={{ position: "relative", width: 180, height: 50 }}>
             <Image
-              src="/images/logo.png"
+              src="/images/logo2.png"
               alt="StudyMate Logo"
               layout="fill"
               objectFit="contain"
@@ -206,9 +201,9 @@ function NavigationBarContent() {
         <Container maxWidth="xl">
           <Toolbar disableGutters sx={{ height: 70 }}>
             <Box sx={{ display: "flex", alignItems: "center" }}>
-              <Box sx={{ position: "relative", width: 320, height: 85 }}>
+              <Box sx={{ position: "relative", width: 180, height: 50 }}>
                 <Image
-                  src="/images/logo.png"
+                  src="/images/logo2.png"
                   alt="StudyMate Logo"
                   layout="fill"
                   objectFit="contain"
@@ -264,12 +259,12 @@ function NavigationBarContent() {
               <Box
                 sx={{
                   position: "relative",
-                  width: { xs: 160, sm: 320 },
-                  height: { xs: 45, sm: 85 },
+                  width: { xs: 140, sm: 260 },
+                  height: { xs: 40, sm: 70 },
                 }}
               >
                 <Image
-                  src="/images/logo.png"
+                  src="/images/logo2.png"
                   alt="StudyMate Logo"
                   layout="fill"
                   objectFit="contain"
@@ -400,12 +395,12 @@ function NavigationBarContent() {
                   <Box
                     sx={{
                       position: "relative",
-                      width: { xs: 130, sm: 320 },
-                      height: { xs: 40, sm: 85 },
+                      width: { xs: 120, sm: 180 },
+                      height: { xs: 35, sm: 50 },
                     }}
                   >
                     <Image
-                      src="/images/logo.png"
+                      src="/images/logo2.png"
                       alt="StudyMate Logo"
                       layout="fill"
                       objectFit="contain"
@@ -432,12 +427,12 @@ function NavigationBarContent() {
                     <Box
                       sx={{
                         position: "relative",
-                        width: 320,
-                        height: 85,
+                        width: { xs: 120, sm: 180 },
+                        height: { xs: 35, sm: 50 },
                       }}
                     >
                       <Image
-                        src="/images/logo.png"
+                        src="/images/logo2.png"
                         alt="StudyMate Logo"
                         layout="fill"
                         objectFit="contain"
@@ -447,7 +442,7 @@ function NavigationBarContent() {
                   </Box>
                 </Link>
 
-                <Box sx={{ flexGrow: 1, display: "flex", gap: 1 }}>
+                <Box sx={{ flexGrow: 1, display: "flex", gap: 0.5 }}>
                   {navigationItems.map((item) => (
                     <Link
                       key={item.path}
@@ -464,11 +459,11 @@ function NavigationBarContent() {
                               : "rgba(0,0,0,0.7)",
                           fontWeight:
                             isActive(item.path) || item.highlight ? 600 : 500,
-                          fontSize: "0.9rem",
+                          fontSize: "0.85rem",
                           textTransform: "none",
                           borderRadius: 2,
-                          px: 2,
-                          py: 1,
+                          px: 1.5,
+                          py: 0.75,
                           position: "relative",
                           overflow: "hidden",
                           "&:hover": {
@@ -500,27 +495,6 @@ function NavigationBarContent() {
             )}
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              {!isMobile && (
-                <Tooltip title="Notifications">
-                  <IconButton
-                    sx={{
-                      ml: 1,
-                      color: "rgba(0,0,0,0.7)",
-                      bgcolor: "rgba(0, 0, 0, 0.04)",
-                      "&:hover": {
-                        bgcolor: "rgba(0, 0, 0, 0.08)",
-                        transform: "translateY(-1px)",
-                      },
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    <Badge badgeContent={3} color="error">
-                      <NotificationsNoneOutlinedIcon />
-                    </Badge>
-                  </IconButton>
-                </Tooltip>
-              )}
-
               <Box
                 sx={{
                   ml: 1,
@@ -596,12 +570,12 @@ export default function NavigationBar() {
                 <Box
                   sx={{
                     position: "relative",
-                    width: 320,
-                    height: 85,
+                    width: { xs: 120, sm: 180 },
+                    height: { xs: 35, sm: 50 },
                   }}
                 >
                   <Image
-                    src="/images/logo.png"
+                    src="/images/logo2.png"
                     alt="StudyMate Logo"
                     layout="fill"
                     objectFit="contain"

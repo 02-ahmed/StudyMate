@@ -826,8 +826,9 @@ export default function HomeContent() {
                 px: { xs: 2, sm: 0 },
               }}
             >
-              Join thousands of students revolutionizing their studies with our
-              cutting-edge AI tools. Start today and unlock your full potential!
+              Join thousands of learners revolutionizing their memorization
+              skills with our cutting-edge AI tools. Start today and unlock your
+              full potential!
             </Typography>
           </motion.div>
 
