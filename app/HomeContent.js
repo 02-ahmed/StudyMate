@@ -810,7 +810,7 @@ export default function HomeContent() {
                 textFillColor: "transparent",
               }}
             >
-              Ignite Your Academic Journey
+              Memorization Journey
             </Typography>
           </motion.div>
 
