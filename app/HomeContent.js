@@ -163,7 +163,7 @@ export default function HomeContent() {
                     textAlign: { xs: "center", sm: "left" },
                   }}
                 >
-                  Memorize Anything{" "}
+                  Understand Anything{" "}
                   <span
                     style={{
                       fontWeight: 900,

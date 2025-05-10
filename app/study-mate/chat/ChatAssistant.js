@@ -940,23 +940,59 @@ export default function ChatAssistant({ userId }) {
               background: "rgba(255,255,255,0.8)",
             }}
           >
-            {/* Chatto-AI attribution - more compact */}
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              align="center"
-              sx={{ fontSize: "0.6rem", opacity: 0.6, pt: 0.5 }}
+            {/* Chatto-AI attribution with Explore More Languages button */}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                px: 2,
+                pt: 1,
+              }}
             >
-              Powered by{" "}
-              <a
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: "0.6rem", opacity: 0.6 }}
+              >
+                Powered by{" "}
+                <a
+                  href="https://chatto-ai.techloft.org/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "inherit" }}
+                >
+                  Chatto-AI
+                </a>
+              </Typography>
+
+              <Button
+                variant="contained"
+                size="small"
                 href="https://chatto-ai.techloft.org/"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: "inherit" }}
+                sx={{
+                  fontSize: "0.7rem",
+                  backgroundColor: "#4457c0",
+                  color: "white",
+                  textTransform: "none",
+                  minWidth: "auto",
+                  px: 2,
+                  py: 0.75,
+                  borderRadius: "8px",
+                  boxShadow: "0 2px 4px rgba(68, 87, 192, 0.2)",
+                  "&:hover": {
+                    backgroundColor: "#3949ab",
+                    boxShadow: "0 4px 8px rgba(68, 87, 192, 0.3)",
+                    transform: "translateY(-1px)",
+                  },
+                  transition: "all 0.2s ease",
+                }}
               >
-                Chatto-AI
-              </a>
-            </Typography>
+                Explore More Languages
+              </Button>
+            </Box>
 
             <Stack direction="row" spacing={2} alignItems="center" p={3} pt={1}>
               {isHistoryLimitReached ? (
