@@ -13,13 +13,18 @@ import {
   Typography,
   Rating,
   CircularProgress,
+  Chip,
 } from "@mui/material";
 import { collection, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import StarIcon from "@mui/icons-material/Star";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import TranslateIcon from "@mui/icons-material/Translate";
 import { db } from "../../../utils/firebase";
+import { SUPPORTED_LANGUAGES } from "../../contexts/LanguageContext";
+import { cleanFlashcardContent } from "@/utils/schemas";
+import useTranslation from "../../hooks/useTranslation";
 
 export default function FlashcardsIdContent({ params }) {
   const { user } = useUser();
@@ -28,7 +33,9 @@ export default function FlashcardsIdContent({ params }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
+  const [language, setLanguage] = useState("en"); // Default to English
   const router = useRouter();
+  const { t } = useTranslation(); // Add translation hook
 
   const loadFlashcards = useCallback(async () => {
     if (!user) return;
@@ -40,6 +47,68 @@ export default function FlashcardsIdContent({ params }) {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setName(data.name);
+
+        console.log("========== FLASHCARD SET DATA ==========");
+        console.log("Flashcard set ID:", params.id);
+        console.log("Flashcard set name:", data.name);
+        console.log("Flashcard set complete data:", data);
+        console.log(
+          "Flashcard set raw data (stringified):",
+          JSON.stringify(data)
+        );
+        console.log("Flashcard set language:", data.language);
+        console.log("Flashcard set language (quoted):", `"${data.language}"`);
+        console.log("Flashcard set language type:", typeof data.language);
+        console.log("Is language field present?", "language" in data);
+        console.log("Is language null?", data.language === null);
+        console.log("Is language undefined?", data.language === undefined);
+        console.log("Is language empty string?", data.language === "");
+        console.log(
+          "Language string length:",
+          data.language ? data.language.length : 0
+        );
+        console.log("Supported languages:", Object.keys(SUPPORTED_LANGUAGES));
+        console.log(
+          "Is language supported?",
+          data.language in SUPPORTED_LANGUAGES
+        );
+        console.log("User ID:", user.id);
+        console.log(
+          "Created at:",
+          data.createdAt ? data.createdAt.toDate().toString() : "unknown"
+        );
+        console.log(
+          "Number of flashcards:",
+          Array.isArray(data.flashcards)
+            ? data.flashcards.length
+            : typeof data.flashcards === "object"
+            ? Object.keys(data.flashcards).length
+            : 0
+        );
+        console.log("========================================");
+
+        // Set the language if available
+        if (data.language && SUPPORTED_LANGUAGES[data.language]) {
+          console.log("Setting language to:", data.language);
+          console.log(
+            "Language display name:",
+            SUPPORTED_LANGUAGES[data.language]
+          );
+          setLanguage(data.language);
+        } else {
+          console.log(
+            "Using default language (en) because:",
+            !data.language
+              ? "language is not set"
+              : !SUPPORTED_LANGUAGES[data.language]
+              ? "language is not supported"
+              : "unknown reason"
+          );
+          console.log(
+            "Default language display name:",
+            SUPPORTED_LANGUAGES["en"]
+          );
+        }
         // Handle both array and object formats for backwards compatibility
         if (Array.isArray(data.flashcards)) {
           setFlashcards(data.flashcards);
@@ -50,10 +119,13 @@ export default function FlashcardsIdContent({ params }) {
         } else {
           setFlashcards([]);
         }
+      } else {
+        console.log("No flashcard set found with ID:", params.id);
       }
       setLoading(false);
     } catch (error) {
       console.error("Error loading flashcards:", error);
+      console.error("Error stack:", error.stack);
       setLoading(false);
     }
   }, [user, params.id]);
@@ -104,40 +176,119 @@ export default function FlashcardsIdContent({ params }) {
           startIcon={<ArrowBackIcon />}
           sx={{ mb: 2 }}
         >
-          Back to Notes
+          {t("flashcards.backToNotes", "Back to Notes")}
         </Button>
         <Typography variant="h5" sx={{ textAlign: "center", mt: 4 }}>
-          No flashcards found in this collection
+          {t(
+            "flashcards.noFlashcardsFound",
+            "No flashcards found in this collection"
+          )}
         </Typography>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 4 }}>
-      <Button onClick={handleBack} startIcon={<ArrowBackIcon />} sx={{ mb: 2 }}>
-        Back to Notes
-      </Button>
+    <Container
+      maxWidth="md"
+      sx={{
+        pt: { xs: 1, sm: 1.5 },
+        pb: { xs: 1, sm: 1.5 },
+        display: "flex",
+        flexDirection: "column",
+        height: "auto",
+        minHeight: "auto",
+        maxHeight: "100vh",
+        overflow: "auto",
+        justifyContent: "space-between",
+        gap: 1, // Increased gap
+      }}
+    >
+      {/* Top Section - Header */}
+      <Box sx={{ flexShrink: 0 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: { xs: 0.5, sm: 0.75 }, // Slightly increased margin
+          }}
+        >
+          <Button
+            onClick={handleBack}
+            startIcon={<ArrowBackIcon sx={{ fontSize: "1rem" }} />}
+            size="small"
+            sx={{ py: 0.5, px: 1, fontSize: "0.85rem" }} // Slightly larger button
+          >
+            {t("flashcards.backToNotes", "Back to Notes")}
+          </Button>
 
-      <Typography variant="h4" sx={{ mb: 4, textAlign: "center" }}>
-        {name || "Untitled Set"}
-      </Typography>
-
-      <Box sx={{ mb: 2, textAlign: "center" }}>
-        <Typography variant="subtitle1">
-          Card {currentIndex + 1} of {flashcards.length}
+          {/* Language indicator */}
+          <Chip
+            icon={<TranslateIcon sx={{ fontSize: "0.9rem" }} />}
+            label={SUPPORTED_LANGUAGES[language] || "English"}
+            color="primary"
+            variant="outlined"
+            size="small"
+            sx={{
+              height: 26, // Slightly taller
+              "& .MuiChip-label": { px: 1, fontSize: "0.75rem" }, // Slightly larger font
+            }}
+          />
+        </Box>
+        <Typography
+          variant="h6"
+          sx={{
+            mb: 0.5, // Slightly increased margin
+            textAlign: "center",
+            lineHeight: 1.2, // Slightly increased line height
+            fontSize: { xs: "1.1rem", sm: "1.2rem", md: "1.35rem" }, // Slightly larger font
+          }}
+        >
+          {name || t("flashcards.untitledSet", "Untitled Set")}
         </Typography>
+        <Box sx={{ display: "flex", justifyContent: "center", mb: 0.5 }}>
+          <Typography
+            variant="body2"
+            sx={{ color: "text.secondary", fontSize: "0.8rem" }} // Slightly larger font
+          >
+            {console.log("Translation params:", {
+              key: "flashcards.cardCount",
+              language,
+              currentIndex: currentIndex + 1,
+              total: flashcards.length,
+            })}
+            {t("flashcards.cardCount", {
+              current: currentIndex + 1,
+              total: flashcards.length,
+            })}
+            {console.log(
+              "Translation result:",
+              t("flashcards.cardCount", {
+                current: currentIndex + 1,
+                total: flashcards.length,
+              })
+            )}
+          </Typography>
+        </Box>
       </Box>
 
+      {/* Card Section - Middle */}
       <Card
         onClick={handleFlip}
         sx={{
-          height: 400,
+          height: { xs: "25vh", sm: "28vh", md: "32vh" }, // Increased heights but still smaller than original
+          minHeight: "160px", // Increased minimum height
+          maxHeight: "280px", // Increased maximum height cap
           width: "100%",
           cursor: "pointer",
           perspective: "1000px",
           backgroundColor: "transparent",
-          mb: 3,
+          my: 0.5, // Slightly more margin
+          boxShadow: "0 1px 5px rgba(0,0,0,0.06)",
+          flexGrow: 0,
+          flexShrink: 1,
+          display: "flex",
         }}
       >
         <Box
@@ -161,19 +312,19 @@ export default function FlashcardsIdContent({ params }) {
               justifyContent: "center",
               backgroundColor: "#fff",
               overflowY: "auto",
-              padding: "24px !important",
+              padding: "14px !important", // Slightly more padding
               "&::-webkit-scrollbar": {
-                width: "8px",
+                width: "4px",
               },
               "&::-webkit-scrollbar-track": {
                 background: "#f1f1f1",
-                borderRadius: "4px",
+                borderRadius: "2px",
               },
               "&::-webkit-scrollbar-thumb": {
-                background: "#888",
-                borderRadius: "4px",
+                background: "#bbb",
+                borderRadius: "2px",
                 "&:hover": {
-                  background: "#666",
+                  background: "#999",
                 },
               },
             }}
@@ -181,24 +332,24 @@ export default function FlashcardsIdContent({ params }) {
             <Box
               sx={{
                 width: "100%",
-                padding: "0 24px",
+                padding: "0 14px", // Slightly more padding
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
               }}
             >
               <Typography
-                variant="h6"
+                variant="body2"
                 sx={{
                   width: "100%",
                   wordBreak: "break-word",
                   whiteSpace: "normal",
-                  fontSize: "1.1rem",
-                  lineHeight: 1.6,
+                  fontSize: "1rem", // Slightly larger font
+                  lineHeight: 1.4,
                   textAlign: "center",
                 }}
               >
-                {flashcards[currentIndex]?.front || ""}
+                {cleanFlashcardContent(flashcards[currentIndex]?.front) || ""}
               </Typography>
             </Box>
           </CardContent>
@@ -215,19 +366,19 @@ export default function FlashcardsIdContent({ params }) {
               backgroundColor: "#fff",
               transform: "rotateY(180deg)",
               overflowY: "auto",
-              padding: "24px !important",
+              padding: "14px !important", // Slightly more padding
               "&::-webkit-scrollbar": {
-                width: "8px",
+                width: "4px",
               },
               "&::-webkit-scrollbar-track": {
                 background: "#f1f1f1",
-                borderRadius: "4px",
+                borderRadius: "2px",
               },
               "&::-webkit-scrollbar-thumb": {
-                background: "#888",
-                borderRadius: "4px",
+                background: "#bbb",
+                borderRadius: "2px",
                 "&:hover": {
-                  background: "#666",
+                  background: "#999",
                 },
               },
             }}
@@ -235,46 +386,65 @@ export default function FlashcardsIdContent({ params }) {
             <Box
               sx={{
                 width: "100%",
-                padding: "0 24px",
+                padding: "0 14px", // Slightly more padding
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
               }}
             >
               <Typography
-                variant="h6"
+                variant="body2"
                 sx={{
                   width: "100%",
                   wordBreak: "break-word",
                   whiteSpace: "normal",
-                  fontSize: "1.1rem",
-                  lineHeight: 1.6,
+                  fontSize: "1rem", // Slightly larger font
+                  lineHeight: 1.4,
                   textAlign: "center",
                 }}
               >
-                {flashcards[currentIndex]?.back || ""}
+                {cleanFlashcardContent(flashcards[currentIndex]?.back) || ""}
               </Typography>
             </Box>
           </CardContent>
         </Box>
       </Card>
 
-      <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+      {/* Navigation Buttons - Bottom */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 2, // Slightly increased gap
+          mt: 0.5, // Slightly increased margin
+          mb: 0.5,
+          flexShrink: 0,
+          position: "sticky",
+          bottom: 0,
+          backgroundColor: "background.paper",
+          zIndex: 2,
+          pt: 0.5,
+        }}
+      >
         <Button
           variant="contained"
           onClick={handlePrevious}
           disabled={currentIndex === 0}
-          startIcon={<ArrowBackIcon />}
+          startIcon={<ArrowBackIcon sx={{ fontSize: "1rem" }} />}
+          size="small"
+          sx={{ px: 1.5, py: 0.5, minWidth: "85px", fontSize: "0.85rem" }}
         >
-          Previous
+          {t("buttons.previous", "Previous")}
         </Button>
         <Button
           variant="contained"
           onClick={handleNext}
           disabled={currentIndex === flashcards.length - 1}
-          endIcon={<ArrowForwardIcon />}
+          endIcon={<ArrowForwardIcon sx={{ fontSize: "1rem" }} />}
+          size="small"
+          sx={{ px: 1.5, py: 0.5, minWidth: "85px", fontSize: "0.85rem" }}
         >
-          Next
+          {t("buttons.next", "Next")}
         </Button>
       </Box>
     </Container>

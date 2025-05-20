@@ -5,21 +5,75 @@ const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 const MAX_QUESTIONS = 15; // Increased from 10 to 15
 
+// Map of language codes to full language names
+const LANGUAGES = {
+  en: "English",
+  es: "Spanish",
+  fr: "French",
+  de: "German",
+  it: "Italian",
+  pt: "Portuguese",
+  nl: "Dutch",
+  pl: "Polish",
+  ru: "Russian",
+  zh: "Chinese",
+  ja: "Japanese",
+  ko: "Korean",
+  ar: "Arabic",
+  hi: "Hindi",
+  tr: "Turkish",
+};
+
 export async function POST(request) {
   try {
-    const { flashcards, numQuestions, questionTypes } = await request.json();
+    const requestBody = await request.json();
+    console.log("Request body received:", requestBody);
+    console.log("Request body type:", typeof requestBody);
+    console.log("Request body keys:", Object.keys(requestBody));
+    console.log("Raw request body (stringified):", JSON.stringify(requestBody));
 
-    // Validate input
+    // Extract parameters from request body
+    const {
+      flashcards,
+      numQuestions = 5,
+      questionTypes = ["multiple-choice"],
+      language = "en",
+    } = requestBody;
+
+    console.log("========== API REQUEST PROCESSING ==========");
+    console.log("Number of flashcards:", flashcards ? flashcards.length : 0);
+    console.log("Number of questions:", numQuestions);
+    console.log("Question types:", questionTypes);
+    console.log("Extracted language:", language);
+    console.log("Extracted language (quoted):", `"${language}"`);
+    console.log("Extracted language type:", typeof language);
+    console.log("Is language null?", language === null);
+    console.log("Is language undefined?", language === undefined);
+    console.log("Is language empty string?", language === "");
+    console.log("Language string length:", language ? language.length : 0);
+    console.log("Is language in request body?", "language" in requestBody);
+    console.log(
+      "Request body language value:",
+      JSON.stringify(requestBody.language)
+    );
+    console.log("Raw language from request body:", requestBody.language);
+    console.log("Raw language type:", typeof requestBody.language);
+    console.log("Raw language quoted:", `"${requestBody.language}"`);
+    console.log("===========================================");
+
+    // Validate input parameters
     if (!flashcards || !Array.isArray(flashcards) || flashcards.length === 0) {
+      console.log("Error: Invalid flashcards array");
       return NextResponse.json(
-        { error: "Invalid or empty flashcards array" },
+        { error: "Invalid flashcards array" },
         { status: 400 }
       );
     }
 
-    if (!numQuestions || numQuestions < 1) {
+    if (typeof numQuestions !== "number" || numQuestions < 1) {
+      console.log("Error: Invalid numQuestions parameter");
       return NextResponse.json(
-        { error: "Number of questions must be at least 1" },
+        { error: "Invalid numQuestions parameter" },
         { status: 400 }
       );
     }
@@ -33,16 +87,35 @@ export async function POST(request) {
       );
     }
 
-    if (
-      !questionTypes ||
-      !Array.isArray(questionTypes) ||
-      questionTypes.length === 0
-    ) {
+    if (!Array.isArray(questionTypes) || questionTypes.length === 0) {
+      console.log("Error: Invalid questionTypes parameter");
       return NextResponse.json(
-        { error: "Invalid question types" },
+        { error: "Invalid questionTypes parameter" },
         { status: 400 }
       );
     }
+
+    // Ensure we have a valid language code
+    // If language is not in our supported languages map, default to English
+    const validLanguage = LANGUAGES[language] ? language : "en";
+    console.log("========== LANGUAGE VALIDATION ==========");
+    console.log("Validated language:", validLanguage);
+    console.log("Validated language (quoted):", `"${validLanguage}"`);
+    console.log("Is language valid?", LANGUAGES[language] ? "yes" : "no");
+    console.log("Supported languages:", Object.keys(LANGUAGES));
+    console.log("Is language in supported languages?", language in LANGUAGES);
+    console.log(
+      "Why defaulting to English:",
+      !LANGUAGES[language]
+        ? "Language not supported"
+        : "Using provided language"
+    );
+    console.log("========================================");
+
+    const languageName = LANGUAGES[validLanguage] || "English";
+    console.log(
+      `Using ${languageName} (${validLanguage}) for question generation`
+    );
 
     // Format flashcards into a study material
     const studyMaterial = flashcards
@@ -72,32 +145,33 @@ IMPORTANT REQUIREMENTS:
    - Encouraging critical thinking beyond the material
 6. Vary the difficulty level of questions
 7. Make questions engaging and thought-provoking
+8. GENERATE ALL QUESTIONS IN ${languageName.toUpperCase()} - this is mandatory
 
 Each question MUST follow this EXACT format:
 
 For Multiple Choice:
 {
   "type": "multipleChoice",
-  "question": "your question here",
+  "question": "your question here in ${languageName}",
   "correctAnswer": "the correct option exactly as it appears in options",
   "options": ["option1", "option2", "option3", "option4"],
-  "explanation": "explanation of why the answer is correct"
+  "explanation": "explanation of why the answer is correct in ${languageName}"
 }
 
 For True/False:
 {
   "type": "trueFalse",
-  "question": "your statement here",
+  "question": "your statement here in ${languageName}",
   "correctAnswer": true or false (must be boolean, not string),
-  "explanation": "explanation of why the statement is true or false"
+  "explanation": "explanation of why the statement is true or false in ${languageName}"
 }
 
 For Fill in Blank:
 {
   "type": "fillInBlank",
-  "question": "question with blank marked by ________",
+  "question": "question with blank marked by ________ in ${languageName}",
   "correctAnswer": "the word or phrase that fills the blank",
-  "explanation": "explanation of why this is the correct answer"
+  "explanation": "explanation of why this is the correct answer in ${languageName}"
 }
 
 Additional Rules:
@@ -105,7 +179,8 @@ Additional Rules:
 2. True/False answers MUST be boolean (true/false), not strings
 3. Multiple choice MUST have exactly 4 options
 4. Return ONLY a JSON array of questions, no markdown or extra text
-5. Ensure the response is valid JSON that can be parsed`;
+5. Ensure the response is valid JSON that can be parsed
+6. ALL TEXT CONTENT MUST BE IN ${languageName.toUpperCase()}`;
 
     // Update the model configuration to increase creativity
     const model = genAI.getGenerativeModel({

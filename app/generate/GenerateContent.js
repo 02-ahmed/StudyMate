@@ -39,7 +39,9 @@ import SaveIcon from "@mui/icons-material/Save";
 import ViewListIcon from "@mui/icons-material/ViewList";
 import FlipIcon from "@mui/icons-material/Flip";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-import { createFlashcardSet } from "../../utils/schemas";
+import { createFlashcardSet, cleanFlashcardContent } from "../../utils/schemas";
+import { useLanguage } from "../contexts/LanguageContext";
+import useTranslation from "../hooks/useTranslation";
 
 // Import Quill dynamically to avoid SSR issues
 const ReactQuill = dynamic(() => import("react-quill"), {
@@ -69,6 +71,7 @@ export default function GenerateContent() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
+  const [messageIndex, setMessageIndex] = useState(0);
   const router = useRouter();
   const [tags, setTags] = useState([]);
   const [currentTag, setCurrentTag] = useState("");
@@ -76,6 +79,8 @@ export default function GenerateContent() {
   const [file, setFile] = useState(null);
   const [fileError, setFileError] = useState(null);
   const [savingFlashcards, setSavingFlashcards] = useState(false);
+  const { language } = useLanguage();
+  const { t } = useTranslation(); // Add translation hook
 
   // Define allowed file types
   const allowedTypes = [
@@ -106,35 +111,77 @@ export default function GenerateContent() {
   // Loading messages
   const loadingMessages = useMemo(
     () => [
-      "Generating your flashcards...",
-      "Breaking down the content into bite-sized pieces...",
-      "Creating comprehensive study materials...",
-      "Did you know? Active recall through flashcards is one of the most effective study methods!",
-      "Almost there! Organizing your flashcards...",
-      "Pro tip: Regular review of flashcards helps move information to long-term memory",
-      "Making sure we capture all the important concepts...",
-      "Fun fact: Spaced repetition can improve retention by up to 200%!",
-      "Still working... Complex topics take time to process properly",
-      "Creating connections between concepts...",
+      t(
+        "generatePage.loadingMessages.generating",
+        "Generating your flashcards..."
+      ),
+      t(
+        "generatePage.loadingMessages.breaking",
+        "Breaking down the content into bite-sized pieces..."
+      ),
+      t(
+        "generatePage.loadingMessages.creating",
+        "Creating comprehensive study materials..."
+      ),
+      t(
+        "generatePage.loadingMessages.didYouKnow",
+        "Did you know? Active recall through flashcards is one of the most effective study methods!"
+      ),
+      t(
+        "generatePage.loadingMessages.organizing",
+        "Almost there! Organizing your flashcards..."
+      ),
+      t(
+        "generatePage.loadingMessages.proTip",
+        "Pro tip: Regular review of flashcards helps move information to long-term memory"
+      ),
+      t(
+        "generatePage.loadingMessages.capturing",
+        "Making sure we capture all the important concepts..."
+      ),
+      t(
+        "generatePage.loadingMessages.funFact",
+        "Fun fact: Spaced repetition can improve retention by up to 200%!"
+      ),
+      t(
+        "generatePage.loadingMessages.stillWorking",
+        "Still working... Complex topics take time to process properly"
+      ),
+      t(
+        "generatePage.loadingMessages.connections",
+        "Creating connections between concepts..."
+      ),
     ],
-    []
+    [t]
   );
 
   // Add useEffect for rotating messages
   useEffect(() => {
-    let messageInterval;
-    if (loading) {
-      let index = 0;
-      setLoadingMessage(loadingMessages[0]);
-      messageInterval = setInterval(() => {
-        index = (index + 1) % loadingMessages.length;
-        setLoadingMessage(loadingMessages[index]);
-      }, 3000); // Change message every 3 seconds
-    }
-    return () => {
-      if (messageInterval) clearInterval(messageInterval);
-    };
-  }, [loading, loadingMessages]);
+    // Don't do anything if not loading
+    if (!loading) return;
+
+    // Use a stable reference to the messages
+    const messages = loadingMessages;
+
+    // Set the first message
+    setLoadingMessage(messages[0]);
+    setMessageIndex(0);
+
+    // Keep a reference to the index outside of the interval
+    let currentIndex = 0;
+
+    // Set up the rotation interval
+    const timer = setInterval(() => {
+      // Update the index and wrap around when we reach the end
+      currentIndex = (currentIndex + 1) % messages.length;
+      // Set the new message
+      setLoadingMessage(messages[currentIndex]);
+      setMessageIndex(currentIndex);
+    }, 5000);
+
+    // Clean up the interval when the component unmounts or loading changes
+    return () => clearInterval(timer);
+  }, [loading]); // Only depend on loading state
 
   const handleOpenDialog = () => {
     if (!isSignedIn) {
@@ -181,6 +228,7 @@ export default function GenerateContent() {
           back: card.back,
           id: index,
         })),
+        language: language,
       });
 
       const docRef = await addDoc(flashcardsRef, validatedFlashcardSet);
@@ -257,16 +305,18 @@ export default function GenerateContent() {
         return;
       }
 
+      console.log("Starting loading - text mode");
       setLoading(true);
       try {
-        const plainText = text.replace(/<[^>]+>/g, "").trim();
-
         const response = await fetch("/api/generate", {
           method: "POST",
           headers: {
-            "Content-Type": "text/plain",
+            "Content-Type": "application/json",
           },
-          body: plainText,
+          body: JSON.stringify({
+            content: text.trim(),
+            language,
+          }),
         });
 
         if (!response.ok) {
@@ -274,14 +324,26 @@ export default function GenerateContent() {
         }
 
         const data = await response.json();
-        setFlashcards(data);
-        setFlipped(Array(data.length).fill(false));
+        // Ensure we're getting the flashcards array
+        const rawFlashcards = Array.isArray(data)
+          ? data
+          : data.flashcards || [];
+
+        // Clean any potential "front:" or "back:" text in the content
+        const cleanedFlashcards = rawFlashcards.map((card) => ({
+          front: cleanFlashcardContent(card.front),
+          back: cleanFlashcardContent(card.back),
+        }));
+
+        setFlashcards(cleanedFlashcards);
+        setFlipped(Array(cleanedFlashcards.length).fill(false));
       } catch (error) {
         console.error("Error generating summary notes:", error);
         alert(
           "An error occurred while generating summary notes. Please try again."
         );
       } finally {
+        console.log("Ending loading - text mode");
         setLoading(false);
       }
     } else {
@@ -291,6 +353,7 @@ export default function GenerateContent() {
         return;
       }
 
+      console.log("Starting loading - file mode");
       setLoading(true);
       const formData = new FormData();
       formData.append("file", file);
@@ -306,11 +369,24 @@ export default function GenerateContent() {
         }
 
         const data = await response.json();
-        setFlashcards(data);
+        // Ensure we're getting the flashcards array
+        const rawFlashcards = Array.isArray(data)
+          ? data
+          : data.flashcards || [];
+
+        // Clean any potential "front:" or "back:" text in the content
+        const cleanedFlashcards = rawFlashcards.map((card) => ({
+          front: cleanFlashcardContent(card.front),
+          back: cleanFlashcardContent(card.back),
+        }));
+
+        setFlashcards(cleanedFlashcards);
+        setFlipped(Array(cleanedFlashcards.length).fill(false));
       } catch (error) {
         console.error("Error processing file:", error);
         alert("An error occurred while processing the file. Please try again.");
       } finally {
+        console.log("Ending loading - file mode");
         setLoading(false);
       }
     }
@@ -325,55 +401,56 @@ export default function GenerateContent() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 5 }}>
+    <Container maxWidth="lg" sx={{ py: { xs: 2, md: 3 } }}>
       <Paper
         elevation={0}
         sx={{
           borderRadius: 3,
           overflow: "hidden",
           boxShadow: "0 10px 40px rgba(0,0,0,0.05)",
-          mb: 4,
+          mb: 2,
           background: "linear-gradient(120deg, #EBF4FF 0%, #F5F8FF 100%)",
         }}
       >
-        <Box sx={{ p: { xs: 3, md: 5 } }}>
+        <Box sx={{ p: { xs: 1.5, md: 2 } }}>
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              mb: 4,
+              mb: 1.5,
               flexDirection: { xs: "column", sm: "row" },
-              gap: 2,
+              gap: 0.5,
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <AutoAwesomeIcon
-                sx={{ fontSize: 28, mr: 1.5, color: "#3f51b5" }}
+                sx={{ fontSize: 20, mr: 0.5, color: "#3f51b5" }}
               />
               <Typography
-                variant="h4"
+                variant="h6"
                 component="h1"
                 sx={{
                   fontWeight: 700,
                   color: "#3f51b5",
-                  fontSize: { xs: "1.75rem", md: "2.125rem" },
+                  fontSize: { xs: "1.25rem", md: "1.5rem" },
                 }}
               >
-                Generate Summary Notes
+                {t("generateSummaryNotes")}
               </Typography>
             </Box>
             <Button
               variant="outlined"
-              startIcon={<ViewListIcon />}
+              startIcon={<ViewListIcon sx={{ fontSize: 18 }} />}
               onClick={handleViewSavedNotes}
               disabled={!isSignedIn}
               sx={{
                 borderRadius: 2,
-                px: 3,
-                py: 1,
+                px: 1.5,
+                py: 0.5,
                 textTransform: "none",
                 fontWeight: 600,
+                fontSize: "0.85rem",
                 borderColor: "#3f51b5",
                 color: "#3f51b5",
                 transition: "all 0.3s ease",
@@ -387,14 +464,14 @@ export default function GenerateContent() {
                 },
               }}
             >
-              View Notes
+              {t("viewNotes")}
             </Button>
           </Box>
 
           <Paper
             elevation={0}
             sx={{
-              mb: 3,
+              mb: 1.5,
               borderRadius: 2,
               overflow: "hidden",
               boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
@@ -411,34 +488,38 @@ export default function GenerateContent() {
               }}
               variant="fullWidth"
               sx={{
+                minHeight: 36,
                 borderBottom: 1,
                 borderColor: "divider",
                 "& .MuiTabs-indicator": {
                   backgroundColor: "#3f51b5",
-                  height: 3,
+                  height: 2,
                 },
                 "& .Mui-selected": {
                   color: "#3f51b5 !important",
                   fontWeight: 600,
                 },
+                "& .MuiTab-root": {
+                  minHeight: 36,
+                },
               }}
             >
               <Tab
-                icon={<TextFieldsIcon />}
-                label="Type or Paste"
+                icon={<TextFieldsIcon sx={{ fontSize: "1rem" }} />}
+                label={t("typeOrPaste")}
                 sx={{
                   textTransform: "none",
-                  fontSize: "1rem",
-                  py: 2,
+                  fontSize: "0.8rem",
+                  py: 1,
                 }}
               />
               <Tab
-                icon={<AttachFileIcon />}
-                label="Upload File"
+                icon={<AttachFileIcon sx={{ fontSize: "1rem" }} />}
+                label={t("uploadFile")}
                 sx={{
                   textTransform: "none",
-                  fontSize: "1rem",
-                  py: 2,
+                  fontSize: "0.8rem",
+                  py: 1,
                 }}
                 disabled={!isSignedIn}
               />
@@ -447,16 +528,21 @@ export default function GenerateContent() {
             {inputMethod === 0 && (
               <Box
                 sx={{
-                  p: 3,
+                  p: 1.5,
                   backgroundColor: "white",
                   borderRadius: "0 0 8px 8px",
                 }}
               >
                 <Typography
-                  variant="subtitle1"
-                  sx={{ mb: 2, fontWeight: 500, color: "#546e7a" }}
+                  variant="body2"
+                  sx={{
+                    mb: 1,
+                    fontWeight: 500,
+                    color: "#546e7a",
+                    fontSize: "0.85rem",
+                  }}
                 >
-                  Enter your text below to generate summary notes
+                  {t("enterTextBelow")}
                 </Typography>
                 <Paper
                   elevation={0}
@@ -473,15 +559,24 @@ export default function GenerateContent() {
                         borderBottom: "1px solid #E0E7FF",
                         borderRadius: "8px 8px 0 0",
                         backgroundColor: "#F8FAFF",
+                        padding: "4px 8px",
+                        "& .ql-formats": {
+                          marginRight: "4px",
+                        },
+                        "& button": {
+                          width: "24px",
+                          height: "24px",
+                        },
                       },
                       "& .ql-container": {
                         borderBottom: "none",
                         borderLeft: "none",
                         borderRight: "none",
-                        minHeight: "200px",
-                        fontSize: "1rem",
+                        minHeight: "100px",
+                        fontSize: "0.9rem",
                         "& .ql-editor": {
-                          minHeight: "200px",
+                          minHeight: "100px",
+                          padding: "8px",
                         },
                       },
                     },
@@ -492,14 +587,19 @@ export default function GenerateContent() {
                     onChange={setText}
                     modules={modules}
                     formats={formats}
-                    placeholder="Enter text..."
+                    placeholder={t("enterText")}
                   />
                 </Paper>
                 {!isSignedIn && (
                   <Typography
-                    variant="body2"
+                    variant="caption"
                     color="text.secondary"
-                    sx={{ mt: 2, textAlign: "center" }}
+                    sx={{
+                      mt: 0.5,
+                      display: "block",
+                      textAlign: "center",
+                      fontSize: "0.7rem",
+                    }}
                   >
                     Sign in to unlock all features: file upload, saving cards,
                     and more!
@@ -511,22 +611,22 @@ export default function GenerateContent() {
             {inputMethod === 1 && (
               <Box
                 sx={{
-                  p: 3,
+                  p: 1.5,
                   backgroundColor: "white",
                   borderRadius: "0 0 8px 8px",
                 }}
               >
                 <Typography
-                  variant="subtitle1"
+                  variant="body2"
                   sx={{
-                    mb: 2,
+                    mb: 1,
                     textAlign: "center",
                     fontWeight: 500,
                     color: "#546e7a",
+                    fontSize: "0.85rem",
                   }}
                 >
-                  Supported file types: PDF, Word, PowerPoint, Text, Images
-                  (PNG, JPEG, GIF, WebP)
+                  {t("supportedFileTypes")}
                 </Typography>
 
                 <Box
@@ -534,10 +634,10 @@ export default function GenerateContent() {
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    p: 4,
+                    p: 2,
                     border: "2px dashed #E0E7FF",
                     borderRadius: 2,
-                    mb: 3,
+                    mb: 1,
                     backgroundColor: "#F8FAFF",
                     transition: "all 0.3s ease",
                     "&:hover": {
@@ -547,7 +647,7 @@ export default function GenerateContent() {
                   }}
                 >
                   <CloudUploadIcon
-                    sx={{ fontSize: 64, color: "#3f51b5", mb: 2 }}
+                    sx={{ fontSize: 36, color: "#3f51b5", mb: 1 }}
                   />
 
                   <input
@@ -561,12 +661,13 @@ export default function GenerateContent() {
                     <Button
                       variant="contained"
                       component="span"
-                      startIcon={<AttachFileIcon />}
+                      startIcon={<AttachFileIcon sx={{ fontSize: 16 }} />}
                       sx={{
-                        mb: 2,
+                        mb: 1,
                         borderRadius: 2,
-                        px: 3,
-                        py: 1.2,
+                        px: 2,
+                        py: 0.75,
+                        fontSize: "0.85rem",
                         backgroundColor: "#4c5fce",
                         transition: "all 0.3s ease",
                         "&:hover": {
@@ -576,12 +677,16 @@ export default function GenerateContent() {
                         },
                       }}
                     >
-                      Select File
+                      {t("selectFile")}
                     </Button>
                   </label>
 
-                  <Typography variant="body2" color="textSecondary">
-                    Drag and drop or click to browse
+                  <Typography
+                    variant="caption"
+                    color="textSecondary"
+                    sx={{ fontSize: "0.75rem" }}
+                  >
+                    {t("dragAndDrop")}
                   </Typography>
 
                   {file && (
@@ -684,11 +789,11 @@ export default function GenerateContent() {
             onClick={handleSubmit}
             fullWidth
             sx={{
-              py: 1.5,
-              mt: 2,
-              mb: 2,
+              py: 1,
+              mt: 1,
+              mb: 0.5,
               borderRadius: 2,
-              fontSize: "1.05rem",
+              fontSize: "0.9rem",
               fontWeight: 600,
               boxShadow: "0 8px 20px rgba(63, 81, 181, 0.25)",
               backgroundColor: "#4c5fce",
@@ -709,7 +814,9 @@ export default function GenerateContent() {
               (inputMethod === 0 && !text.trim()) ||
               (inputMethod === 1 && !file)
             }
-            startIcon={loading ? null : <AutoAwesomeIcon />}
+            startIcon={
+              loading ? null : <AutoAwesomeIcon sx={{ fontSize: 18 }} />
+            }
           >
             {loading ? (
               <Box
@@ -717,16 +824,19 @@ export default function GenerateContent() {
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: 1,
+                  gap: 0.25,
                 }}
               >
-                <CircularProgress size={24} sx={{ color: "white" }} />
-                <Typography variant="body2" sx={{ mt: 1, color: "white" }}>
-                  {loadingMessage}
+                <CircularProgress size={16} sx={{ color: "white" }} />
+                <Typography
+                  variant="caption"
+                  sx={{ mt: 0.25, color: "white", fontSize: "0.75rem" }}
+                >
+                  {loadingMessage || "Generating your flashcards..."}
                 </Typography>
               </Box>
             ) : (
-              "Generate Summary Notes"
+              t("generateSummaryNotes", "Generate Summary Notes")
             )}
           </Button>
         </Box>
@@ -859,7 +969,7 @@ export default function GenerateContent() {
         <Paper
           elevation={0}
           sx={{
-            p: { xs: 3, md: 5 },
+            p: { xs: 2, md: 3 },
             borderRadius: 3,
             boxShadow: "0 10px 40px rgba(0,0,0,0.05)",
             background: "linear-gradient(120deg, #F5F8FF 0%, #FFFFFF 100%)",
@@ -870,7 +980,7 @@ export default function GenerateContent() {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              mb: 3,
+              mb: 2,
             }}
           >
             <Typography
@@ -881,9 +991,10 @@ export default function GenerateContent() {
                 color: "#3f51b5",
                 display: "flex",
                 alignItems: "center",
+                fontSize: { xs: "1.25rem", md: "1.5rem" },
               }}
             >
-              <AutoAwesomeIcon sx={{ mr: 1, fontSize: 20 }} />
+              <AutoAwesomeIcon sx={{ mr: 1, fontSize: 18 }} />
               Generated Summary Notes
             </Typography>
 
@@ -896,236 +1007,152 @@ export default function GenerateContent() {
                   "&:hover": {
                     backgroundColor: "#E0E7FF",
                   },
+                  padding: 1,
                 }}
               >
-                <FlipIcon />
+                <FlipIcon sx={{ fontSize: 20 }} />
               </IconButton>
             </Tooltip>
           </Box>
 
           <Typography
             sx={{
-              mb: 3,
+              mb: 2,
               color: "#546e7a",
               fontWeight: 500,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "0.95rem",
+              fontSize: "0.85rem",
             }}
           >
             <span>📚 Tap on a card to flip and see more details</span>
           </Typography>
 
-          <Grid container spacing={3}>
-            {flashcards.map((summaryNote, index) => {
-              const front =
-                typeof summaryNote.front === "string"
-                  ? summaryNote.front
-                      .replace(/^["']|["']$/g, "")
-                      .replace(/\\"/g, '"')
-                  : summaryNote.front;
-              const back =
-                typeof summaryNote.back === "string"
-                  ? summaryNote.back
-                      .replace(/^["']|["']$/g, "")
-                      .replace(/\\"/g, '"')
-                  : summaryNote.back;
-
-              return (
-                <Grid item xs={12} sm={6} md={4} key={index}>
-                  <Fade in={true} timeout={300 + index * 100}>
-                    <Card
-                      onClick={() => {
-                        const newFlipped = [...flipped];
-                        newFlipped[index] = !newFlipped[index];
-                        setFlipped(newFlipped);
-                      }}
-                      sx={{
-                        height: 240,
-                        borderRadius: 3,
-                        background: "white",
-                        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
+          <Grid container spacing={2}>
+            {flashcards.map((flashcard, index) => (
+              <Grid item xs={12} sm={6} md={4} key={index}>
+                <Fade in={true} timeout={300 + index * 100}>
+                  <Card
+                    onClick={() => {
+                      const newFlipped = [...flipped];
+                      newFlipped[index] = !newFlipped[index];
+                      setFlipped(newFlipped);
+                    }}
+                    sx={{
+                      height: 200,
+                      borderRadius: 3,
+                      background: "white",
+                      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
+                      transition: "all 0.3s ease",
+                      cursor: "pointer",
+                      "&:hover": {
+                        transform: "translateY(-6px)",
+                        boxShadow: "0 12px 30px rgba(63, 81, 181, 0.15)",
+                      },
+                      position: "relative",
+                      overflow: "visible",
+                      "&::after": {
+                        content: '""',
+                        position: "absolute",
+                        top: 12,
+                        right: 12,
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        backgroundColor: "#3f51b5",
+                        opacity: 0.7,
                         transition: "all 0.3s ease",
-                        cursor: "pointer",
-                        "&:hover": {
-                          transform: "translateY(-6px)",
-                          boxShadow: "0 12px 30px rgba(63, 81, 181, 0.15)",
-                        },
-                        position: "relative",
-                        overflow: "visible",
-                        "&::after": {
-                          content: '""',
-                          position: "absolute",
-                          top: 12,
-                          right: 12,
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          backgroundColor: "#3f51b5",
-                          opacity: 0.7,
-                          transition: "all 0.3s ease",
-                        },
-                        "&:hover::after": {
-                          transform: "scale(1.5)",
-                          opacity: 1,
-                        },
-                      }}
-                    >
-                      <CardContent sx={{ height: "100%", p: 0 }}>
-                        <Box sx={{ perspective: "1000px", height: "100%" }}>
+                      },
+                      "&:hover::after": {
+                        transform: "scale(1.5)",
+                        opacity: 1,
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ height: "100%", p: 0 }}>
+                      <Box sx={{ perspective: "1000px", height: "100%" }}>
+                        <Box
+                          sx={{
+                            width: "100%",
+                            height: "100%",
+                            position: "relative",
+                            transformStyle: "preserve-3d",
+                            transition:
+                              "transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                            transform: flipped[index]
+                              ? "rotateY(180deg)"
+                              : "rotateY(0deg)",
+                          }}
+                        >
+                          {/* Front of card */}
                           <Box
                             sx={{
+                              position: "absolute",
                               width: "100%",
                               height: "100%",
-                              position: "relative",
-                              transformStyle: "preserve-3d",
-                              transition:
-                                "transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                              transform: flipped[index]
-                                ? "rotateY(180deg)"
-                                : "rotateY(0deg)",
+                              backfaceVisibility: "hidden",
+                              p: 3,
+                              display: "flex",
+                              flexDirection: "column",
                             }}
                           >
-                            <Box
+                            <Typography
+                              variant="body1"
                               sx={{
-                                position: "absolute",
-                                width: "100%",
-                                height: "100%",
-                                backfaceVisibility: "hidden",
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                backgroundColor: "#fff",
-                                borderRadius: 3,
-                                border: "1px solid rgba(63, 81, 181, 0.1)",
-                                padding: 3,
-                                boxSizing: "border-box",
-                                background:
-                                  "linear-gradient(135deg, #ffffff 0%, #f8faff 100%)",
-                                overflowY: "auto",
-                                "&::-webkit-scrollbar": {
-                                  width: "6px",
-                                },
-                                "&::-webkit-scrollbar-track": {
-                                  background: "#f1f1f1",
-                                  borderRadius: "3px",
-                                },
-                                "&::-webkit-scrollbar-thumb": {
-                                  background: "#3f51b5",
-                                  borderRadius: "3px",
-                                  "&:hover": {
-                                    background: "#303f9f",
-                                  },
-                                },
+                                flex: 1,
+                                overflow: "auto",
+                                fontSize: "1.1rem",
+                                lineHeight: 1.5,
+                                color: "#2c3e50",
                               }}
                             >
-                              <Typography
-                                variant="overline"
-                                sx={{
-                                  color: "#3f51b5",
-                                  opacity: 0.7,
-                                  mb: 1,
-                                  letterSpacing: 1,
-                                }}
-                              >
-                                CONCEPT
-                              </Typography>
-                              <Typography
-                                variant="body1"
-                                component="div"
-                                sx={{
-                                  wordBreak: "break-word",
-                                  whiteSpace: "pre-wrap",
-                                  maxWidth: "100%",
-                                  fontSize: "1.1rem",
-                                  color: "#37474f",
-                                  fontWeight: 500,
-                                  textAlign: "center",
-                                  lineHeight: 1.5,
-                                }}
-                              >
-                                {front}
-                              </Typography>
-                            </Box>
+                              {typeof flashcard === "string"
+                                ? cleanFlashcardContent(flashcard)
+                                : cleanFlashcardContent(flashcard.front)}
+                            </Typography>
+                          </Box>
 
-                            <Box
+                          {/* Back of card */}
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              width: "100%",
+                              height: "100%",
+                              backfaceVisibility: "hidden",
+                              transform: "rotateY(180deg)",
+                              p: 3,
+                              display: "flex",
+                              flexDirection: "column",
+                            }}
+                          >
+                            <Typography
+                              variant="body1"
                               sx={{
-                                position: "absolute",
-                                width: "100%",
-                                height: "100%",
-                                backfaceVisibility: "hidden",
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                backgroundColor: "#fff",
-                                borderRadius: 3,
-                                border: "1px solid rgba(63, 81, 181, 0.1)",
-                                padding: 3,
-                                boxSizing: "border-box",
-                                transform: "rotateY(180deg)",
-                                background:
-                                  "linear-gradient(135deg, #EBF4FF 0%, #F8FBFF 100%)",
-                                overflowY: "auto",
-                                "&::-webkit-scrollbar": {
-                                  width: "6px",
-                                },
-                                "&::-webkit-scrollbar-track": {
-                                  background: "#f1f1f1",
-                                  borderRadius: "3px",
-                                },
-                                "&::-webkit-scrollbar-thumb": {
-                                  background: "#3f51b5",
-                                  borderRadius: "3px",
-                                  "&:hover": {
-                                    background: "#303f9f",
-                                  },
-                                },
+                                flex: 1,
+                                overflow: "auto",
+                                fontSize: "1.1rem",
+                                lineHeight: 1.5,
+                                color: "#2c3e50",
                               }}
                             >
-                              <Typography
-                                variant="overline"
-                                sx={{
-                                  color: "#3f51b5",
-                                  opacity: 0.7,
-                                  mb: 1,
-                                  letterSpacing: 1,
-                                }}
-                              >
-                                DETAILS
-                              </Typography>
-                              <Typography
-                                variant="body1"
-                                component="div"
-                                sx={{
-                                  wordBreak: "break-word",
-                                  whiteSpace: "pre-wrap",
-                                  maxWidth: "100%",
-                                  fontSize: "1rem",
-                                  color: "#37474f",
-                                  fontWeight: 400,
-                                  textAlign: "center",
-                                  lineHeight: 1.6,
-                                }}
-                              >
-                                {back}
-                              </Typography>
-                            </Box>
+                              {typeof flashcard === "string"
+                                ? cleanFlashcardContent(flashcard)
+                                : cleanFlashcardContent(flashcard.back)}
+                            </Typography>
                           </Box>
                         </Box>
-                      </CardContent>
-                    </Card>
-                  </Fade>
-                </Grid>
-              );
-            })}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Fade>
+              </Grid>
+            ))}
           </Grid>
 
           <Box
             sx={{
-              mt: 5,
+              mt: 3,
               display: "flex",
               justifyContent: "center",
               gap: 2,

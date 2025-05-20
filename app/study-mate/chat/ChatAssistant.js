@@ -31,8 +31,12 @@ import {
 import { db } from "../../../utils/firebase";
 import ReactMarkdown from "react-markdown";
 import QuestionAnswerOutlinedIcon from "@mui/icons-material/QuestionAnswerOutlined";
+import { useLanguage } from "../../contexts/LanguageContext";
+import useTranslation from "../../hooks/useTranslation";
 
 export default function ChatAssistant({ userId }) {
+  const { t } = useTranslation();
+  const { language: appLanguage } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [flashcardSets, setFlashcardSets] = useState([]);
   const [selectedSet, setSelectedSet] = useState("");
@@ -70,6 +74,7 @@ export default function ChatAssistant({ userId }) {
             name: data.name || doc.id,
             cardCount: data.flashcards ? data.flashcards.length : 0,
             tags: data.tags || [],
+            language: data.language || null,
           });
         });
 
@@ -104,16 +109,15 @@ export default function ChatAssistant({ userId }) {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          setSelectedSetData(docSnap.data());
+          const setData = docSnap.data(); // Store flashcard set data in a local variable
+          setSelectedSetData(setData); // Update state with the new data
 
           // Check if we already have a session ID for this set in our tracker
           const trackedSessionId = sessionTracker[selectedSet];
 
           if (trackedSessionId) {
             console.log(
-              `Using tracked session ID for ${
-                docSnap.data().name
-              }: ${trackedSessionId}`
+              `Using tracked session ID for ${setData.name}: ${trackedSessionId}`
             );
 
             try {
@@ -146,9 +150,7 @@ export default function ChatAssistant({ userId }) {
                 }
                 setMessages(existingMessages);
                 console.log(
-                  `Loaded tracked chat session for set "${
-                    docSnap.data().name
-                  }" with ${existingMessages.length} messages`
+                  `Loaded tracked chat session for set "${setData.name}" with ${existingMessages.length} messages`
                 );
                 setLoadingHistory(false);
                 return;
@@ -243,25 +245,26 @@ export default function ChatAssistant({ userId }) {
                 }
                 setMessages(existingMessages);
                 console.log(
-                  `Loaded existing chat session for set "${
-                    docSnap.data().name
-                  }" with ${existingMessages.length} messages`
+                  `Loaded existing chat session for set "${setData.name}" with ${existingMessages.length} messages`
                 );
               } else {
-                createWelcomeMessage(docSnap.data().name);
+                // Pass the current flashcard set data instead of just the name
+                createWelcomeMessage(setData);
               }
             } else {
               console.log(
                 `No chat sessions found for flashcardSetId: ${selectedSet}`
               );
-              createWelcomeMessage(docSnap.data().name);
+              // Pass the current flashcard set data instead of just the name
+              createWelcomeMessage(setData);
             }
           } catch (queryError) {
             console.error("Error querying chat sessions:", queryError);
             setError(
               "Error loading chat history. Starting a new conversation."
             );
-            createWelcomeMessage(docSnap.data().name);
+            // Pass the current flashcard set data instead of just the name
+            createWelcomeMessage(setData);
           }
         }
       } catch (error) {
@@ -273,16 +276,44 @@ export default function ChatAssistant({ userId }) {
     }
 
     // Helper function to create a welcome message
-    function createWelcomeMessage(setName) {
+    // Update function to accept the flashcard set data instead of just the name
+    function createWelcomeMessage(setData) {
+      // Get language directly from the passed setData
+      const language = setData?.language || null;
+      const setName = setData?.name || "flashcards";
+
+      // For Premium note
+      const premiumNote = `*${t("chat.premiumComing")}*`;
+
+      // Get welcome message from translations and replace placeholders
+      let welcomeText = "";
+
+      if (language === "es") {
+        // Use Spanish translation
+        welcomeText =
+          t("chat.welcomeMessage", { setName: setName }) + "\n\n" + premiumNote;
+      } else if (language === "fr") {
+        // Use French translation
+        welcomeText =
+          t("chat.welcomeMessage", { setName: setName }) + "\n\n" + premiumNote;
+      } else {
+        // Default to English translation
+        welcomeText =
+          t("chat.welcomeMessage", { setName: setName }) + "\n\n" + premiumNote;
+      }
+
       // No matching session found for this set, start fresh with welcome message
       console.log(
-        `No existing chat session found for set "${setName}". Creating new session.`
+        `No existing chat session found for set "${setName}". Creating new session in ${
+          language || "en"
+        } language.`
       );
+
       const welcomeMessage = {
         role: "model",
         parts: [
           {
-            text: `Hi! I am your study assistant for the "${setName}" flashcard set. I can help you understand concepts, provide additional context, or offer study tips related to these cards. What would you like to learn more about?\n\n*Note: Free chats are limited to ${MAX_MESSAGE_COUNT} messages. Premium plans with unlimited chats coming soon!*`,
+            text: welcomeText,
           },
         ],
         timestamp: new Date(),
@@ -386,6 +417,7 @@ export default function ChatAssistant({ userId }) {
               context: {
                 currentTopic: selectedSetData?.name || "",
                 flashcardContext: flashcardContext,
+                language: selectedSetData?.language || null,
               },
               stream: false, // Disabled streaming mode
             }),
@@ -486,6 +518,24 @@ export default function ChatAssistant({ userId }) {
     } catch (error) {
       console.error("Error sending message:", error);
 
+      // Get error message based on language - ensure we have current data
+      const language = selectedSetData?.language || null;
+      let errorMessage = "";
+
+      if (language === "es") {
+        // Spanish error message
+        errorMessage =
+          "Lo siento, hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo en un momento.";
+      } else if (language === "fr") {
+        // French error message
+        errorMessage =
+          "Désolé, une erreur s'est produite lors du traitement de votre demande. Veuillez réessayer dans un instant.";
+      } else {
+        // Default English error message
+        errorMessage =
+          "Sorry, there was an error processing your request. Please try again in a moment.";
+      }
+
       // Show error in chat
       setMessages((prev) => {
         const newMessages = [...prev];
@@ -499,7 +549,7 @@ export default function ChatAssistant({ userId }) {
             role: "model",
             parts: [
               {
-                text: "Sorry, there was an error processing your request. Please try again in a moment.",
+                text: errorMessage,
               },
             ],
             timestamp: new Date(),
@@ -510,7 +560,7 @@ export default function ChatAssistant({ userId }) {
             role: "model",
             parts: [
               {
-                text: "Sorry, there was an error processing your request. Please try again in a moment.",
+                text: errorMessage,
               },
             ],
             timestamp: new Date(),
@@ -535,24 +585,51 @@ export default function ChatAssistant({ userId }) {
   // Add a function to handle clearing chat history
   const handleClearChatHistory = async () => {
     try {
-      // Get the flashcard set name before clearing
-      const setName = selectedSetData?.name || "flashcards";
+      if (!selectedSetData) {
+        setError("No flashcard set selected.");
+        return;
+      }
+
+      // Get the flashcard set info directly from the current selectedSetData
+      const setName = selectedSetData.name || "flashcards";
+      const language = selectedSetData.language || null;
+
+      // For Premium note
+      const premiumNote = `*${t("chat.premiumComing")}*`;
+
+      // Get cleared history message from translations and replace placeholders
+      let clearedText = "";
+
+      if (language === "es") {
+        // Use Spanish translation
+        clearedText =
+          t("chat.historyClearedMessage", { setName: setName }) +
+          "\n\n" +
+          premiumNote;
+      } else if (language === "fr") {
+        // Use French translation
+        clearedText =
+          t("chat.historyClearedMessage", { setName: setName }) +
+          "\n\n" +
+          premiumNote;
+      } else {
+        // Default to English translation
+        clearedText =
+          t("chat.historyClearedMessage", { setName: setName }) +
+          "\n\n" +
+          premiumNote;
+      }
 
       // Show a welcome message with no apostrophes or special characters
       const welcomeMessage = {
         role: "model",
         parts: [
           {
-            text:
-              "The conversation history has been cleared. We can continue discussing the " +
-              setName +
-              " flashcard set. What would you like to know?\n\n*Note: Free chats are limited to " +
-              MAX_MESSAGE_COUNT +
-              " messages. Premium plans with unlimited chats coming soon!*",
+            text: clearedText,
           },
         ],
         timestamp: new Date(),
-        isWelcomeMessage: true,
+        isWelcomeMessage: true, // Flag as welcome message so it won't be sent to API
       };
 
       // Reset chat state
@@ -691,7 +768,9 @@ export default function ChatAssistant({ userId }) {
               },
             }}
           >
-            <InputLabel id="flashcard-set-label">Flashcard Set</InputLabel>
+            <InputLabel id="flashcard-set-label">
+              {t("flashcardSet")}
+            </InputLabel>
             <Select
               labelId="flashcard-set-label"
               value={selectedSet}
@@ -699,7 +778,7 @@ export default function ChatAssistant({ userId }) {
                 console.log(`Flashcard set changed to: ${e.target.value}`);
                 setSelectedSet(e.target.value);
               }}
-              label="Flashcard Set"
+              label={t("flashcardSet")}
               disabled={loading}
             >
               {flashcardSets.map((set) => (
@@ -852,7 +931,10 @@ export default function ChatAssistant({ userId }) {
                       color="warning.dark"
                       fontWeight="bold"
                     >
-                      You&apos;ve reached the maximum conversation length
+                      {t(
+                        "chat.messageLimitReached",
+                        "You've reached the maximum conversation length"
+                      )}
                     </Typography>
                     <Typography
                       variant="body2"
@@ -860,8 +942,10 @@ export default function ChatAssistant({ userId }) {
                       sx={{ mb: 1 }}
                       color="text.secondary"
                     >
-                      To continue chatting effectively and avoid memory issues,
-                      please clear the conversation history.
+                      {t(
+                        "chat.continueMessage",
+                        "To continue chatting effectively and avoid memory issues, please clear the conversation history using the button below."
+                      )}
                     </Typography>
                     <Typography
                       variant="body2"
@@ -870,9 +954,10 @@ export default function ChatAssistant({ userId }) {
                       color="text.secondary"
                       fontStyle="italic"
                     >
-                      Coming soon: Our premium subscription will allow for
-                      longer conversations and access to your complete chat
-                      history!
+                      {t(
+                        "chat.premiumComing",
+                        "Coming soon: Our premium subscription will allow for longer conversations and access to your complete chat history!"
+                      )}
                     </Typography>
                     <Button
                       variant="contained"
@@ -880,7 +965,7 @@ export default function ChatAssistant({ userId }) {
                       onClick={handleClearChatHistory}
                       sx={{ minWidth: 200 }}
                     >
-                      Clear Conversation History
+                      {t("buttons.clearHistory")}
                     </Button>
                   </Box>
                 )}
@@ -904,7 +989,7 @@ export default function ChatAssistant({ userId }) {
                   color="textSecondary"
                   align="center"
                 >
-                  Select a flashcard set and start a conversation
+                  {t("messages.selectFlashcardSet")}
                 </Typography>
                 <Typography
                   variant="body2"
@@ -912,10 +997,10 @@ export default function ChatAssistant({ userId }) {
                   align="center"
                   sx={{ mt: 1, maxWidth: 450 }}
                 >
-                  Ask questions about your flashcards, get explanations for
-                  concepts, receive study and retention tips, or learn about
-                  related topics. For testing your knowledge, use the Practice
-                  Tests feature.
+                  {t(
+                    "chat.askQuestionsDescription",
+                    "Ask questions about your flashcards, get explanations for concepts, receive study and retention tips, or learn about related topics. For testing your knowledge, use the Practice Tests feature."
+                  )}
                 </Typography>
               </Box>
             )}
@@ -952,10 +1037,9 @@ export default function ChatAssistant({ userId }) {
             >
               <Typography
                 variant="caption"
-                color="text.secondary"
                 sx={{ fontSize: "0.6rem", opacity: 0.6 }}
               >
-                Powered by{" "}
+                {t("poweredBy")}{" "}
                 <a
                   href="https://chatto-ai.techloft.org/"
                   target="_blank"
@@ -990,7 +1074,7 @@ export default function ChatAssistant({ userId }) {
                   transition: "all 0.2s ease",
                 }}
               >
-                Explore More Languages
+                {t("buttons.exploreMoreLanguages", "Explore More Languages")}
               </Button>
             </Box>
 
@@ -1003,8 +1087,7 @@ export default function ChatAssistant({ userId }) {
                     sx={{ mb: 1 }}
                     fontStyle="italic"
                   >
-                    Coming soon: Premium subscription with unlimited chat
-                    history!
+                    {t("chat.premiumComing")}
                   </Typography>
                   <Button
                     variant="contained"
@@ -1013,13 +1096,13 @@ export default function ChatAssistant({ userId }) {
                     onClick={handleClearChatHistory}
                     sx={{ py: 1.5 }}
                   >
-                    Clear History to Continue Chatting
+                    {t("buttons.clearHistory")}
                   </Button>
                 </Box>
               ) : (
                 <>
                   <TextField
-                    label="Send a message..."
+                    label={t("sendMessage")}
                     fullWidth
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
@@ -1056,6 +1139,30 @@ export default function ChatAssistant({ userId }) {
                 </>
               )}
             </Stack>
+
+            {/* Add a Clear Chat button when messages exist and a set is selected */}
+            {messages.length > 0 && selectedSet && !isHistoryLimitReached && (
+              <Box sx={{ display: "flex", justifyContent: "center", pb: 2 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleClearChatHistory}
+                  sx={{
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    color: "#6b7280",
+                    borderColor: "#d1d5db",
+                    "&:hover": {
+                      backgroundColor: "rgba(0,0,0,0.03)",
+                      borderColor: "#9ca3af",
+                    },
+                    fontSize: "0.8rem",
+                  }}
+                >
+                  {t("buttons.clearChatHistory")}
+                </Button>
+              </Box>
+            )}
           </Stack>
         </Stack>
       </Box>

@@ -1,7 +1,10 @@
+"use client";
+
 import { Suspense } from "react";
 import { Box, Container, CircularProgress } from "@mui/material";
 import dynamic from "next/dynamic";
 
+// Import ReviewContent dynamically with SSR disabled
 const ReviewContent = dynamic(() => import("./ReviewContent"), {
   ssr: false,
 });

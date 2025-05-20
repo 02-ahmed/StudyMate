@@ -39,10 +39,13 @@ import {
   where,
 } from "firebase/firestore";
 import { createFlashcardSet, validateFlashcardSet } from "../../utils/schemas";
+import { useLanguage } from "../contexts/LanguageContext";
+import useTranslation from "../hooks/useTranslation";
 
 export default function NotesContent() {
   const { user } = useUser();
   const router = useRouter();
+  const { t } = useTranslation();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTags, setSelectedTags] = useState([]);
@@ -121,12 +124,7 @@ export default function NotesContent() {
 
   const handleDelete = async (id) => {
     if (!user) return;
-    if (
-      !window.confirm(
-        "Are you sure you want to hide this note set? You can restore it later."
-      )
-    )
-      return;
+    if (!window.confirm(t("flashcards.confirmHide"))) return;
 
     try {
       setDeletingNoteId(id);
@@ -141,7 +139,7 @@ export default function NotesContent() {
       setNotes(notes.filter((note) => note.id !== id));
     } catch (error) {
       console.error("Error hiding note:", error);
-      alert("Failed to hide note set");
+      alert(t("flashcards.hideFailed"));
     } finally {
       setDeletingNoteId(null);
     }
@@ -180,7 +178,7 @@ export default function NotesContent() {
 
   const handleSaveEdit = async () => {
     if (!editingNote || !editName.trim()) {
-      alert("Please enter a name for your flashcard set.");
+      alert(t("flashcards.enterName"));
       return;
     }
 
@@ -199,9 +197,7 @@ export default function NotesContent() {
       });
 
       if (nameExists) {
-        alert(
-          "A flashcard set with this name already exists. Please choose a different name."
-        );
+        alert(t("flashcards.nameExists"));
         return;
       }
 
@@ -220,7 +216,7 @@ export default function NotesContent() {
       // Validate the data before updating
       if (!validateFlashcardSet(updatedData)) {
         console.error("Invalid flashcard set data:", updatedData);
-        alert("Invalid data format. Please try again.");
+        alert(t("flashcards.invalidFormat"));
         return;
       }
 
@@ -241,7 +237,7 @@ export default function NotesContent() {
       handleCloseEditDialog();
     } catch (error) {
       console.error("Error updating note:", error);
-      alert("Failed to update note. Please try again.");
+      alert(t("flashcards.updateFailed"));
     } finally {
       setSavingEdit(false);
     }
@@ -258,7 +254,7 @@ export default function NotesContent() {
           variant="h4"
           sx={{ mb: 4, fontWeight: "bold", color: "#3f51b5" }}
         >
-          My Notes
+          {t("titles.myNotes")}
         </Typography>
         <Grid container spacing={3}>
           {[1, 2, 3].map((index) => (
@@ -360,7 +356,7 @@ export default function NotesContent() {
         }}
       >
         <Typography variant="h4" sx={{ fontWeight: "bold", color: "#3f51b5" }}>
-          My Notes
+          {t("titles.myNotes")}
         </Typography>
         <Button
           variant="text"
@@ -369,7 +365,7 @@ export default function NotesContent() {
           onClick={() => router.push("/notes/deleted")}
           startIcon={<DeleteIcon />}
         >
-          View Deleted Notes
+          {t("buttons.viewDeletedNotes")}
         </Button>
       </Box>
 
@@ -377,7 +373,7 @@ export default function NotesContent() {
         <TextField
           fullWidth
           variant="outlined"
-          placeholder="Search notes..."
+          placeholder={t("messages.searchNotes")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{
@@ -450,7 +446,7 @@ export default function NotesContent() {
                     </Stack>
                   </Box>
                   <Typography variant="body2" color="text.secondary">
-                    {note.totalCards} cards
+                    {note.totalCards} {t("flashcards.cards")}
                   </Typography>
                   {note.createdAt && (
                     <Typography
@@ -458,7 +454,8 @@ export default function NotesContent() {
                       color="text.secondary"
                       sx={{ mt: 1 }}
                     >
-                      Created: {note.createdAt.toLocaleDateString()}
+                      {t("flashcards.created")}{" "}
+                      {note.createdAt.toLocaleDateString()}
                     </Typography>
                   )}
                   {note.tags && note.tags.length > 0 && (
@@ -490,10 +487,10 @@ export default function NotesContent() {
           <Grid item xs={12}>
             <Box sx={{ textAlign: "center", py: 4 }}>
               <Typography variant="h6" color="text.secondary" gutterBottom>
-                No matching notes found
+                {t("flashcards.noMatching")}
               </Typography>
               <Typography variant="body1" color="text.secondary">
-                Try adjusting your search or filters
+                {t("flashcards.adjustSearch")}
               </Typography>
             </Box>
           </Grid>
@@ -501,15 +498,15 @@ export default function NotesContent() {
       </Grid>
 
       <Dialog open={editDialogOpen} onClose={handleCloseEditDialog}>
-        <DialogTitle>Edit Flashcard Set</DialogTitle>
+        <DialogTitle>{t("flashcards.editSet")}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Update the name and tags for your flashcard set.
+            {t("flashcards.updateNameAndTags")}
           </DialogContentText>
           <TextField
             autoFocus
             margin="dense"
-            label="Set Name"
+            label={t("flashcards.setName")}
             type="text"
             fullWidth
             value={editName}
@@ -518,8 +515,8 @@ export default function NotesContent() {
           />
           <Box sx={{ mt: 2 }}>
             <TextField
-              label="Add Tags"
-              placeholder="Type and press Enter"
+              label={t("flashcards.addTags")}
+              placeholder={t("flashcards.typeAndPressEnter")}
               fullWidth
               value={currentTag}
               onChange={(e) => setCurrentTag(e.target.value)}
@@ -540,14 +537,14 @@ export default function NotesContent() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseEditDialog}>Cancel</Button>
+          <Button onClick={handleCloseEditDialog}>{t("buttons.cancel")}</Button>
           <Button
             onClick={handleSaveEdit}
             color="primary"
             disabled={savingEdit}
             startIcon={savingEdit ? <CircularProgress size={20} /> : null}
           >
-            {savingEdit ? "Saving..." : "Save"}
+            {savingEdit ? t("messages.loading") : t("buttons.save")}
           </Button>
         </DialogActions>
       </Dialog>

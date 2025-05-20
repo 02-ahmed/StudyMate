@@ -21,6 +21,8 @@ import { collection, query, getDocs, deleteDoc, doc } from "firebase/firestore";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SchoolIcon from "@mui/icons-material/School";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "../contexts/LanguageContext";
+import useTranslation from "../hooks/useTranslation";
 
 export default function SavedReviewsContent() {
   const { user } = useUser();
@@ -29,6 +31,8 @@ export default function SavedReviewsContent() {
   const [reviews, setReviews] = useState([]);
   const [error, setError] = useState(null);
   const [deletingReviewId, setDeletingReviewId] = useState(null);
+  const { language } = useLanguage();
+  const { t } = useTranslation();
 
   const loadSavedReviews = useCallback(async () => {
     if (!user) return;
@@ -116,13 +120,13 @@ export default function SavedReviewsContent() {
               WebkitTextFillColor: "transparent",
             }}
           >
-            Saved Reviews
+            {t("savedReviews")}
           </Typography>
           <Typography
             variant="body1"
             sx={{ textAlign: "center", mt: 1, color: "text.secondary" }}
           >
-            Access your saved study guides
+            {t("accessSavedGuides")}
           </Typography>
         </Box>
 
@@ -161,7 +165,9 @@ export default function SavedReviewsContent() {
                           }}
                         >
                           <SchoolIcon color="primary" />
-                          <Typography variant="h6">Review Guide</Typography>
+                          <Typography variant="h6">
+                            {t("reviewGuide")}
+                          </Typography>
                         </Box>
                         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                           {(review.topics || [review.topic] || []).map(
@@ -187,7 +193,7 @@ export default function SavedReviewsContent() {
                             boxShadow: "0 3px 5px 2px rgba(63, 81, 181, .3)",
                           }}
                         >
-                          View Review
+                          {t("viewReview")}
                         </Button>
                         <IconButton
                           onClick={() => handleDeleteReview(review.id)}
@@ -204,8 +210,12 @@ export default function SavedReviewsContent() {
                         </IconButton>
                       </Box>
                     </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Created: {review.createdAt?.toLocaleDateString()}
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: "block", mt: 1 }}
+                    >
+                      {t("created")}: {review.createdAt?.toLocaleString()}
                     </Typography>
                   </CardContent>
                 </Card>

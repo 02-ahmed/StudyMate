@@ -37,6 +37,8 @@ import {
   where,
   getDocs,
 } from "firebase/firestore";
+import { useLanguage } from "../contexts/LanguageContext";
+import useTranslation from "../hooks/useTranslation";
 
 // Import the same section components used in the dialog
 import NotesSection from "../components/review/NotesSection";
@@ -56,6 +58,7 @@ export default function ReviewContent() {
     message: "",
     severity: "success",
   });
+  const { t } = useTranslation();
 
   const loadContent = useCallback(
     async (topics) => {
@@ -63,49 +66,76 @@ export default function ReviewContent() {
         setLoading(true);
         setError(null);
 
-        // First try to find saved content
-        const reviewsRef = collection(db, "users", user.id, "savedReviews");
-        // Query for both old and new data structures
-        const queries = [
-          query(reviewsRef, where("topics", "array-contains", topics[0].topic)),
-          query(reviewsRef, where("topic", "==", topics[0].topic)),
-        ];
+        // First try to get content from sessionStorage (this is the content from the dialog)
+        try {
+          const storedContent = sessionStorage.getItem("currentReviewContent");
+          if (storedContent) {
+            console.log("Using content from dialog via sessionStorage");
+            const parsedContent = JSON.parse(storedContent);
+            setContent(parsedContent);
+            setLoading(false);
 
-        let savedReview = null;
-        for (const q of queries) {
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
-            // Use the most recently saved review
-            savedReview = querySnapshot.docs
-              .map((doc) => ({ id: doc.id, ...doc.data() }))
-              .sort((a, b) => b.updatedAt - a.updatedAt)[0];
-            break;
+            // Don't remove from sessionStorage in case user refreshes the page
+
+            return;
           }
+        } catch (storageError) {
+          console.error("Error accessing sessionStorage:", storageError);
         }
 
-        if (savedReview) {
-          setContent({ sections: savedReview.content });
-          setLoading(false);
-          return;
+        // If we're here, there's no content in sessionStorage
+        // Only load from database or generate if this is not from the "View Full Page" button
+        if (!topics[0].useStoredContent) {
+          // Find saved content in database
+          const reviewsRef = collection(db, "users", user.id, "savedReviews");
+          const queries = [
+            query(
+              reviewsRef,
+              where("topics", "array-contains", topics[0].topic)
+            ),
+            query(reviewsRef, where("topic", "==", topics[0].topic)),
+          ];
+
+          let savedReview = null;
+          for (const q of queries) {
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+              savedReview = querySnapshot.docs
+                .map((doc) => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+              break;
+            }
+          }
+
+          if (savedReview) {
+            setContent({ sections: savedReview.content });
+            setLoading(false);
+            return;
+          }
+
+          // If no saved content, generate new content
+          const response = await fetch("/api/generate-review-content", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              topic: topics[0].topic,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          setContent(data);
+        } else {
+          // This was supposed to be opened from View Full Page but no content was found
+          setError(
+            "No content available. Please go back to the dashboard and try again."
+          );
         }
-
-        // If no saved content, generate new content
-        const response = await fetch("/api/generate-review-content", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            topic: topics[0].topic,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setContent(data);
       } catch (error) {
         console.error("Error loading review content:", error);
         setError(error.message || "Failed to load review content");
@@ -116,6 +146,7 @@ export default function ReviewContent() {
     [user]
   );
 
+  // Only run this when searchParams, user, or loadContent changes
   useEffect(() => {
     const topicsParam = searchParams.get("topics");
     if (!topicsParam) {
@@ -133,6 +164,7 @@ export default function ReviewContent() {
       }
 
       if (user) {
+        // The loadContent function will now handle checking sessionStorage first
         loadContent(topics);
       } else {
         setError("Please sign in to view study guides");
@@ -167,14 +199,17 @@ export default function ReviewContent() {
 
       setSnackbar({
         open: true,
-        message: "Study guide saved successfully!",
+        message: t("messages.saved", "Study guide saved successfully!"),
         severity: "success",
       });
     } catch (error) {
       console.error("Error saving study guide:", error);
       setSnackbar({
         open: true,
-        message: "Failed to save study guide. Please try again.",
+        message: t(
+          "messages.error",
+          "Failed to save study guide. Please try again."
+        ),
         severity: "error",
       });
     } finally {
@@ -230,7 +265,7 @@ export default function ReviewContent() {
                 fontSize: { xs: "1.75rem", sm: "2.125rem" },
               }}
             >
-              Study Guide
+              {t("titles.studyGuide", "Study Guide")}
             </Typography>
             <Typography
               variant="body1"
@@ -240,7 +275,10 @@ export default function ReviewContent() {
                 fontSize: { xs: "0.875rem", sm: "1rem" },
               }}
             >
-              Comprehensive review materials to help you master these topics
+              {t(
+                "studyGuide.comprehensive",
+                "Comprehensive review materials to help you master these topics"
+              )}
             </Typography>
           </Box>
           <Button
@@ -260,14 +298,19 @@ export default function ReviewContent() {
               },
             }}
           >
-            {saving ? "Saving..." : "SAVE STUDY GUIDE"}
+            {saving
+              ? t("messages.loading", "Saving...")
+              : t("buttons.save", "SAVE STUDY GUIDE")}
           </Button>
         </Box>
 
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="body2">
-            🧪 This feature is in beta. The content generation is experimental
-            and may not always produce perfect results.
+            🧪{" "}
+            {t(
+              "messages.betaFeature",
+              "This feature is in beta. The content generation is experimental and may not always produce perfect results."
+            )}
           </Typography>
         </Alert>
 

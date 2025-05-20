@@ -199,6 +199,7 @@ export function createFlashcardSet(data) {
           id: typeof card.id === "number" ? card.id : index,
         }))
       : [],
+    language: data.language || "en",
   };
 }
 
@@ -300,6 +301,7 @@ export const SCHEMAS = {
     createdAt: "timestamp",
     tags: "array<string>",
     flashcards: "array<{front: string, back: string, id: number}>",
+    language: "string",
   },
 
   testResult: {
@@ -330,3 +332,23 @@ export const SCHEMAS = {
     messageCount: "number",
   },
 };
+
+/**
+ * Cleans flashcard content by removing "front:" and "back:" labels
+ * @param {string} content - The content to clean
+ * @returns {string} - The cleaned content
+ */
+export function cleanFlashcardContent(content) {
+  if (typeof content !== "string") return content;
+
+  // Remove "front:" or "back:" at the beginning of the content
+  let cleaned = content.replace(/^(front|back):\s*/i, "");
+
+  // Remove "front:" or "back:" anywhere in the content if it appears to be a label
+  cleaned = cleaned.replace(/(^|\n|\s)(front|back):\s*/gi, "$1");
+
+  // Remove any JSON-like formatting that might have leaked through
+  cleaned = cleaned.replace(/["{}[\],]/g, "");
+
+  return cleaned.trim();
+}

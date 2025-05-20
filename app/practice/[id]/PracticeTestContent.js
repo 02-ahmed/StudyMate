@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -22,6 +22,7 @@ import {
   Fade,
   Grow,
   Paper,
+  Chip,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -39,7 +40,13 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import { createTestResult } from "../../../utils/schemas";
+import TranslateIcon from "@mui/icons-material/Translate";
+import {
+  createTestResult,
+  cleanFlashcardContent,
+} from "../../../utils/schemas";
+import { SUPPORTED_LANGUAGES } from "../../contexts/LanguageContext";
+import useTranslation from "../../hooks/useTranslation";
 
 export default function PracticeTestContent({ params }) {
   const { user } = useUser();
@@ -53,7 +60,61 @@ export default function PracticeTestContent({ params }) {
   const [error, setError] = useState(null);
   const [startTime, setStartTime] = useState(null);
   const [generatingQuestions, setGeneratingQuestions] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [savingResults, setSavingResults] = useState(false);
+  const [setName, setSetName] = useState("");
+  const [language, setLanguage] = useState("en"); // Default to English
+  const { t } = useTranslation(); // Add translation hook
+
+  // Define loading messages with translations
+  const loadingMessages = useMemo(
+    () => [
+      t("practice.loadingMessages.analyzing", "Analyzing your flashcards..."),
+      t(
+        "practice.loadingMessages.creating",
+        "Creating challenging practice questions..."
+      ),
+      t(
+        "practice.loadingMessages.varying",
+        "Varying question types and difficulty levels..."
+      ),
+      t(
+        "practice.loadingMessages.personalizing",
+        "Personalizing your practice test..."
+      ),
+      t(
+        "practice.loadingMessages.finishing",
+        "Almost ready! Finalizing your test..."
+      ),
+    ],
+    [t]
+  );
+
+  // Add useEffect for rotating messages during loading
+  useEffect(() => {
+    // Don't rotate messages if not generating questions
+    if (!generatingQuestions) return;
+
+    // Use a stable reference to the messages
+    const messages = loadingMessages;
+
+    // Set the first message
+    setLoadingMessage(messages[0]);
+
+    // Keep a reference to the index outside of the interval
+    let messageIndex = 0;
+
+    // Set up the rotation interval
+    const timer = setInterval(() => {
+      // Update the index and wrap around when reaching the end
+      messageIndex = (messageIndex + 1) % messages.length;
+      // Set the new message
+      setLoadingMessage(messages[messageIndex]);
+    }, 3000); // Rotate every 3 seconds
+
+    // Clean up the interval when the component unmounts or loading state changes
+    return () => clearInterval(timer);
+  }, [generatingQuestions]); // Only depend on generatingQuestions state
 
   // Add navigation warning when quiz is in progress
   useEffect(() => {
@@ -162,34 +223,76 @@ export default function PracticeTestContent({ params }) {
     router.push("/practice");
   };
 
-  const generateAIQuestions = useCallback(async (flashcards, config) => {
-    try {
-      setGeneratingQuestions(true);
-      const response = await fetch("/api/generate-questions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          flashcards,
+  const generateAIQuestions = useCallback(
+    async (flashcards, config) => {
+      try {
+        setGeneratingQuestions(true);
+
+        console.log("========== GENERATING AI QUESTIONS ==========");
+        console.log("Flashcards count:", flashcards.length);
+        console.log("Config:", config);
+        console.log("Config language:", config.language);
+        console.log("Config language type:", typeof config.language);
+        console.log("Is config language null?", config.language === null);
+        console.log(
+          "Is config language undefined?",
+          config.language === undefined
+        );
+        console.log("Is config language empty string?", config.language === "");
+        console.log("Component language state:", language);
+        console.log("Final language to use:", config.language || language);
+        console.log("Supported languages:", Object.keys(SUPPORTED_LANGUAGES));
+        console.log(
+          "Is language supported?",
+          (config.language || language) in SUPPORTED_LANGUAGES
+        );
+
+        const requestBody = {
+          flashcards: flashcards.map((card) => ({
+            front: cleanFlashcardContent(card.front),
+            back: cleanFlashcardContent(card.back),
+            id: card.id,
+          })),
           numQuestions: config.numQuestions,
           questionTypes: config.questionTypes,
-        }),
-      });
+          language: config.language || language,
+        };
 
-      if (!response.ok) {
-        throw new Error("Failed to generate questions");
+        console.log("Request body:", requestBody);
+        console.log("Request body language:", requestBody.language);
+        console.log("Request body language type:", typeof requestBody.language);
+        console.log("===========================================");
+
+        const response = await fetch("/api/generate-questions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("API error response:", errorText);
+          throw new Error(
+            `Failed to generate questions: ${response.status} ${errorText}`
+          );
+        }
+
+        const data = await response.json();
+        console.log("API response data:", data);
+        return data.questions;
+      } catch (error) {
+        console.error("Error generating AI questions:", error);
+        console.error("Error details:", error.message);
+        console.error("Error stack:", error.stack);
+        throw error;
+      } finally {
+        setGeneratingQuestions(false);
       }
-
-      const data = await response.json();
-      return data.questions;
-    } catch (error) {
-      console.error("Error generating AI questions:", error);
-      throw error;
-    } finally {
-      setGeneratingQuestions(false);
-    }
-  }, []);
+    },
+    [language]
+  );
 
   const loadTest = useCallback(async () => {
     try {
@@ -198,39 +301,110 @@ export default function PracticeTestContent({ params }) {
         return;
       }
 
+      console.log("========== LOADING TEST ==========");
+      console.log("User ID:", user.id);
+      console.log("Flashcard set ID:", params.id);
+
       const config = JSON.parse(searchParams.get("config"));
+      console.log("Config from URL:", config);
+      console.log("Config question types:", config.questionTypes);
+      console.log("Config number of questions:", config.numQuestions);
+
       const docRef = doc(db, "users", user.id, "flashcardSets", params.id);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
         const data = docSnap.data();
+        setSetName(data.name || "Untitled Set");
+
+        console.log("Flashcard set data:", data);
+        console.log("Flashcard set name:", data.name);
+        console.log("Flashcard set language:", data.language);
+        console.log("Flashcard set language type:", typeof data.language);
+        console.log("Is language field present?", "language" in data);
+        console.log("Is language null?", data.language === null);
+        console.log("Is language undefined?", data.language === undefined);
+        console.log("Is language empty string?", data.language === "");
+        console.log(
+          "Language string length:",
+          data.language ? data.language.length : 0
+        );
+        console.log("Supported languages:", Object.keys(SUPPORTED_LANGUAGES));
+        console.log(
+          "Is language supported?",
+          data.language in SUPPORTED_LANGUAGES
+        );
+
+        // Set the language if available
+        let flashcardLanguage = "en"; // Default to English
+        if (data.language && SUPPORTED_LANGUAGES[data.language]) {
+          flashcardLanguage = data.language;
+          setLanguage(data.language);
+          console.log("Setting language to:", data.language);
+          console.log(
+            "Language display name:",
+            SUPPORTED_LANGUAGES[data.language]
+          );
+        } else {
+          console.log(
+            "Using default language (en) because:",
+            !data.language
+              ? "language is not set"
+              : !SUPPORTED_LANGUAGES[data.language]
+              ? "language is not supported"
+              : "unknown reason"
+          );
+          console.log(
+            "Default language display name:",
+            SUPPORTED_LANGUAGES["en"]
+          );
+        }
+        console.log(`Flashcard set language: ${data.language || "not set"}`);
+
         if (!data.flashcards || data.flashcards.length === 0) {
           setError("No flashcards found in this set");
           setLoading(false);
           return;
         }
 
+        console.log("Number of flashcards:", data.flashcards.length);
+
         const questionTypes = Array.isArray(config.questionTypes)
           ? config.questionTypes
           : [config.questionTypes];
 
+        console.log("Processed question types:", questionTypes);
+
         const aiQuestions = await generateAIQuestions(data.flashcards, {
           ...config,
           questionTypes,
+          language: data.language, // Pass the language from the flashcard set
         });
+
+        console.log("AI questions generated:", aiQuestions.length);
 
         const filteredQuestions = aiQuestions.filter((q) =>
           questionTypes.includes(q.type)
         );
 
+        console.log("Filtered questions:", filteredQuestions.length);
+        console.log(
+          "First question language check:",
+          filteredQuestions[0]?.question.substring(0, 50)
+        );
+        console.log("=================================");
+
         setQuestions(filteredQuestions);
         setStartTime(new Date());
       } else {
+        console.log("Flashcard set not found");
         setError("Flashcard set not found");
       }
       setLoading(false);
     } catch (error) {
       console.error("Error loading test:", error);
+      console.error("Error details:", error.message);
+      console.error("Error stack:", error.stack);
       setError("Error loading test");
       setLoading(false);
     }
@@ -387,8 +561,12 @@ export default function PracticeTestContent({ params }) {
           <CircularProgress />
           <Typography>
             {generatingQuestions
-              ? "Generating practice questions..."
-              : "Loading..."}
+              ? loadingMessage ||
+                t(
+                  "practice.generatingQuestions",
+                  "Generating practice questions..."
+                )
+              : t("messages.loading", "Loading...")}
           </Typography>
         </Box>
       </Container>
@@ -406,7 +584,7 @@ export default function PracticeTestContent({ params }) {
           onClick={() => router.push("/practice")}
           startIcon={<ArrowBackIcon />}
         >
-          Back to Practice
+          {t("buttons.back", "Back to Practice")}
         </Button>
       </Container>
     );
@@ -416,6 +594,25 @@ export default function PracticeTestContent({ params }) {
     const score = calculateScore();
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+          <Button
+            variant="outlined"
+            onClick={handleBackToPractice}
+            startIcon={<ArrowBackIcon />}
+          >
+            {t("buttons.back", "Back to Practice")}
+          </Button>
+
+          {/* Language indicator */}
+          <Chip
+            icon={<TranslateIcon />}
+            label={SUPPORTED_LANGUAGES[language] || "English"}
+            color="primary"
+            variant="outlined"
+            size="small"
+          />
+        </Box>
+
         <Grow in={true}>
           <Card
             sx={{
@@ -446,7 +643,7 @@ export default function PracticeTestContent({ params }) {
                   textAlign="center"
                   sx={{ color: "#3f51b5", fontWeight: "bold" }}
                 >
-                  Test Results
+                  {t("practice.testResults", "Test Results")}
                 </Typography>
 
                 <Box
@@ -507,10 +704,10 @@ export default function PracticeTestContent({ params }) {
                   </Box>
                   <Typography variant="h6" color="text.secondary">
                     {score >= 70
-                      ? "Excellent!"
+                      ? t("practice.excellent", "Excellent!")
                       : score >= 50
-                      ? "Good effort!"
-                      : "Keep practicing!"}
+                      ? t("practice.goodEffort", "Good effort!")
+                      : t("practice.keepPracticing", "Keep practicing!")}
                   </Typography>
                 </Box>
 
@@ -520,7 +717,7 @@ export default function PracticeTestContent({ params }) {
                     gutterBottom
                     sx={{ fontWeight: "medium" }}
                   >
-                    Question Review:
+                    {t("practice.questionReview", "Question Review:")}
                   </Typography>
                   <Stack spacing={3}>
                     {questions.map((question, index) => {
@@ -563,13 +760,18 @@ export default function PracticeTestContent({ params }) {
                                 variant="subtitle1"
                                 sx={{ fontWeight: "medium" }}
                               >
-                                Question {index + 1}
+                                {t("practice.question", "Question")} {index + 1}
                               </Typography>
                             </Box>
-                            <Typography>{question.question}</Typography>
+                            <Typography>
+                              {cleanFlashcardContent(question.question)}
+                            </Typography>
                             <Typography color="text.secondary">
-                              Your answer:{" "}
-                              {answers[index]?.toString() || "Not answered"}
+                              {t("practice.yourAnswer", "Your answer:")}{" "}
+                              {typeof answers[index] === "string"
+                                ? cleanFlashcardContent(answers[index])
+                                : answers[index]?.toString() ||
+                                  t("practice.notAnswered", "Not answered")}
                             </Typography>
                             <Typography
                               sx={{
@@ -578,8 +780,12 @@ export default function PracticeTestContent({ params }) {
                                   : "error.main",
                               }}
                             >
-                              Correct answer:{" "}
-                              {question.correctAnswer.toString()}
+                              {t("practice.correctAnswer", "Correct answer:")}{" "}
+                              {typeof question.correctAnswer === "string"
+                                ? cleanFlashcardContent(
+                                    question.correctAnswer.toString()
+                                  )
+                                : question.correctAnswer.toString()}
                             </Typography>
                           </Stack>
                         </Paper>
@@ -603,7 +809,7 @@ export default function PracticeTestContent({ params }) {
                       },
                     }}
                   >
-                    Back to Practice
+                    {t("buttons.back", "Back to Practice")}
                   </Button>
                   <Button
                     variant="contained"
@@ -619,7 +825,7 @@ export default function PracticeTestContent({ params }) {
                     }}
                     disabled={savingResults}
                   >
-                    Retry Test
+                    {t("practice.retryTest", "Retry Test")}
                   </Button>
                 </Stack>
               </motion.div>
@@ -652,6 +858,35 @@ export default function PracticeTestContent({ params }) {
           maxWidth: "600px", // Limit the width for better readability
         }}
       >
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+          <Button
+            variant="outlined"
+            onClick={handleBackToPractice}
+            startIcon={<ArrowBackIcon />}
+          >
+            {t("buttons.back", "Back to Practice")}
+          </Button>
+
+          {/* Language indicator */}
+          <Chip
+            icon={<TranslateIcon />}
+            label={SUPPORTED_LANGUAGES[language] || "English"}
+            color="primary"
+            variant="outlined"
+            size="small"
+          />
+        </Box>
+
+        <Typography variant="h4" sx={{ mb: 1, textAlign: "center" }}>
+          {setName || t("practice.practiceTest", "Practice Test")}
+        </Typography>
+
+        <LinearProgress
+          variant="determinate"
+          value={(currentQuestionIndex / questions.length) * 100}
+          sx={{ mb: 4, height: 8, borderRadius: 4 }}
+        />
+
         {/* Progress and Question Count */}
         <Box
           sx={{
@@ -699,7 +934,10 @@ export default function PracticeTestContent({ params }) {
             </Box>
           </Box>
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            Question {currentQuestionIndex + 1} of {questions.length}
+            {t("practice.questionCount", {
+              current: currentQuestionIndex + 1,
+              total: questions.length,
+            })}
           </Typography>
         </Box>
 
@@ -723,7 +961,7 @@ export default function PracticeTestContent({ params }) {
                   variant="h6"
                   sx={{ mb: 2, wordBreak: "break-word" }}
                 >
-                  {currentQuestion.question}
+                  {cleanFlashcardContent(currentQuestion.question)}
                 </Typography>
 
                 {currentQuestion.type === "multipleChoice" && (
@@ -777,7 +1015,7 @@ export default function PracticeTestContent({ params }) {
                                       whiteSpace: "normal",
                                     }}
                                   >
-                                    {option}
+                                    {cleanFlashcardContent(option)}
                                   </Typography>
                                 </Box>
                               }
@@ -808,8 +1046,11 @@ export default function PracticeTestContent({ params }) {
                     >
                       <Stack spacing={0.5} sx={{ width: "100%" }}>
                         {[
-                          { value: "true", label: "True" },
-                          { value: "false", label: "False" },
+                          { value: "true", label: t("practice.true", "True") },
+                          {
+                            value: "false",
+                            label: t("practice.false", "False"),
+                          },
                         ].map((option) => (
                           <Paper
                             key={option.value}
@@ -885,7 +1126,7 @@ export default function PracticeTestContent({ params }) {
                     fullWidth
                     size="small"
                     variant="outlined"
-                    placeholder="Type your answer"
+                    placeholder={t("practice.typeAnswer", "Type your answer")}
                     value={answers[currentQuestionIndex] || ""}
                     onChange={(e) => handleAnswer(e.target.value)}
                     sx={{
@@ -926,7 +1167,7 @@ export default function PracticeTestContent({ params }) {
               py: 0.75,
             }}
           >
-            Previous
+            {t("buttons.previous", "Previous")}
           </Button>
           <Button
             variant="contained"
@@ -939,7 +1180,9 @@ export default function PracticeTestContent({ params }) {
               py: 0.75,
             }}
           >
-            {currentQuestionIndex === questions.length - 1 ? "Finish" : "Next"}
+            {currentQuestionIndex === questions.length - 1
+              ? t("buttons.finish", "Finish")
+              : t("buttons.next", "Next")}
           </Button>
         </Box>
       </Box>

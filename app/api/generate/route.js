@@ -3,6 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const systemPrompt = `You are a flashcard generator API that MUST ALWAYS respond in valid JSON format.
 Your task is to create comprehensive educational flashcards about the specific topic or text provided by the user.
+If a target language is specified, generate the flashcards in that language while maintaining academic accuracy and natural language use.
+
 IMPORTANT: You MUST ONLY respond with JSON in the following format, nothing else:
 
 {
@@ -30,7 +32,12 @@ Rules:
    - Cover important dates, events, or characteristics
    - Include significant achievements or notable works
    - Add relevant context and background information
-   - Focus on what makes the topic unique or significant`;
+   - Focus on what makes the topic unique or significant
+9. When generating in a specific language:
+   - Use proper grammar and natural expressions
+   - Maintain academic accuracy
+   - Consider cultural context when relevant
+   - Use appropriate academic/formal language level`;
 
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
@@ -46,6 +53,13 @@ const SUPPORTED_MIME_TYPES = {
 
 // 1MB in bytes - limit for free plan
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+
+// Add supported languages
+const SUPPORTED_LANGUAGES = {
+  en: "English",
+  es: "Spanish",
+  fr: "French",
+};
 
 function convertTextToFlashcards(text) {
   // If the text contains bullet points or lists, convert them to flashcards
@@ -65,14 +79,20 @@ function convertTextToFlashcards(text) {
     if (trimmed.includes("?")) {
       // If we have a previous pair, save it
       if (currentFront && currentBack) {
-        flashcards.push({ front: currentFront, back: currentBack });
+        flashcards.push({
+          front: currentFront.replace(/^front:\s*/i, "").trim(),
+          back: currentBack.replace(/^back:\s*/i, "").trim(),
+        });
         currentBack = "";
       }
       currentFront = trimmed;
     } else if (currentFront && !currentBack) {
       // If we have a front but no back, this is the back
       currentBack = trimmed;
-      flashcards.push({ front: currentFront, back: currentBack });
+      flashcards.push({
+        front: currentFront.replace(/^front:\s*/i, "").trim(),
+        back: currentBack.replace(/^back:\s*/i, "").trim(),
+      });
       currentFront = "";
       currentBack = "";
     }
@@ -84,8 +104,8 @@ function convertTextToFlashcards(text) {
     for (let i = 0; i < sentences.length - 1; i += 2) {
       if (sentences[i] && sentences[i + 1]) {
         flashcards.push({
-          front: sentences[i].trim(),
-          back: sentences[i + 1].trim(),
+          front: sentences[i].replace(/^front:\s*/i, "").trim(),
+          back: sentences[i + 1].replace(/^back:\s*/i, "").trim(),
         });
       }
     }
@@ -110,15 +130,14 @@ export async function POST(req) {
     generationConfig: {
       temperature: 0.7,
       topK: 40,
-      topP: 0.95,
+      topP: 0.8,
       maxOutputTokens: 8192,
-      responseMimeType: "application/json",
     },
   });
 
-  // Check if the request is multipart form data (file upload)
-  const contentType = req.headers.get("content-type");
-  if (contentType && contentType.includes("multipart/form-data")) {
+  // Check if it's a FormData request (file upload)
+  const contentType = req.headers.get("content-type") || "";
+  if (contentType.includes("multipart/form-data")) {
     const formData = await req.formData();
     const file = formData.get("file");
     if (!file) {
@@ -176,7 +195,14 @@ export async function POST(req) {
     try {
       // First try direct JSON parse
       const flashcards = JSON.parse(text);
-      return NextResponse.json(flashcards.flashcards);
+
+      // Clean up any potential "front:" or "back:" text in the content
+      const cleanedFlashcards = flashcards.flashcards.map((card) => ({
+        front: card.front.replace(/^front:\s*/i, "").trim(),
+        back: card.back.replace(/^back:\s*/i, "").trim(),
+      }));
+
+      return NextResponse.json(cleanedFlashcards);
     } catch (error) {
       console.log(
         "Initial JSON parse failed, attempting to fix truncated JSON"
@@ -188,7 +214,14 @@ export async function POST(req) {
         const fixedText = text.substring(0, lastCompleteCard + 1) + "]}";
         try {
           const fixedJson = JSON.parse(fixedText);
-          return NextResponse.json(fixedJson.flashcards);
+
+          // Clean up any potential "front:" or "back:" text in the content
+          const cleanedFlashcards = fixedJson.flashcards.map((card) => ({
+            front: card.front.replace(/^front:\s*/i, "").trim(),
+            back: card.back.replace(/^back:\s*/i, "").trim(),
+          }));
+
+          return NextResponse.json(cleanedFlashcards);
         } catch (error) {
           console.log(
             "Failed to fix truncated JSON, falling back to text conversion"
@@ -203,24 +236,74 @@ export async function POST(req) {
   } else {
     // Handle direct text input
     const data = await req.text();
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: "user",
-          parts: [{ text: systemPrompt }, { text: data }],
-        },
-      ],
-    });
+    let targetLanguage = "en"; // Default to English
 
-    const text = await result.response.text();
-    console.log("Raw response:", text); // Debug log
-
+    // Try to parse the request as JSON to check for language parameter
     try {
-      const flashcards = JSON.parse(text);
-      return NextResponse.json(flashcards.flashcards);
+      const jsonData = JSON.parse(data);
+      if (jsonData.language && SUPPORTED_LANGUAGES[jsonData.language]) {
+        targetLanguage = jsonData.language;
+      }
+      // Use the content field if it exists, otherwise use the raw data
+      const content = jsonData.content || data;
+
+      // Add language instruction to the prompt
+      const languagePrompt =
+        targetLanguage !== "en"
+          ? `Generate the flashcards in ${SUPPORTED_LANGUAGES[targetLanguage]}. Ensure natural language use and proper grammar.`
+          : "";
+
+      const result = await model.generateContent({
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: systemPrompt },
+              { text: languagePrompt },
+              { text: content },
+            ],
+          },
+        ],
+      });
+
+      const text = await result.response.text();
+      console.log("Raw response:", text); // Debug log
+
+      try {
+        const flashcards = JSON.parse(text);
+
+        // Clean up any potential "front:" or "back:" text in the content
+        const cleanedFlashcards = flashcards.flashcards.map((card) => ({
+          front: card.front.replace(/^front:\s*/i, "").trim(),
+          back: card.back.replace(/^back:\s*/i, "").trim(),
+        }));
+
+        return NextResponse.json(cleanedFlashcards);
+      } catch (error) {
+        const processedFlashcards = convertTextToFlashcards(text);
+        return NextResponse.json(processedFlashcards.flashcards);
+      }
     } catch (error) {
-      const processedFlashcards = convertTextToFlashcards(text);
-      return NextResponse.json(processedFlashcards.flashcards);
+      // If JSON parsing fails, treat it as plain text input in English
+      const result = await model.generateContent({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: systemPrompt }, { text: data }],
+          },
+        ],
+      });
+
+      const text = await result.response.text();
+      console.log("Raw response:", text); // Debug log
+
+      try {
+        const flashcards = JSON.parse(text);
+        return NextResponse.json(flashcards.flashcards);
+      } catch (error) {
+        const processedFlashcards = convertTextToFlashcards(text);
+        return NextResponse.json(processedFlashcards.flashcards);
+      }
     }
   }
 }

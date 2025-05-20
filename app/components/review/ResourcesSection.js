@@ -11,8 +11,12 @@ import {
 } from "@mui/material";
 import ArticleIcon from "@mui/icons-material/Article";
 import YouTubeIcon from "@mui/icons-material/YouTube";
+import { useLanguage } from "../../contexts/LanguageContext";
+import useTranslation from "../../hooks/useTranslation";
 
 export default function ResourcesSection({ resources, type = "academic" }) {
+  const { t } = useTranslation();
+
   if (!resources || resources.length === 0) return null;
 
   const icon =
@@ -21,7 +25,11 @@ export default function ResourcesSection({ resources, type = "academic" }) {
     ) : (
       <YouTubeIcon color="primary" />
     );
-  const title = type === "academic" ? "Study Resources" : "Video Resources";
+
+  const title =
+    type === "academic"
+      ? t("titles.studyResources", "Study Resources")
+      : t("titles.videoResources", "Video Resources");
 
   return (
     <Paper
@@ -69,7 +77,9 @@ export default function ResourcesSection({ resources, type = "academic" }) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {type === "academic" ? "Read" : "Watch"}
+              {type === "academic"
+                ? t("buttons.read", "Read")
+                : t("buttons.watch", "Watch")}
             </Button>
           </ListItem>
         ))}

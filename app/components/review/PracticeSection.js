@@ -2,8 +2,12 @@
 
 import { Box, Typography, Paper } from "@mui/material";
 import AssignmentIcon from "@mui/icons-material/Assignment";
+import { useLanguage } from "../../contexts/LanguageContext";
+import useTranslation from "../../hooks/useTranslation";
 
 export default function PracticeSection({ content }) {
+  const { t } = useTranslation();
+
   if (!content) return null;
 
   return (
@@ -18,7 +22,7 @@ export default function PracticeSection({ content }) {
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
         <AssignmentIcon color="primary" />
         <Typography variant="h6" color="primary">
-          Practice Materials
+          {t("titles.practiceMaterials", "Practice Materials")}
         </Typography>
       </Box>
 

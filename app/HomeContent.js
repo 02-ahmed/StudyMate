@@ -22,6 +22,9 @@ import SpeedIcon from "@mui/icons-material/Speed";
 import AssessmentIcon from "@mui/icons-material/Assessment";
 import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { useLanguage } from "./contexts/LanguageContext";
+import useTranslation from "./hooks/useTranslation";
+import LandingNavBar from "./components/LandingNavBar";
 
 // Animation variants
 const fadeIn = {
@@ -91,6 +94,7 @@ export default function HomeContent() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isMedium = useMediaQuery(theme.breakpoints.down("md"));
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (isLoaded && isSignedIn && window.location.pathname === "/") {
@@ -123,11 +127,14 @@ export default function HomeContent() {
       maxWidth="xl"
       sx={{
         px: { xs: 2, sm: 6 },
+        pt: { xs: 8, md: 10 },
         overflow: "hidden",
         bgcolor: "background.default",
         position: "relative",
       }}
     >
+      <LandingNavBar />
+
       {/* Hero Section */}
       <Box
         sx={{
@@ -138,7 +145,7 @@ export default function HomeContent() {
           justifyContent: "center",
           alignItems: "center",
           position: "relative",
-          mt: { xs: 6, sm: 0 },
+          mt: { xs: 2, sm: 0 },
         }}
       >
         <Grid container spacing={{ xs: 6, sm: 4 }} alignItems="center">
@@ -163,20 +170,7 @@ export default function HomeContent() {
                     textAlign: { xs: "center", sm: "left" },
                   }}
                 >
-                  Understand Anything{" "}
-                  <span
-                    style={{
-                      fontWeight: 900,
-                      background:
-                        "linear-gradient(90deg,rgb(182, 52, 214) 0%,rgb(44, 34, 240) 100%)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                      color: "transparent",
-                    }}
-                  >
-                    With Ease
-                  </span>
+                  {t("landing.hero.title", "Understand Anything With Ease")}
                 </Typography>
               </motion.div>
 
@@ -193,8 +187,10 @@ export default function HomeContent() {
                     mx: { xs: "auto", sm: 0 },
                   }}
                 >
-                  Unleash your potential with AI-powered flashcards, smart
-                  notes, personalized learning analytics & more
+                  {t(
+                    "landing.hero.subtitle",
+                    "Unleash your potential with AI-powered flashcards, smart notes, personalized learning analytics & more"
+                  )}
                 </Typography>
               </motion.div>
 
@@ -229,7 +225,7 @@ export default function HomeContent() {
                       },
                     }}
                   >
-                    Get Started
+                    {t("landing.hero.getStarted", "Get Started")}
                   </Button>
 
                   <Button
@@ -253,7 +249,7 @@ export default function HomeContent() {
                       },
                     }}
                   >
-                    Sign Up For Free
+                    {t("landing.hero.signUp", "Sign Up For Free")}
                   </Button>
                 </Box>
               </motion.div>
@@ -336,7 +332,7 @@ export default function HomeContent() {
                 color: "transparent",
               }}
             >
-              Cutting-Edge Features
+              {t("landing.features.title", "Cutting-Edge Features")}
             </Typography>
           </motion.div>
 
@@ -351,23 +347,35 @@ export default function HomeContent() {
           >
             {[
               {
-                title: "Smart Notes",
-                description:
-                  "AI-driven note generation creates concise, impactful study materials.",
+                title: t("landing.features.smartNotes.title", "Smart Notes"),
+                description: t(
+                  "landing.features.smartNotes.description",
+                  "AI-driven note generation creates concise, impactful study materials."
+                ),
                 icon: <LightbulbIcon sx={{ fontSize: 36, color: "#3B82F6" }} />,
                 color: "#EFF6FF",
               },
               {
-                title: "Adaptive Review",
-                description:
-                  "Personalized learning schedules maximize retention and efficiency.",
+                title: t(
+                  "landing.features.adaptiveReview.title",
+                  "Adaptive Review"
+                ),
+                description: t(
+                  "landing.features.adaptiveReview.description",
+                  "Personalized learning schedules maximize retention and efficiency."
+                ),
                 icon: <SpeedIcon sx={{ fontSize: 36, color: "#3B82F6" }} />,
                 color: "#F5F3FF",
               },
               {
-                title: "Deep Analytics",
-                description:
-                  "Actionable insights track progress and optimize study focus.",
+                title: t(
+                  "landing.features.deepAnalytics.title",
+                  "Deep Analytics"
+                ),
+                description: t(
+                  "landing.features.deepAnalytics.description",
+                  "Actionable insights track progress and optimize study focus."
+                ),
                 icon: (
                   <AssessmentIcon sx={{ fontSize: 36, color: "#3B82F6" }} />
                 ),
@@ -466,7 +474,7 @@ export default function HomeContent() {
                 color: "transparent",
               }}
             >
-              Your Learning Blueprint
+              {t("landing.blueprint.title", "Your Learning Blueprint")}
             </Typography>
           </motion.div>
 
@@ -485,21 +493,36 @@ export default function HomeContent() {
                 {[
                   {
                     number: "01",
-                    title: "Input Content",
-                    description:
-                      "Upload text, PDFs, or images effortlessly with our intuitive interface.",
+                    title: t(
+                      "landing.blueprint.steps.0.title",
+                      "Input Content"
+                    ),
+                    description: t(
+                      "landing.blueprint.steps.0.description",
+                      "Upload text, PDFs, or images effortlessly with our intuitive interface."
+                    ),
                   },
                   {
                     number: "02",
-                    title: "AI Transformation",
-                    description:
-                      "Advanced AI converts your content into optimized study resources.",
+                    title: t(
+                      "landing.blueprint.steps.1.title",
+                      "AI Transformation"
+                    ),
+                    description: t(
+                      "landing.blueprint.steps.1.description",
+                      "Advanced AI converts your content into optimized study resources."
+                    ),
                   },
                   {
                     number: "03",
-                    title: "Master Concepts",
-                    description:
-                      "Learn smarter with adaptive, personalized review sessions.",
+                    title: t(
+                      "landing.blueprint.steps.2.title",
+                      "Master Concepts"
+                    ),
+                    description: t(
+                      "landing.blueprint.steps.2.description",
+                      "Learn smarter with adaptive, personalized review sessions."
+                    ),
                   },
                 ].map((step, index) => (
                   <motion.div
@@ -645,7 +668,7 @@ export default function HomeContent() {
                 color: "transparent",
               }}
             >
-              Voices of Success
+              {t("landing.testimonials.title", "Voices of Success")}
             </Typography>
           </motion.div>
 
@@ -660,22 +683,37 @@ export default function HomeContent() {
           >
             {[
               {
-                name: "James Blay",
-                role: "Engineering Student",
-                quote:
-                  "This platform transformed my study routine, doubling my efficiency!",
+                name: t("landing.testimonials.people.0.name", "James Blay"),
+                role: t(
+                  "landing.testimonials.people.0.role",
+                  "Engineering Student"
+                ),
+                quote: t(
+                  "landing.testimonials.people.0.quote",
+                  "This platform transformed my study routine, doubling my efficiency!"
+                ),
               },
               {
-                name: "Gina Lucy",
-                role: "HR Manager of a Company",
-                quote:
-                  "AI flashcards streamlined our employee training process, making onboarding faster and more engaging.",
+                name: t("landing.testimonials.people.1.name", "Gina Lucy"),
+                role: t(
+                  "landing.testimonials.people.1.role",
+                  "HR Manager of a Company"
+                ),
+                quote: t(
+                  "landing.testimonials.people.1.quote",
+                  "AI flashcards streamlined our employee training process, making onboarding faster and more engaging."
+                ),
               },
               {
-                name: "Duvor William",
-                role: "Working Professional",
-                quote:
-                  "Balancing work and upskilling was tough, but this tool made learning efficient and flexible.",
+                name: t("landing.testimonials.people.2.name", "Duvor William"),
+                role: t(
+                  "landing.testimonials.people.2.role",
+                  "Working Professional"
+                ),
+                quote: t(
+                  "landing.testimonials.people.2.quote",
+                  "Balancing work and upskilling was tough, but this tool made learning efficient and flexible."
+                ),
               },
             ].map((testimonial, index) => (
               <Grid item xs={12} sm={6} md={4} key={index}>
@@ -810,7 +848,7 @@ export default function HomeContent() {
                 textFillColor: "transparent",
               }}
             >
-              Memorization Journey
+              {t("landing.cta.title", "Memorization Journey")}
             </Typography>
           </motion.div>
 
@@ -826,9 +864,10 @@ export default function HomeContent() {
                 px: { xs: 2, sm: 0 },
               }}
             >
-              Join thousands of learners revolutionizing their memorization
-              skills with our cutting-edge AI tools. Start today and unlock your
-              full potential!
+              {t(
+                "landing.cta.description",
+                "Join thousands of learners revolutionizing their memorization skills with our cutting-edge AI tools. Start today and unlock your full potential!"
+              )}
             </Typography>
           </motion.div>
 
@@ -854,7 +893,7 @@ export default function HomeContent() {
                 },
               }}
             >
-              Launch Your Success
+              {t("landing.cta.button", "Launch Your Success")}
             </Button>
           </motion.div>
         </motion.div>

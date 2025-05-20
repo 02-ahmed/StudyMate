@@ -1,0 +1,164 @@
+"use client";
+
+import React, { createContext, useState, useContext, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../../utils/firebase.js";
+
+// Supported languages
+export const SUPPORTED_LANGUAGES = {
+  en: "English",
+  es: "Español",
+  fr: "Français",
+  de: "Deutsch",
+};
+
+// Add some debug logging
+console.log("=== LANGUAGE CONTEXT MODULE (APP) LOADED ===");
+console.log("Module path: %s", import.meta.url);
+console.log("Supported languages:", Object.keys(SUPPORTED_LANGUAGES));
+console.log(
+  "Supported language display names:",
+  Object.values(SUPPORTED_LANGUAGES)
+);
+
+// Create context with default values
+const LanguageContext = createContext({
+  language: "en",
+  changeLanguage: () => {},
+  supportedLanguages: SUPPORTED_LANGUAGES,
+});
+
+// Create provider
+export function LanguageProvider({ children }) {
+  // Default to English or try to get from Firestore
+  const [language, setLanguage] = useState("en");
+  const [isLoading, setIsLoading] = useState(true);
+  const { user, isLoaded } = useUser();
+
+  console.log("LanguageProvider initialized, default language:", language);
+  console.log("User loaded:", isLoaded);
+  console.log("User available:", !!user);
+
+  // Load user's language preference from Firebase
+  useEffect(() => {
+    async function loadLanguagePreference() {
+      console.log("Loading language preference from Firebase");
+      if (!isLoaded || !user) {
+        console.log("User not loaded or not available, using default language");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        console.log("Fetching language preference for user:", user.id);
+        // Get user preferences document
+        const prefsRef = doc(db, "users", user.id, "preferences", "language");
+        const prefsDoc = await getDoc(prefsRef);
+
+        if (prefsDoc.exists()) {
+          // Use stored preference
+          const storedLanguage = prefsDoc.data().value;
+          console.log("Found stored language preference:", storedLanguage);
+
+          if (SUPPORTED_LANGUAGES[storedLanguage]) {
+            console.log(
+              "Setting language to stored preference:",
+              storedLanguage
+            );
+            setLanguage(storedLanguage);
+          } else {
+            console.log(
+              "Stored language not supported, using default:",
+              language
+            );
+          }
+        } else {
+          console.log("No language preference found, using default:", language);
+        }
+      } catch (error) {
+        console.error("Error loading language preference:", error);
+      } finally {
+        setIsLoading(false);
+        console.log("Language loading complete");
+      }
+    }
+
+    loadLanguagePreference();
+  }, [user, isLoaded]);
+
+  // Update language and save to Firestore
+  const changeLanguage = async (newLanguage) => {
+    try {
+      console.log(
+        "📣 LanguageContext: Changing language from",
+        language,
+        "to",
+        newLanguage
+      );
+
+      // Validate the language is supported
+      if (!(newLanguage in SUPPORTED_LANGUAGES)) {
+        console.error(
+          `📣 LanguageContext: Language '${newLanguage}' not supported. Supported languages:`,
+          Object.keys(SUPPORTED_LANGUAGES)
+        );
+        return;
+      }
+
+      // Update state immediately for responsive UI
+      setLanguage(newLanguage);
+      console.log("📣 LanguageContext: Language state updated to", newLanguage);
+
+      // Save to Firebase if user is logged in
+      if (user) {
+        try {
+          console.log(
+            "Saving language preference to Firebase for user:",
+            user.id
+          );
+          const prefsRef = doc(db, "users", user.id, "preferences", "language");
+          await setDoc(prefsRef, { value: newLanguage }, { merge: true });
+          console.log("Language preference saved successfully to database");
+        } catch (error) {
+          console.error("Error saving language preference to database:", error);
+        }
+      } else {
+        console.log("User not logged in, not saving preference to Firebase");
+      }
+    } catch (error) {
+      console.error(
+        "📣 LanguageContext: Error saving language preference:",
+        error
+      );
+    }
+  };
+
+  // Create the context value with supportedLanguages and loading state
+  const contextValue = {
+    language,
+    changeLanguage,
+    supportedLanguages: SUPPORTED_LANGUAGES,
+    isLoading,
+  };
+
+  return (
+    <LanguageContext.Provider value={contextValue}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+// Custom hook to use the language context
+export function useLanguage() {
+  // Removed excessive logging
+  const context = useContext(LanguageContext);
+  // Since we've provided default values in createContext(),
+  // this check is less likely to fail
+  if (!context) {
+    console.error(
+      "🔍 APP CONTEXT: useLanguage: Context is undefined, this should not happen with default values"
+    );
+  }
+  return context;
+}

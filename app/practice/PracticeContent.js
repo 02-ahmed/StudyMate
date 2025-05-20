@@ -24,6 +24,8 @@ import {
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../utils/firebase";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useLanguage } from "../contexts/LanguageContext";
+import useTranslation from "../hooks/useTranslation";
 
 export default function PracticeContent() {
   const { user } = useUser();
@@ -39,6 +41,8 @@ export default function PracticeContent() {
   });
   const [error, setError] = useState(null);
   const [numQuestions, setNumQuestions] = useState(5);
+  const { language } = useLanguage();
+  const { t } = useTranslation();
 
   // Handle URL parameters for pre-configuration
   useEffect(() => {
@@ -158,7 +162,7 @@ export default function PracticeContent() {
           fontWeight: "bold",
         }}
       >
-        Practice Test Generator
+        {t("practiceTestGenerator")}
       </Typography>
 
       <Typography
@@ -172,7 +176,7 @@ export default function PracticeContent() {
               .toLowerCase()} questions`
           : searchParams.get("topic")
           ? `Practicing ${searchParams.get("topic")}`
-          : "Create a custom practice test from your flashcard sets"}
+          : t("createCustomTest")}
       </Typography>
 
       <Card
@@ -187,11 +191,11 @@ export default function PracticeContent() {
           <Grid container spacing={3}>
             <Grid item xs={12}>
               <FormControl fullWidth>
-                <InputLabel>Select Flashcard Set</InputLabel>
+                <InputLabel>{t("selectFlashcardSet")}</InputLabel>
                 <Select
                   value={selectedSet}
                   onChange={(e) => setSelectedSet(e.target.value)}
-                  label="Select Flashcard Set"
+                  label={t("selectFlashcardSet")}
                 >
                   {flashcardSets.map((set) => (
                     <MenuItem key={set.id} value={set.id}>
@@ -203,8 +207,8 @@ export default function PracticeContent() {
             </Grid>
 
             <Grid item xs={12}>
-              <Typography variant="h6" gutterBottom sx={{ color: "#3f51b5" }}>
-                Question Types
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 500 }}>
+                {t("questionTypes")}
               </Typography>
               <FormGroup>
                 <FormControlLabel
@@ -214,84 +218,85 @@ export default function PracticeContent() {
                       onChange={() =>
                         handleQuestionTypeChange("multipleChoice")
                       }
+                      color="primary"
                     />
                   }
-                  label="Multiple Choice"
+                  label={t("multipleChoice")}
                 />
                 <FormControlLabel
                   control={
                     <Checkbox
                       checked={questionTypes.trueFalse}
                       onChange={() => handleQuestionTypeChange("trueFalse")}
+                      color="primary"
                     />
                   }
-                  label="True/False"
+                  label={t("trueFalse")}
                 />
                 <FormControlLabel
                   control={
                     <Checkbox
                       checked={questionTypes.fillInBlank}
                       onChange={() => handleQuestionTypeChange("fillInBlank")}
+                      color="primary"
                     />
                   }
-                  label="Fill in the Blank"
+                  label={t("fillInBlank")}
                 />
               </FormGroup>
             </Grid>
 
             <Grid item xs={12}>
+              <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 500 }}>
+                {t("numberOfQuestions")}
+              </Typography>
               <FormControl fullWidth>
-                <InputLabel>Number of Questions</InputLabel>
                 <Select
                   value={numQuestions}
                   onChange={(e) => setNumQuestions(e.target.value)}
-                  label="Number of Questions"
                 >
-                  <MenuItem value={5}>5 questions</MenuItem>
-                  <MenuItem value={10}>10 questions</MenuItem>
-                  <MenuItem value={15}>15 questions</MenuItem>
+                  {[5, 10, 15].map((num) => (
+                    <MenuItem key={num} value={num}>
+                      {num}
+                    </MenuItem>
+                  ))}
                 </Select>
-                <FormHelperText>
-                  Maximum 15 questions per test for optimal performance
-                </FormHelperText>
+                <FormHelperText>{t("maxQuestionsNote")}</FormHelperText>
               </FormControl>
-            </Grid>
-
-            {error && (
-              <Grid item xs={12}>
-                <Alert severity="error" onClose={() => setError(null)}>
-                  {error}
-                </Alert>
-              </Grid>
-            )}
-
-            <Grid item xs={12}>
-              <Button
-                variant="contained"
-                fullWidth
-                size="large"
-                onClick={handleStartTest}
-                disabled={
-                  !selectedSet || !Object.values(questionTypes).some(Boolean)
-                }
-                sx={{
-                  background:
-                    "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
-                  boxShadow: "0 3px 5px 2px rgba(63, 81, 181, .3)",
-                  borderRadius: 2,
-                  height: "50px",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(45deg, #303f9f 30%, #5c6bc0 90%)",
-                  },
-                }}
-              >
-                Generate Practice Test
-              </Button>
             </Grid>
           </Grid>
         </CardContent>
       </Card>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Button
+        variant="contained"
+        color="primary"
+        fullWidth
+        size="large"
+        onClick={handleStartTest}
+        disabled={!selectedSet || !Object.values(questionTypes).some(Boolean)}
+        sx={{
+          py: 1.5,
+          borderRadius: 2,
+          fontSize: "1rem",
+          fontWeight: 600,
+          boxShadow: "0 4px 12px rgba(63, 81, 181, 0.2)",
+          background: "linear-gradient(45deg, #3f51b5 30%, #5a67d8 90%)",
+          transition: "all 0.3s ease",
+          "&:hover": {
+            boxShadow: "0 6px 15px rgba(63, 81, 181, 0.3)",
+            transform: "translateY(-2px)",
+          },
+        }}
+      >
+        {t("generatePracticeTest")}
+      </Button>
     </Container>
   );
 }

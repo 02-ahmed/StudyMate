@@ -2,8 +2,12 @@
 
 import { Box, Typography, Paper } from "@mui/material";
 import LightbulbIcon from "@mui/icons-material/Lightbulb";
+import { useLanguage } from "../../contexts/LanguageContext";
+import useTranslation from "../../hooks/useTranslation";
 
 export default function ExplanationsSection({ content }) {
+  const { t } = useTranslation();
+
   if (!content) return null;
 
   return (
@@ -18,7 +22,7 @@ export default function ExplanationsSection({ content }) {
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
         <LightbulbIcon color="primary" />
         <Typography variant="h6" color="primary">
-          In-Depth Explanations
+          {t("titles.inDepthExplanations", "In-Depth Explanations")}
         </Typography>
       </Box>
 

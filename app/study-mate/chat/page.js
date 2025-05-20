@@ -1,21 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
-import { Box } from "@mui/material";
-import ChatAssistant from "./ChatAssistant";
+import { Suspense } from "react";
+import { Box, Container, CircularProgress } from "@mui/material";
+import dynamic from "next/dynamic";
+
+// Import ChatAssistant dynamically with SSR disabled
+const ChatAssistant = dynamic(() => import("./ChatAssistant"), {
+  ssr: false,
+});
 
 export default function ChatPage() {
-  const { user } = useUser();
+  // Try to get user ID from local storage on the client side
+  let userId = null;
+  if (typeof window !== "undefined") {
+    try {
+      userId = window.clerkUserInfo?.id || localStorage.getItem("userId");
+    } catch (e) {
+      console.error("Error accessing localStorage:", e);
+    }
+  }
 
   return (
-    <Box
-      sx={{
-        height: "calc(100vh - 64px)",
-        overflow: "hidden",
-      }}
-    >
-      <ChatAssistant userId={user?.id} />
-    </Box>
+    <Container maxWidth="lg" sx={{ py: 2 }}>
+      <Suspense fallback={<CircularProgress />}>
+        <ChatAssistant userId={userId} />
+      </Suspense>
+    </Container>
   );
 }

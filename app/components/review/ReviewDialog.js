@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -19,20 +20,13 @@ import NotesSection from "./NotesSection";
 import ExplanationsSection from "./ExplanationsSection";
 import ResourcesSection from "./ResourcesSection";
 import PracticeSection from "./PracticeSection";
-import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { db } from "../../../utils/firebase";
 import { collection, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import SaveIcon from "@mui/icons-material/Save";
 import { useRouter } from "next/navigation";
-
-const loadingMessages = [
-  "Analyzing topic and generating comprehensive notes...",
-  "Creating detailed explanations and examples...",
-  "Finding relevant study resources and videos...",
-  "Preparing practice materials...",
-  "Almost there! Putting everything together...",
-];
+import { useLanguage } from "../../contexts/LanguageContext";
+import useTranslation from "../../hooks/useTranslation";
 
 export default function ReviewDialog({
   open,
@@ -43,6 +37,35 @@ export default function ReviewDialog({
 }) {
   const { user } = useUser();
   const router = useRouter();
+  const { t } = useTranslation();
+
+  // Create stable loading messages with useMemo
+  const loadingMessages = useMemo(
+    () => [
+      t(
+        "studyGuide.loadingMessages.analyzing",
+        "Analyzing topic and generating comprehensive notes..."
+      ),
+      t(
+        "studyGuide.loadingMessages.creating",
+        "Creating detailed explanations and examples..."
+      ),
+      t(
+        "studyGuide.loadingMessages.finding",
+        "Finding relevant study resources and videos..."
+      ),
+      t(
+        "studyGuide.loadingMessages.preparing",
+        "Preparing practice materials..."
+      ),
+      t(
+        "studyGuide.loadingMessages.finishing",
+        "Almost there! Putting everything together..."
+      ),
+    ],
+    [t]
+  );
+
   const [loadingMessage, setLoadingMessage] = useState(loadingMessages[0]);
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -51,16 +74,31 @@ export default function ReviewDialog({
     severity: "success",
   });
 
+  // Only run this effect when loading state changes
   useEffect(() => {
-    if (loading) {
-      let index = 0;
-      const interval = setInterval(() => {
-        index = (index + 1) % loadingMessages.length;
-        setLoadingMessage(loadingMessages[index]);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [loading]);
+    // Don't do anything if not loading
+    if (!loading) return;
+
+    // Use a stable reference to the messages that won't change
+    const messages = loadingMessages;
+
+    // Set the first message
+    setLoadingMessage(messages[0]);
+
+    // Keep a reference to the index outside of the interval
+    let messageIndex = 0;
+
+    // Set up the rotation interval
+    const timer = setInterval(() => {
+      // Update the index and wrap around when we reach the end
+      messageIndex = (messageIndex + 1) % messages.length;
+      // Set the new message
+      setLoadingMessage(messages[messageIndex]);
+    }, 3000);
+
+    // Clean up the interval when the component unmounts or loading changes
+    return () => clearInterval(timer);
+  }, [loading]); // Remove loadingMessages dependency to avoid rerenders
 
   const handleSaveReview = async () => {
     if (!user || !content?.sections) return;
@@ -79,14 +117,17 @@ export default function ReviewDialog({
 
       setSnackbar({
         open: true,
-        message: "Study guide saved successfully!",
+        message: t("messages.saved", "Study guide saved successfully!"),
         severity: "success",
       });
     } catch (error) {
       console.error("Error saving study guide:", error);
       setSnackbar({
         open: true,
-        message: "Failed to save study guide. Please try again.",
+        message: t(
+          "messages.error",
+          "Failed to save study guide. Please try again."
+        ),
         severity: "error",
       });
     } finally {
@@ -95,16 +136,23 @@ export default function ReviewDialog({
   };
 
   const handleViewFullPage = () => {
-    if (!topic) {
-      console.error("No topic provided");
+    if (!topic || !content) {
       setSnackbar({
         open: true,
-        message: "Cannot view full page: topic is missing",
+        message: "Cannot view full page: content is not ready",
         severity: "error",
       });
       return;
     }
-    const topicParam = encodeURIComponent(JSON.stringify([{ topic }]));
+
+    // Store the current content in sessionStorage
+    sessionStorage.setItem("currentReviewContent", JSON.stringify(content));
+
+    // Add a flag to the topic parameter
+    const topicData = { topic, useStoredContent: true };
+    const topicParam = encodeURIComponent(JSON.stringify([topicData]));
+
+    // Navigate to full page
     router.push(`/review?topics=${topicParam}`);
   };
 
@@ -137,12 +185,12 @@ export default function ReviewDialog({
         }}
       >
         <SchoolIcon />
-        Study Guide
+        {t("titles.studyGuide", "Study Guide")}
         <Box sx={{ flexGrow: 1 }} />
         {!loading && user && (
           <>
             <Button onClick={handleViewFullPage} sx={{ color: "white", mr: 1 }}>
-              View Full Page
+              {t("buttons.viewFullPage", "View Full Page")}
             </Button>
             <Button
               startIcon={<SaveIcon />}
@@ -150,7 +198,9 @@ export default function ReviewDialog({
               disabled={saving}
               sx={{ color: "white" }}
             >
-              {saving ? "Saving..." : "Save"}
+              {saving
+                ? t("messages.loading", "Saving...")
+                : t("buttons.save", "Save")}
             </Button>
           </>
         )}
@@ -167,8 +217,11 @@ export default function ReviewDialog({
       <DialogContent sx={{ mt: 2 }}>
         <Alert severity="info" sx={{ mb: 2 }}>
           <Typography variant="body2">
-            🧪 This feature is in beta. The content generation is experimental
-            and may not always produce perfect results.
+            🧪{" "}
+            {t(
+              "messages.betaFeature",
+              "This feature is in beta. The content generation is experimental and may not always produce perfect results."
+            )}
           </Typography>
         </Alert>
 

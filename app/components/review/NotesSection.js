@@ -2,8 +2,12 @@
 
 import { Box, Typography, Paper } from "@mui/material";
 import SchoolIcon from "@mui/icons-material/School";
+import { useLanguage } from "../../contexts/LanguageContext";
+import useTranslation from "../../hooks/useTranslation";
 
 export default function NotesSection({ content }) {
+  const { t } = useTranslation();
+
   if (!content) return null;
 
   return (
@@ -18,7 +22,7 @@ export default function NotesSection({ content }) {
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
         <SchoolIcon color="primary" />
         <Typography variant="h6" color="primary">
-          Detailed Notes
+          {t("titles.detailedNotes", "Detailed Notes")}
         </Typography>
       </Box>
 

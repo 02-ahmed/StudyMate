@@ -3,35 +3,69 @@ import { NextResponse } from "next/server";
 
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
+// Language-specific prompts
+const LANGUAGE_PROMPTS = {
+  en: {
+    language: "English",
+    introduction: "Introduction",
+    mainConcept: "Main Concept Explanation",
+    relatedConcepts: "Related Concepts",
+    learningResources: "Learning Resources",
+  },
+  es: {
+    language: "Spanish",
+    introduction: "Introducción",
+    mainConcept: "Explicación del Concepto Principal",
+    relatedConcepts: "Conceptos Relacionados",
+    learningResources: "Recursos de Aprendizaje",
+  },
+  fr: {
+    language: "French",
+    introduction: "Introduction",
+    mainConcept: "Explication du Concept Principal",
+    relatedConcepts: "Concepts Connexes",
+    learningResources: "Ressources d'Apprentissage",
+  },
+  de: {
+    language: "German",
+    introduction: "Einführung",
+    mainConcept: "Erklärung des Hauptkonzepts",
+    relatedConcepts: "Verwandte Konzepte",
+    learningResources: "Lernressourcen",
+  },
+};
+
 export async function POST(request) {
   try {
-    const { topic } = await request.json();
+    const { topic, language = "en" } = await request.json();
+    const sections = LANGUAGE_PROMPTS[language];
 
     const prompt = `
-      I need a comprehensive learning guide about ${topic}.
+      Generate a comprehensive learning guide about ${topic} in ${sections.language}.
       Please provide:
 
-      1. Introduction:
+      1. ${sections.introduction}:
       - Basic overview of the field/subject this topic belongs to
       - Why this topic is important
       - Prerequisites for understanding this topic
 
-      2. Main Concept Explanation:
+      2. ${sections.mainConcept}:
       - Detailed explanation of ${topic}
       - Key principles and components
       - Common applications
       - Visual descriptions (if applicable)
 
-      3. Related Concepts:
+      3. ${sections.relatedConcepts}:
       - Connected topics and their relationships
       - How this fits into the broader subject
       - Progressive learning path
 
-      4. Learning Resources:
+      4. ${sections.learningResources}:
       - Key terms for finding educational content
       - Suggested topics for further reading
       - Specific concepts to search for in educational videos
 
+      Please provide the response in ${sections.language}.
       Format the response with clear sections and bullet points.
     `;
 
@@ -40,40 +74,40 @@ export async function POST(request) {
     const response = result.response.text();
 
     // Parse the response into sections
-    const sections = response.split(/\d\.\s+/);
+    const contentSections = response.split(/\d\.\s+/);
 
     // Structure the content
     const structuredContent = {
-      introduction: sections[1] || "",
-      conceptExplanation: sections[2] || "",
-      relatedConcepts: sections[3] || "",
+      introduction: contentSections[1] || "",
+      conceptExplanation: contentSections[2] || "",
+      relatedConcepts: contentSections[3] || "",
       resources: {
         articles: [
           {
-            title: `Introduction to ${topic}`,
+            title: `${sections.introduction} - ${topic}`,
             url: `https://scholar.google.com/scholar?q=introduction+${encodeURIComponent(
               topic
-            )}`,
+            )}&hl=${language}`,
           },
           {
-            title: `Advanced ${topic} Concepts`,
+            title: `${sections.mainConcept} - ${topic}`,
             url: `https://scholar.google.com/scholar?q=advanced+${encodeURIComponent(
               topic
-            )}`,
+            )}&hl=${language}`,
           },
         ],
         videos: [
           {
-            title: `${topic} Basics`,
+            title: `${topic} - ${sections.introduction}`,
             url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
               topic
-            )}+tutorial`,
+            )}+tutorial&hl=${language}`,
           },
           {
-            title: `${topic} Explained`,
+            title: `${topic} - ${sections.mainConcept}`,
             url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
               topic
-            )}+explained`,
+            )}+explained&hl=${language}`,
           },
         ],
       },

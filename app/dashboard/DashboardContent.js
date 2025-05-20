@@ -1,170 +1,223 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
-  Container,
-  Grid,
-  Card,
-  CardContent,
-  Typography,
   Box,
   Button,
+  Card,
+  CardContent,
+  Container,
+  Grid,
+  Typography,
   CircularProgress,
-  Paper,
 } from "@mui/material";
-import { collection, getDocs, query } from "firebase/firestore";
 import { db } from "../../utils/firebase";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import AutoStoriesIcon from "@mui/icons-material/AutoStories";
-import NoteAddIcon from "@mui/icons-material/NoteAdd";
-import TestStats from "../components/TestStats";
-import PerformanceAnalytics from "../components/PerformanceAnalytics";
-import { motion } from "framer-motion";
-import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
-import AddIcon from "@mui/icons-material/Add";
+import { collection, getDocs } from "firebase/firestore";
+import LibraryBooksIcon from "@mui/icons-material/LibraryBooks";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import QuizIcon from "@mui/icons-material/Quiz";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import TestStats from "../components/TestStats";
+import PerformanceAnalytics from "../components/PerformanceAnalytics";
+import { useRouter } from "next/navigation";
+import { useLanguage } from "../contexts/LanguageContext";
+import useTranslation from "../hooks/useTranslation";
 
 export default function DashboardContent() {
-  const { user } = useUser();
-  const [totalNotes, setTotalNotes] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const { user, isLoaded, isSignedIn } = useUser();
   const router = useRouter();
-  const [weakTopics, setWeakTopics] = useState([]);
+  const { t, language } = useTranslation();
+  console.log("🔍 Current language in DashboardContent:", language);
+  console.log(
+    "🔍 Translation for 'nav.learningJourney':",
+    t("nav.learningJourney")
+  );
+  console.log(
+    "🔍 Translation for 'titles.studyAchievement':",
+    t("titles.studyAchievement")
+  );
+  const [stats, setStats] = useState({
+    totalNotes: 0,
+    averageScore: 0,
+    totalFlashcards: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const [loadingStates, setLoadingStates] = useState({
     createNotes: false,
     viewNotes: false,
     takeQuiz: false,
   });
 
+  // New effect to log all flashcard sets
   useEffect(() => {
-    async function loadStats() {
-      if (!user) return;
-      try {
-        const q = query(collection(db, "users", user.id, "flashcardSets"));
-        const querySnapshot = await getDocs(q);
-        setTotalNotes(querySnapshot.size);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error loading stats:", error);
+    console.log("=== DASHBOARD: FLASHCARD SETS LOGGING EFFECT TRIGGERED ===");
+
+    const logFlashcardSets = async () => {
+      if (isLoaded && isSignedIn && user) {
+        console.log(`🔍 Logging all flashcard sets for user: ${user.id}`);
+
+        try {
+          const flashcardSetsRef = collection(
+            db,
+            "users",
+            user.id,
+            "flashcardSets"
+          );
+          const snapshot = await getDocs(flashcardSetsRef);
+
+          console.log(`Found ${snapshot.size} flashcard sets`);
+
+          if (snapshot.empty) {
+            console.log("⚠️ No flashcard sets found for this user");
+          } else {
+            console.log("--- FLASHCARD SETS DETAILS (FROM DASHBOARD) ---");
+
+            snapshot.forEach((docSnap, index) => {
+              const data = docSnap.data();
+              console.log(
+                `========== FLASHCARD SET ${index + 1}: ${
+                  docSnap.id
+                } ==========`
+              );
+              console.log(`📝 Name: ${data.name || "Unnamed"}`);
+              console.log(`🌐 Language: ${data.language || "not set"}`);
+              console.log(`🔍 Language type: ${typeof data.language}`);
+              console.log(`🔍 Raw language value: "${data.language}"`);
+              console.log(
+                `🔍 Is language field present: ${"language" in data}`
+              );
+              console.log(
+                `🔍 Created at: ${
+                  data.createdAt
+                    ? typeof data.createdAt.toDate === "function"
+                      ? data.createdAt.toDate().toString()
+                      : data.createdAt.toString()
+                    : "unknown"
+                }`
+              );
+              console.log(
+                `📚 Flashcards count: ${
+                  data.flashcards ? data.flashcards.length : 0
+                }`
+              );
+
+              // Log a sample of the flashcards if available
+              if (data.flashcards && data.flashcards.length > 0) {
+                console.log(
+                  `First flashcard: ${JSON.stringify(data.flashcards[0])}`
+                );
+              }
+
+              console.log("============================================");
+            });
+          }
+        } catch (error) {
+          console.error("Error logging flashcard sets:", error);
+          console.error("Error details:", error.message);
+          console.error("Error stack:", error.stack);
+        }
+      } else {
+        console.log(
+          "User not loaded or not signed in yet, cannot log flashcard sets"
+        );
+        console.log(
+          `isLoaded: ${isLoaded}, isSignedIn: ${isSignedIn}, user: ${
+            user ? "exists" : "null"
+          }`
+        );
+      }
+    };
+
+    logFlashcardSets();
+  }, [isLoaded, isSignedIn, user]);
+
+  async function loadStats() {
+    try {
+      if (user) {
+        setLoading(true);
+        // Get total number of note sets
+        const flashcardSetsRef = collection(
+          db,
+          "users",
+          user.id,
+          "flashcardSets"
+        );
+        const snapshot = await getDocs(flashcardSetsRef);
+        const totalNotes = snapshot.size;
+
+        setStats({
+          totalNotes,
+          averageScore: 0,
+          totalFlashcards: 0,
+        });
         setLoading(false);
       }
+    } catch (error) {
+      console.error("Error loading stats:", error);
+      setLoading(false);
     }
-    loadStats();
+  }
+
+  useEffect(() => {
+    if (user) {
+      loadStats();
+    } else {
+      setLoading(false);
+    }
   }, [user]);
 
   const handleNavigation = async (path, buttonKey) => {
     setLoadingStates((prev) => ({ ...prev, [buttonKey]: true }));
-    await router.push(path);
-    setLoadingStates((prev) => ({ ...prev, [buttonKey]: false }));
+    router.push(path);
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
-    <Container
-      maxWidth="lg"
-      sx={{
-        py: { xs: 1, sm: 2 },
-        px: { xs: 1, sm: 2 },
-      }}
-    >
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography
+        variant="h4"
+        component="h1"
+        sx={{
+          color: "#4355B9",
+          fontWeight: "500",
+          mb: 2,
+          fontSize: "1.5rem",
+        }}
       >
-        <Typography
-          variant="h5"
-          sx={{
-            mb: { xs: 2, sm: 3 },
-            fontSize: { xs: "1.25rem", sm: "1.5rem" },
-            fontWeight: 600,
-            background: "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            textAlign: { xs: "center", sm: "left" },
-          }}
-        >
-          Your Learning Journey
-        </Typography>
-      </motion.div>
+        {t("nav.learningJourney")}
+      </Typography>
 
-      <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-        {/* Achievement Card */}
+      <Grid container spacing={2}>
+        {/* Study Achievement Card */}
         <Grid item xs={12} md={4}>
           <Card
             sx={{
               height: "100%",
-              borderRadius: { xs: 1.5, sm: 2 },
-              boxShadow: { xs: 1, sm: 2 },
+              display: "flex",
+              flexDirection: "column",
+              borderRadius: 2,
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
             }}
           >
-            <CardContent
-              sx={{
-                p: { xs: 1.5, sm: 2 },
-                "&:last-child": { pb: { xs: 1.5, sm: 2 } },
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  mb: 1,
-                  justifyContent: { xs: "center", sm: "flex-start" },
-                }}
-              >
+            <CardContent sx={{ py: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
                 <EmojiEventsIcon
-                  sx={{
-                    fontSize: { xs: 18, sm: 20 },
-                    color: "#FFD700",
-                    mr: 1,
-                  }}
+                  sx={{ color: "#FFD700", mr: 1, fontSize: "1.2rem" }}
                 />
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 500,
-                    fontSize: { xs: "0.9rem", sm: "1rem" },
-                  }}
-                >
-                  Study Achievement
+                <Typography variant="subtitle1" component="h2">
+                  {t("titles.studyAchievement")}
                 </Typography>
               </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  mt: 1,
-                  justifyContent: { xs: "center", sm: "flex-start" },
-                }}
-              >
+              <Box sx={{ display: "flex", alignItems: "baseline" }}>
                 <Typography
                   variant="h4"
-                  sx={{
-                    color: "#3f51b5",
-                    fontWeight: 600,
-                    fontSize: { xs: "1.75rem", sm: "2.125rem" },
-                  }}
+                  component="p"
+                  sx={{ color: "#4355B9", fontWeight: "bold", mr: 1 }}
                 >
-                  {totalNotes}
+                  {stats.totalNotes}
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    ml: 1,
-                    color: "text.secondary",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  Note Sets Created
+                <Typography variant="body2" color="text.secondary">
+                  {t("messages.noteSetsCreated")}
                 </Typography>
               </Box>
             </CardContent>
@@ -176,126 +229,87 @@ export default function DashboardContent() {
           <Card
             sx={{
               height: "100%",
-              borderRadius: { xs: 1.5, sm: 2 },
-              boxShadow: { xs: 1, sm: 2 },
+              borderRadius: 2,
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
             }}
           >
-            <CardContent
-              sx={{
-                p: { xs: 1.5, sm: 2 },
-                "&:last-child": { pb: { xs: 1.5, sm: 2 } },
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  mb: 1,
-                  justifyContent: { xs: "center", sm: "flex-start" },
-                }}
-              >
-                <NoteAddIcon
-                  sx={{
-                    fontSize: { xs: 18, sm: 20 },
-                    color: "#3f51b5",
-                    mr: 1,
-                  }}
-                />
-                <Typography
-                  variant="subtitle1"
-                  sx={{
-                    fontWeight: 500,
-                    fontSize: { xs: "0.9rem", sm: "1rem" },
-                  }}
-                >
-                  Quick Actions
-                </Typography>
-              </Box>
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: { xs: 1, sm: 2 },
-                  mt: 1,
-                  flexWrap: "wrap",
-                  justifyContent: { xs: "center", sm: "flex-start" },
-                }}
-              >
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={!loadingStates.createNotes && <AddIcon />}
-                  onClick={() => handleNavigation("/generate", "createNotes")}
-                  disabled={loadingStates.createNotes}
-                  sx={{
-                    bgcolor: "#3f51b5",
-                    textTransform: "none",
-                    flex: { xs: "1 1 100%", sm: "1 1 auto" },
-                    maxWidth: { xs: "100%", sm: 200 },
-                    height: { xs: 36, sm: 40 },
-                    fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                    position: "relative",
-                  }}
-                >
-                  {loadingStates.createNotes ? (
-                    <CircularProgress size={20} sx={{ color: "white" }} />
-                  ) : (
-                    "Create Notes"
-                  )}
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={!loadingStates.viewNotes && <VisibilityIcon />}
-                  onClick={() => handleNavigation("/notes", "viewNotes")}
-                  disabled={loadingStates.viewNotes}
-                  sx={{
-                    textTransform: "none",
-                    flex: { xs: "1 1 100%", sm: "1 1 auto" },
-                    maxWidth: { xs: "100%", sm: 200 },
-                    height: { xs: 36, sm: 40 },
-                    fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                    position: "relative",
-                  }}
-                >
-                  {loadingStates.viewNotes ? (
-                    <CircularProgress size={20} sx={{ color: "#3f51b5" }} />
-                  ) : (
-                    "View Notes"
-                  )}
-                </Button>
-
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={!loadingStates.takeQuiz && <QuizIcon />}
-                  onClick={() => handleNavigation("/practice", "takeQuiz")}
-                  disabled={loadingStates.takeQuiz}
-                  sx={{
-                    bgcolor: "#4caf50",
-                    textTransform: "none",
-                    flex: { xs: "1 1 100%", sm: "1 1 auto" },
-                    maxWidth: { xs: "100%", sm: 200 },
-                    height: { xs: 36, sm: 40 },
-                    fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                    "&:hover": {
-                      bgcolor: "#388e3c",
-                    },
-                    position: "relative",
-                  }}
-                >
-                  {loadingStates.takeQuiz ? (
-                    <CircularProgress size={20} sx={{ color: "white" }} />
-                  ) : (
-                    "Take a Quiz"
-                  )}
-                </Button>
-              </Box>
+            <CardContent sx={{ py: 2 }}>
+              <Typography variant="subtitle1" component="h2" sx={{ mb: 1 }}>
+                {t("titles.quickActions")}
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<LibraryBooksIcon />}
+                    onClick={() =>
+                      handleNavigation("/flashcards", "createNotes")
+                    }
+                    disabled={loadingStates.createNotes}
+                    sx={{
+                      py: 1,
+                      bgcolor: "#4355B9",
+                      "&:hover": { bgcolor: "#3644A0" },
+                    }}
+                  >
+                    {loadingStates.createNotes ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      t("buttons.createNotes")
+                    )}
+                  </Button>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<VisibilityIcon />}
+                    onClick={() => handleNavigation("/notes", "viewNotes")}
+                    disabled={loadingStates.viewNotes}
+                    sx={{
+                      py: 1,
+                      borderColor: "#4355B9",
+                      color: "#4355B9",
+                      "&:hover": {
+                        borderColor: "#3644A0",
+                        bgcolor: "rgba(67, 85, 185, 0.08)",
+                      },
+                    }}
+                  >
+                    {loadingStates.viewNotes ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      t("buttons.viewNotes")
+                    )}
+                  </Button>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<QuizIcon />}
+                    onClick={() => handleNavigation("/practice", "takeQuiz")}
+                    disabled={loadingStates.takeQuiz}
+                    sx={{
+                      py: 1,
+                      bgcolor: "#4CAF50",
+                      "&:hover": { bgcolor: "#388E3C" },
+                    }}
+                  >
+                    {loadingStates.takeQuiz ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      t("buttons.takeQuiz")
+                    )}
+                  </Button>
+                </Grid>
+              </Grid>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* Combined Statistics Section */}
+        {/* Learning Journey Section */}
         <Grid item xs={12}>
           <Card
             sx={{
@@ -317,6 +331,32 @@ export default function DashboardContent() {
                 }}
               >
                 <TestStats />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Study Achievement Section */}
+        <Grid item xs={12}>
+          <Card
+            sx={{
+              borderRadius: { xs: 1.5, sm: 2 },
+              boxShadow: { xs: 1, sm: 2 },
+            }}
+          >
+            <CardContent
+              sx={{
+                p: { xs: 1.5, sm: 2 },
+                "&:last-child": { pb: { xs: 1.5, sm: 2 } },
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: { xs: 2, sm: 3 },
+                }}
+              >
                 <PerformanceAnalytics />
               </Box>
             </CardContent>

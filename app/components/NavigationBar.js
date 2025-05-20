@@ -23,8 +23,13 @@ import {
   Avatar,
   Tooltip,
   Badge,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import Image from "next/image";
+import TranslateIcon from "@mui/icons-material/Translate";
+import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
+import useTranslation from "../hooks/useTranslation";
 
 // Icons
 import MenuIcon from "@mui/icons-material/Menu";
@@ -44,28 +49,40 @@ function NavigationBarContent() {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
+  const { language, changeLanguage } = useLanguage();
+  const { t } = useTranslation();
+
+  const handleLanguageChange = (event) => {
+    console.log("Language change requested:", event.target.value);
+    console.log("Current language before change:", language);
+    changeLanguage(event.target.value);
+    console.log("Language change function called");
+  };
 
   const isActive = (path) => pathname === path;
 
   const navigationItems = [
-    { path: "/dashboard", label: "Dashboard", icon: <DashboardOutlinedIcon /> },
-    { path: "/notes", label: "Notes", icon: <NotesOutlinedIcon /> },
+    {
+      path: "/dashboard",
+      label: t("nav.dashboard"),
+      icon: <DashboardOutlinedIcon />,
+    },
+    { path: "/notes", label: t("nav.flashcards"), icon: <NotesOutlinedIcon /> },
     {
       path: "/generate",
-      label: "Generate",
+      label: t("nav.generate", "Generate"),
       icon: <CreateOutlinedIcon />,
     },
-    { path: "/practice", label: "Practice", icon: <QuizOutlinedIcon /> },
+    { path: "/practice", label: t("nav.practice"), icon: <QuizOutlinedIcon /> },
     {
       path: "/saved-reviews",
-      label: "Saved",
+      label: t("nav.saved", "Saved"),
       icon: <BookmarkBorderOutlinedIcon />,
     },
     {
       path: "/study-mate/chat",
-      label: "Chat",
+      label: t("nav.studyChat"),
       icon: <ChatOutlinedIcon />,
-      highlight: pathname.startsWith("/study-mate/chat"),
     },
   ];
 
@@ -131,6 +148,7 @@ function NavigationBarContent() {
                 borderRadius: 2,
                 mb: 1,
                 py: 1,
+                height: "48px",
                 bgcolor: isActive(item.path)
                   ? "rgba(79, 70, 229, 0.08)"
                   : "transparent",
@@ -143,7 +161,10 @@ function NavigationBarContent() {
               <ListItemIcon
                 sx={{
                   color: isActive(item.path) ? "#4f46e5" : "rgba(0,0,0,0.6)",
-                  minWidth: 40,
+                  minWidth: 36,
+                  "& svg": {
+                    fontSize: "1.2rem",
+                  },
                 }}
               >
                 {item.icon}
@@ -151,9 +172,14 @@ function NavigationBarContent() {
               <ListItemText
                 primary={item.label}
                 sx={{
+                  m: 0,
                   "& .MuiListItemText-primary": {
                     fontWeight: isActive(item.path) ? 600 : 500,
+                    fontSize: "0.875rem",
                     color: isActive(item.path) ? "#4f46e5" : "rgba(0,0,0,0.7)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   },
                 }}
               />
@@ -179,10 +205,56 @@ function NavigationBarContent() {
           p: 3,
           borderTop: "1px solid rgba(0,0,0,0.06)",
           display: "flex",
-          justifyContent: "center",
+          flexDirection: "column",
+          gap: 2,
         }}
       >
-        <UserButton afterSignOutUrl="/" />
+        {/* Language selector */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 1,
+          }}
+        >
+          <TranslateIcon sx={{ color: "#4f46e5" }} />
+          <Select
+            value={language}
+            onChange={handleLanguageChange}
+            size="small"
+            variant="standard"
+            displayEmpty
+            renderValue={(value) =>
+              `${value}: ${SUPPORTED_LANGUAGES[value] || "Unknown"}`
+            }
+            sx={{
+              minWidth: 120,
+              "& .MuiSelect-select": {
+                py: 1,
+                color: "#4f46e5",
+                fontWeight: 500,
+              },
+              "&:before, &:after": {
+                display: "none",
+              },
+              "& .MuiSelect-icon": {
+                color: "#4f46e5",
+              },
+            }}
+          >
+            {Object.entries(SUPPORTED_LANGUAGES).map(([code, name]) => (
+              <MenuItem key={code} value={code}>
+                {name}
+              </MenuItem>
+            ))}
+          </Select>
+        </Box>
+
+        {/* User button */}
+        <Box sx={{ display: "flex", justifyContent: "center" }}>
+          <UserButton afterSignOutUrl="/" />
+        </Box>
       </Box>
     </Drawer>
   );
@@ -300,7 +372,7 @@ function NavigationBarContent() {
                     },
                   }}
                 >
-                  Pricing
+                  {t("nav.pricing", "Pricing")}
                 </Button>
               </Link>
 
@@ -320,7 +392,7 @@ function NavigationBarContent() {
                   },
                 }}
               >
-                Sign In
+                {t("nav.signIn")}
               </Button>
 
               {/* Only show Get Started button on larger screens */}
@@ -346,7 +418,7 @@ function NavigationBarContent() {
                     transition: "all 0.2s ease",
                   }}
                 >
-                  Get Started
+                  {t("nav.getStarted", "Get Started")}
                 </Button>
               </Box>
             </Box>
@@ -453,36 +525,49 @@ function NavigationBarContent() {
                       <Button
                         startIcon={item.icon}
                         sx={{
-                          color:
-                            isActive(item.path) || item.highlight
-                              ? "#4f46e5"
-                              : "rgba(0,0,0,0.7)",
-                          fontWeight:
-                            isActive(item.path) || item.highlight ? 600 : 500,
-                          fontSize: "0.85rem",
+                          color: isActive(item.path)
+                            ? "#4f46e5"
+                            : "rgba(0,0,0,0.7)",
+                          fontWeight: isActive(item.path) ? 600 : 500,
+                          fontSize: "0.8rem",
                           textTransform: "none",
                           borderRadius: 2,
-                          px: 1.5,
+                          px: 1,
                           py: 0.75,
+                          minWidth: "auto",
+                          maxWidth: "120px",
+                          height: "40px",
                           position: "relative",
                           overflow: "hidden",
+                          whiteSpace: "nowrap",
+                          textOverflow: "ellipsis",
+                          "& .MuiButton-startIcon": {
+                            mr: 0.5,
+                            "& svg": {
+                              fontSize: "1.2rem",
+                            },
+                          },
+                          "& .MuiButton-label": {
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          },
                           "&:hover": {
                             backgroundColor: "rgba(79, 70, 229, 0.05)",
                           },
-                          "&::after":
-                            isActive(item.path) || item.highlight
-                              ? {
-                                  content: '""',
-                                  position: "absolute",
-                                  bottom: 0,
-                                  left: "50%",
-                                  transform: "translateX(-50%)",
-                                  width: "30%",
-                                  height: 3,
-                                  backgroundColor: "#4f46e5",
-                                  borderRadius: "3px 3px 0 0",
-                                }
-                              : {},
+                          "&::after": isActive(item.path)
+                            ? {
+                                content: '""',
+                                position: "absolute",
+                                bottom: 0,
+                                left: "50%",
+                                transform: "translateX(-50%)",
+                                width: "30%",
+                                height: 3,
+                                backgroundColor: "#4f46e5",
+                                borderRadius: "3px 3px 0 0",
+                              }
+                            : {},
                           transition: "all 0.2s ease",
                         }}
                       >
@@ -495,6 +580,49 @@ function NavigationBarContent() {
             )}
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              {/* Language selector */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  bgcolor: "rgba(79, 70, 229, 0.1)",
+                  borderRadius: 1,
+                  px: 1,
+                }}
+              >
+                <TranslateIcon sx={{ color: "#4f46e5", fontSize: 20, mr: 1 }} />
+                <Select
+                  value={language}
+                  onChange={handleLanguageChange}
+                  size="small"
+                  variant="standard"
+                  displayEmpty
+                  renderValue={(value) =>
+                    `${value}: ${SUPPORTED_LANGUAGES[value] || "Unknown"}`
+                  }
+                  sx={{
+                    minWidth: 120,
+                    "& .MuiSelect-select": {
+                      py: 1,
+                      color: "#4f46e5",
+                      fontWeight: 500,
+                    },
+                    "&:before, &:after": {
+                      display: "none",
+                    },
+                    "& .MuiSelect-icon": {
+                      color: "#4f46e5",
+                    },
+                  }}
+                >
+                  {Object.entries(SUPPORTED_LANGUAGES).map(([code, name]) => (
+                    <MenuItem key={code} value={code}>
+                      {name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Box>
+
               <Box
                 sx={{
                   ml: 1,
