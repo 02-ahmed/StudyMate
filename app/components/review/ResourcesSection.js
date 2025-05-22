@@ -55,6 +55,9 @@ export default function ResourcesSection({ resources, type = "academic" }) {
               bgcolor: "white",
               mb: 1,
               borderRadius: 2,
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "flex-start", sm: "center" },
+              padding: { xs: 2, sm: 2 },
               "&:hover": {
                 bgcolor: "rgba(63, 81, 181, 0.05)",
               },
@@ -68,6 +71,9 @@ export default function ResourcesSection({ resources, type = "academic" }) {
                   fontWeight: 500,
                   color: "primary.main",
                 },
+                width: "100%",
+                pr: { xs: 0, sm: 2 },
+                mb: { xs: 1, sm: 0 },
               }}
             />
             <Button
@@ -76,6 +82,17 @@ export default function ResourcesSection({ resources, type = "academic" }) {
               href={resource.url}
               target="_blank"
               rel="noopener noreferrer"
+              sx={{
+                minWidth: { xs: 80, sm: 85 },
+                maxHeight: "36px",
+                whiteSpace: "nowrap",
+                fontSize: { xs: "0.75rem", sm: "0.8rem" },
+                alignSelf: { xs: "flex-end", sm: "center" },
+                mt: { xs: 1, sm: 0 },
+                ml: { xs: 0, sm: 1 },
+                py: 0.5,
+                px: 1.5,
+              }}
             >
               {type === "academic"
                 ? t("buttons.read", "Read")

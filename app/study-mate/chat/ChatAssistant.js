@@ -819,7 +819,7 @@ export default function ChatAssistant({ userId }) {
             spacing={2}
             flexGrow={1}
             overflow="auto"
-            p={3}
+            p={2}
             ref={messagesContainerRef}
             sx={{
               scrollbarWidth: "thin",
@@ -834,6 +834,7 @@ export default function ChatAssistant({ userId }) {
                 background: "#94a3b8",
                 borderRadius: "24px",
               },
+              width: "100%", // Ensure full width
             }}
           >
             {loadingHistory ? (
@@ -881,14 +882,15 @@ export default function ChatAssistant({ userId }) {
                     justifyContent={
                       message.role === "user" ? "flex-end" : "flex-start"
                     }
-                    paddingX={1}
+                    width="100%"
                   >
                     <Box
                       bgcolor={message.role === "user" ? "#4457c0" : "white"}
                       color={message.role === "user" ? "white" : "inherit"}
                       borderRadius="16px"
                       p={2}
-                      maxWidth="80%"
+                      width={message.role === "user" ? "auto" : "100%"}
+                      maxWidth="100%"
                       sx={{
                         position: "relative",
                         boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
@@ -902,6 +904,8 @@ export default function ChatAssistant({ userId }) {
                           paddingLeft: "20px",
                           m: 0,
                         },
+                        overflowWrap: "break-word",
+                        wordBreak: "break-word",
                       }}
                     >
                       <ReactMarkdown>{message.parts[0].text}</ReactMarkdown>

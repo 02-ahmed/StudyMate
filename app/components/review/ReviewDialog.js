@@ -11,7 +11,6 @@ import {
   Stack,
   Typography,
   Alert,
-  Button,
   Snackbar,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -24,6 +23,7 @@ import { useUser } from "@clerk/nextjs";
 import { db } from "../../../utils/firebase";
 import { collection, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import SaveIcon from "@mui/icons-material/Save";
+import OpenInFullIcon from "@mui/icons-material/OpenInFull";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../../contexts/LanguageContext";
 import useTranslation from "../../hooks/useTranslation";
@@ -145,11 +145,35 @@ export default function ReviewDialog({
       return;
     }
 
+    console.log(
+      "ReviewDialog.js - handleViewFullPage called with topic:",
+      topic
+    );
+    console.log("ReviewDialog.js - Topic type:", typeof topic);
+    if (typeof topic === "object") {
+      console.log("ReviewDialog.js - Topic object keys:", Object.keys(topic));
+      console.log("ReviewDialog.js - Topic language:", topic.language);
+      console.log("ReviewDialog.js - Topic setId:", topic.setId);
+    }
+
     // Store the current content in sessionStorage
     sessionStorage.setItem("currentReviewContent", JSON.stringify(content));
 
     // Add a flag to the topic parameter
-    const topicData = { topic, useStoredContent: true };
+    // Make sure we preserve the language property if it exists in the topic object
+    const topicData = {
+      topic: typeof topic === "string" ? topic : topic.topic || topic,
+      language:
+        typeof topic === "object" && topic.language
+          ? topic.language
+          : undefined,
+      setId: typeof topic === "object" && topic.setId ? topic.setId : undefined,
+      useStoredContent: true,
+    };
+    console.log(
+      "ReviewDialog.js - Navigating to full page with topic data:",
+      topicData
+    );
     const topicParam = encodeURIComponent(JSON.stringify([topicData]));
 
     // Navigate to full page
@@ -178,40 +202,104 @@ export default function ReviewDialog({
       <DialogTitle
         sx={{
           display: "flex",
-          alignItems: "center",
-          gap: 2,
+          flexDirection: { xs: "column", sm: "row" },
+          alignItems: { xs: "flex-start", sm: "center" },
+          gap: { xs: 1, sm: 2 },
+          padding: { xs: 2, sm: 3 },
           background: "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
           color: "white",
+          position: "relative",
         }}
       >
-        <SchoolIcon />
-        {t("titles.studyGuide", "Study Guide")}
-        <Box sx={{ flexGrow: 1 }} />
-        {!loading && user && (
-          <>
-            <Button onClick={handleViewFullPage} sx={{ color: "white", mr: 1 }}>
-              {t("buttons.viewFullPage", "View Full Page")}
-            </Button>
-            <Button
-              startIcon={<SaveIcon />}
-              onClick={handleSaveReview}
-              disabled={saving}
-              sx={{ color: "white" }}
-            >
-              {saving
-                ? t("messages.loading", "Saving...")
-                : t("buttons.save", "Save")}
-            </Button>
-          </>
-        )}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <SchoolIcon />
+          <Typography
+            variant="h6"
+            sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}
+          >
+            {t("titles.studyGuide", "Study Guide")}
+          </Typography>
+        </Box>
+
         <IconButton
           onClick={onClose}
           sx={{
             color: "white",
+            position: "absolute",
+            top: "8px",
+            right: "8px",
+            width: 30,
+            height: 30,
+            padding: 0.5,
           }}
         >
-          <CloseIcon />
+          <CloseIcon sx={{ fontSize: "1.2rem" }} />
         </IconButton>
+
+        {!loading && user && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: "8px",
+              right: "48px",
+              display: "flex",
+              gap: 1,
+              alignItems: "center",
+              height: 30,
+            }}
+          >
+            <IconButton
+              onClick={handleViewFullPage}
+              size="small"
+              sx={{
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.5)",
+                padding: 0.5,
+                width: 30,
+                height: 30,
+                minWidth: "unset",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                "&:hover": {
+                  borderColor: "white",
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                },
+              }}
+              aria-label={t("buttons.viewFullPage", "View Full Page")}
+            >
+              <OpenInFullIcon sx={{ fontSize: "1.2rem" }} />
+            </IconButton>
+
+            <IconButton
+              onClick={handleSaveReview}
+              disabled={saving}
+              size="small"
+              sx={{
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.5)",
+                padding: 0.5,
+                width: 30,
+                height: 30,
+                minWidth: "unset",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                "&:hover": {
+                  borderColor: "white",
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                },
+              }}
+              aria-label={t("buttons.save", "Save")}
+            >
+              {saving ? (
+                <CircularProgress size={16} color="inherit" />
+              ) : (
+                <SaveIcon sx={{ fontSize: "1.2rem" }} />
+              )}
+            </IconButton>
+          </Box>
+        )}
       </DialogTitle>
 
       <DialogContent sx={{ mt: 2 }}>

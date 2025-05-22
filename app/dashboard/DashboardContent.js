@@ -204,11 +204,26 @@ export default function DashboardContent() {
                 <EmojiEventsIcon
                   sx={{ color: "#FFD700", mr: 1, fontSize: "1.2rem" }}
                 />
-                <Typography variant="subtitle1" component="h2">
+                <Typography
+                  variant="subtitle1"
+                  component="h2"
+                  sx={{
+                    height: 28, // Fixed height for title
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: { xs: "0.9rem", md: "1rem" }, // Smaller font on mobile/tablets
+                  }}
+                >
                   {t("titles.studyAchievement")}
                 </Typography>
               </Box>
-              <Box sx={{ display: "flex", alignItems: "baseline" }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  height: 40, // Fixed height for content
+                }}
+              >
                 <Typography
                   variant="h4"
                   component="p"
@@ -216,7 +231,17 @@ export default function DashboardContent() {
                 >
                   {stats.totalNotes}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    maxWidth: "70%", // Limit width to prevent pushing layout
+                    fontSize: { xs: "0.75rem", md: "0.875rem" }, // Smaller font on mobile/tablets
+                    whiteSpace: "nowrap", // Prevent text from wrapping
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   {t("messages.noteSetsCreated")}
                 </Typography>
               </Box>
@@ -249,15 +274,34 @@ export default function DashboardContent() {
                     disabled={loadingStates.createNotes}
                     sx={{
                       py: 1,
+                      height: { xs: 40, sm: 48 },
                       bgcolor: "#4355B9",
                       "&:hover": { bgcolor: "#3644A0" },
+                      "& .MuiButton-startIcon": {
+                        marginRight: { xs: 0.5, sm: 1 },
+                      },
                     }}
                   >
-                    {loadingStates.createNotes ? (
-                      <CircularProgress size={20} color="inherit" />
-                    ) : (
-                      t("buttons.createNotes")
-                    )}
+                    <Box
+                      sx={{
+                        width: "100%",
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                        fontSize: {
+                          xs: "0.7rem",
+                          sm: "0.825rem",
+                          md: "0.875rem",
+                        },
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {loadingStates.createNotes ? (
+                        <CircularProgress size={20} color="inherit" />
+                      ) : (
+                        t("buttons.createNotes")
+                      )}
+                    </Box>
                   </Button>
                 </Grid>
                 <Grid item xs={12} sm={4}>
@@ -269,19 +313,38 @@ export default function DashboardContent() {
                     disabled={loadingStates.viewNotes}
                     sx={{
                       py: 1,
+                      height: { xs: 40, sm: 48 },
                       borderColor: "#4355B9",
                       color: "#4355B9",
                       "&:hover": {
                         borderColor: "#3644A0",
                         bgcolor: "rgba(67, 85, 185, 0.08)",
                       },
+                      "& .MuiButton-startIcon": {
+                        marginRight: { xs: 0.5, sm: 1 },
+                      },
                     }}
                   >
-                    {loadingStates.viewNotes ? (
-                      <CircularProgress size={20} color="inherit" />
-                    ) : (
-                      t("buttons.viewNotes")
-                    )}
+                    <Box
+                      sx={{
+                        width: "100%",
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                        fontSize: {
+                          xs: "0.7rem",
+                          sm: "0.825rem",
+                          md: "0.875rem",
+                        },
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {loadingStates.viewNotes ? (
+                        <CircularProgress size={20} color="inherit" />
+                      ) : (
+                        t("buttons.viewNotes")
+                      )}
+                    </Box>
                   </Button>
                 </Grid>
                 <Grid item xs={12} sm={4}>
@@ -293,15 +356,34 @@ export default function DashboardContent() {
                     disabled={loadingStates.takeQuiz}
                     sx={{
                       py: 1,
+                      height: { xs: 40, sm: 48 },
                       bgcolor: "#4CAF50",
                       "&:hover": { bgcolor: "#388E3C" },
+                      "& .MuiButton-startIcon": {
+                        marginRight: { xs: 0.5, sm: 1 },
+                      },
                     }}
                   >
-                    {loadingStates.takeQuiz ? (
-                      <CircularProgress size={20} color="inherit" />
-                    ) : (
-                      t("buttons.takeQuiz")
-                    )}
+                    <Box
+                      sx={{
+                        width: "100%",
+                        textOverflow: "ellipsis",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                        fontSize: {
+                          xs: "0.7rem",
+                          sm: "0.825rem",
+                          md: "0.875rem",
+                        },
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {loadingStates.takeQuiz ? (
+                        <CircularProgress size={20} color="inherit" />
+                      ) : (
+                        t("buttons.takeQuiz")
+                      )}
+                    </Box>
                   </Button>
                 </Grid>
               </Grid>

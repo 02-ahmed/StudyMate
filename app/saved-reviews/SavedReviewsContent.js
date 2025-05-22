@@ -14,12 +14,14 @@ import {
   Alert,
   IconButton,
   Chip,
+  Tooltip,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { db } from "../../utils/firebase";
 import { collection, query, getDocs, deleteDoc, doc } from "firebase/firestore";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SchoolIcon from "@mui/icons-material/School";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../contexts/LanguageContext";
 import useTranslation from "../hooks/useTranslation";
@@ -165,7 +167,19 @@ export default function SavedReviewsContent() {
                           }}
                         >
                           <SchoolIcon color="primary" />
-                          <Typography variant="h6">
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontSize: {
+                                xs: "0.95rem",
+                                sm: "1.1rem",
+                                md: "1.25rem",
+                              },
+                              lineHeight: 1.2,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
                             {t("reviewGuide")}
                           </Typography>
                         </Box>
@@ -184,17 +198,20 @@ export default function SavedReviewsContent() {
                         </Box>
                       </Box>
                       <Box sx={{ display: "flex", gap: 1 }}>
-                        <Button
-                          variant="contained"
-                          onClick={() => handleViewReview(review)}
-                          sx={{
-                            background:
-                              "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
-                            boxShadow: "0 3px 5px 2px rgba(63, 81, 181, .3)",
-                          }}
-                        >
-                          {t("viewReview")}
-                        </Button>
+                        <Tooltip title={t("viewReview")}>
+                          <IconButton
+                            onClick={() => handleViewReview(review)}
+                            sx={{
+                              color: "primary.main",
+                              backgroundColor: "rgba(63, 81, 181, 0.08)",
+                              "&:hover": {
+                                backgroundColor: "rgba(63, 81, 181, 0.15)",
+                              },
+                            }}
+                          >
+                            <VisibilityIcon />
+                          </IconButton>
+                        </Tooltip>
                         <IconButton
                           onClick={() => handleDeleteReview(review.id)}
                           disabled={deletingReviewId === review.id}

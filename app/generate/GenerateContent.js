@@ -397,7 +397,7 @@ export default function GenerateContent() {
       alert("Please sign in to view saved summary notes.");
       return;
     }
-    router.push("/flashcards");
+    router.push("/notes");
   };
 
   return (

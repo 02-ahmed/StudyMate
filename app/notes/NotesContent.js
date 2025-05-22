@@ -353,6 +353,8 @@ export default function NotesContent() {
           justifyContent: "space-between",
           alignItems: "center",
           mb: 4,
+          flexDirection: { xs: "column", sm: "row" },
+          gap: { xs: 2, sm: 0 },
         }}
       >
         <Typography variant="h4" sx={{ fontWeight: "bold", color: "#3f51b5" }}>
@@ -364,6 +366,7 @@ export default function NotesContent() {
           size="small"
           onClick={() => router.push("/notes/deleted")}
           startIcon={<DeleteIcon />}
+          sx={{ whiteSpace: "nowrap" }}
         >
           {t("buttons.viewDeletedNotes")}
         </Button>

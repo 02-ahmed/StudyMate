@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
   Box,
@@ -59,6 +59,15 @@ const fireAnimation = keyframes`
   100% { transform: translateY(0) rotate(0deg); }
 `;
 
+// Add a helper for conditional logging
+const isDevMode = process.env.NODE_ENV === "development";
+const debugLog = (...args) => {
+  // Only log in development mode
+  if (isDevMode) {
+    console.log(...args);
+  }
+};
+
 export default function PerformanceAnalytics() {
   const { user } = useUser();
   const router = useRouter();
@@ -82,9 +91,87 @@ export default function PerformanceAnalytics() {
   });
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [topicForReview, setTopicForReview] = useState("");
+  const { language } = useLanguage();
+
+  // Memoize the current UI language to prevent unnecessary re-renders
+  const currentLanguage = useMemo(() => language, [language]);
+
+  // Add a flag to track if analytics have been loaded
+  const [analyticsLoaded, setAnalyticsLoaded] = useState(false);
+  // Use a ref to further prevent multiple loads
+  const analyticsLoadingRef = useRef(false);
+
+  // Memoize router actions to prevent unnecessary re-renders
+  const navigateToSetId = useCallback(
+    (setId) => {
+      router.push(`/practice?setId=${encodeURIComponent(setId)}`);
+    },
+    [router]
+  );
+
+  const navigateToQuestionType = useCallback(
+    (questionType) => {
+      router.push(`/practice?questionTypes=${questionType}`);
+    },
+    [router]
+  );
+
+  // Memoized translations to prevent unnecessary re-renders
+  const translations = useMemo(
+    () => ({
+      focusOn: (topic, accuracy) =>
+        t("dashboard.performance.focusOn", {
+          topic,
+          accuracy,
+        }),
+      practiceMore: (type) =>
+        t("dashboard.performance.practiceMore", {
+          type: type.replace(/([A-Z])/g, " $1").toLowerCase(),
+        }),
+    }),
+    [t]
+  );
+
+  // Memoize the topic data separately from the render function
+  const processedTopicData = useMemo(() => {
+    // Extract topic name, language, and setId
+    let topicName = topicForReview;
+    let extractedLanguage = undefined;
+    let setId = null;
+
+    if (typeof topicForReview === "object") {
+      // If topic is an object, extract the topic name, language, and setId
+      if (topicForReview.topic) {
+        topicName = topicForReview.topic;
+      }
+
+      if (topicForReview.language) {
+        extractedLanguage = topicForReview.language;
+      }
+
+      if (topicForReview.setId) {
+        setId = topicForReview.setId;
+      }
+    }
+
+    return {
+      topicName,
+      extractedLanguage,
+      setId,
+      topicObj: {
+        topic: topicName,
+        language: extractedLanguage || currentLanguage,
+        setId: setId,
+      },
+    };
+  }, [topicForReview, currentLanguage]);
 
   const loadAnalytics = useCallback(async () => {
-    if (!user) return;
+    // Extra protection against multiple loads
+    if (!user || analyticsLoaded || analyticsLoadingRef.current) return;
+
+    // Set loading ref to true to prevent concurrent loads
+    analyticsLoadingRef.current = true;
 
     try {
       const testResultsRef = collection(db, "users", user.id, "testResults");
@@ -127,7 +214,7 @@ export default function PerformanceAnalytics() {
                 name: displayTopic,
                 correctAnswers: 0,
                 totalQuestions: 0,
-                setId: test.setId,
+                setId: test.flashcardSetId,
                 language: test.language,
               });
             }
@@ -173,11 +260,9 @@ export default function PerformanceAnalytics() {
       if (weakestType && weakestType.accuracy < 70) {
         recommendations.push({
           type: "questionType",
-          message: t("dashboard.performance.practiceMore", {
-            type: weakestType.type.replace(/([A-Z])/g, " $1").toLowerCase(),
-          }),
+          message: translations.practiceMore(weakestType.type),
           priority: 2,
-          action: () => router.push(`/practice?type=${weakestType.type}`),
+          action: () => navigateToQuestionType(weakestType.type),
           config: {
             questionType: weakestType.type,
           },
@@ -186,19 +271,25 @@ export default function PerformanceAnalytics() {
 
       // Topic-based recommendations
       if (weakTopics.length > 0) {
+        // Make sure we have a topic object with language - only log once
+        const topicWithLanguage = {
+          topic: weakTopics[0].name,
+          language: weakTopics[0].language,
+          setId: weakTopics[0].setId,
+        };
+
         recommendations.push({
           type: "topic",
-          message: t("dashboard.performance.focusOn", {
-            topic: weakTopics[0].name,
-            accuracy: weakTopics[0].accuracy.toFixed(1),
-          }),
+          message: translations.focusOn(
+            weakTopics[0].name,
+            weakTopics[0].accuracy.toFixed(1)
+          ),
           priority: 1,
-          action: () =>
-            router.push(
-              `/practice?setId=${encodeURIComponent(weakTopics[0].setId)}`
-            ),
+          topic: topicWithLanguage,
+          action: () => navigateToSetId(weakTopics[0].setId),
           config: {
             setId: weakTopics[0].setId,
+            language: weakTopics[0].language,
           },
         });
       }
@@ -216,18 +307,27 @@ export default function PerformanceAnalytics() {
         averageScore: testCount > 0 ? totalScore / testCount : 0,
       }));
 
-      setLoading(false);
+      setAnalyticsLoaded(true); // Mark as loaded to prevent repeated loads
     } catch (error) {
       console.error("Error loading analytics:", error);
+    } finally {
       setLoading(false);
+      // Always reset loading ref even if there was an error
+      analyticsLoadingRef.current = false;
     }
-  }, [user, router, t]);
+  }, [
+    user,
+    navigateToSetId,
+    navigateToQuestionType,
+    translations,
+    analyticsLoaded,
+  ]);
 
   useEffect(() => {
-    if (user) {
+    if (user && !analyticsLoaded) {
       loadAnalytics();
     }
-  }, [user, loadAnalytics]);
+  }, [user, loadAnalytics, analyticsLoaded]);
 
   const toggleSection = (section) => {
     setExpandedSections((prev) => ({
@@ -236,20 +336,46 @@ export default function PerformanceAnalytics() {
     }));
   };
 
-  const generateReviewContent = async (topic, language) => {
+  const generateReviewContent = async (topicObj) => {
     setReviewLoading(true);
     setReviewDialogOpen(true);
-    setTopicForReview(topic);
+    setTopicForReview(topicObj);
+
+    // Remove debug logs to prevent re-render triggers
+    // Extract topic name, setId and language
+    let topicName = topicObj;
+    let extractedLanguage = undefined;
+    let setId = null;
+
+    if (typeof topicObj === "object") {
+      // If topic is an object, extract the topic name, setId and language
+      if (topicObj.topic) {
+        topicName = topicObj.topic;
+      }
+
+      if (topicObj.setId) {
+        setId = topicObj.setId;
+      }
+
+      if (topicObj.language) {
+        extractedLanguage = topicObj.language;
+      }
+    }
+
+    // Use the language from the topic object or parameter if available, otherwise fall back to UI language
+    const contentLanguage = extractedLanguage || currentLanguage;
 
     try {
       const response = await fetch("/api/generate-review-content", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-user-id": user.id, // Include user ID for server-side lookup
         },
         body: JSON.stringify({
-          topic,
-          language,
+          topic: topicName,
+          setId: setId, // Pass the setId to allow direct lookup
+          language: contentLanguage,
         }),
       });
 
@@ -267,19 +393,38 @@ export default function PerformanceAnalytics() {
     }
   };
 
-  const renderReviewDialog = () => (
-    <ReviewDialog
-      open={reviewDialogOpen}
-      onClose={() => {
-        setReviewDialogOpen(false);
-        setReviewContent(null);
-        setReviewLoading(false);
-      }}
-      content={reviewContent}
-      loading={reviewLoading}
-      topic={topicForReview}
-    />
-  );
+  // Memoize any click handlers that are passed to the memoized dialog
+  const handleDialogClose = useCallback(() => {
+    setReviewDialogOpen(false);
+    setReviewContent(null);
+    setReviewLoading(false);
+  }, []);
+
+  // Instead of using useCallback for renderReviewDialog, memoize the Dialog component directly
+  const memoizedReviewDialog = useMemo(() => {
+    // If the dialog is not open, return null or empty fragment to prevent any unnecessary rendering
+    if (!reviewDialogOpen) {
+      return null;
+    }
+
+    const { topicObj } = processedTopicData;
+
+    return (
+      <ReviewDialog
+        open={reviewDialogOpen}
+        onClose={handleDialogClose}
+        content={reviewContent}
+        loading={reviewLoading}
+        topic={topicObj}
+      />
+    );
+  }, [
+    processedTopicData,
+    reviewDialogOpen, // This dependency ensures we only render when the dialog actually opens/closes
+    reviewContent,
+    reviewLoading,
+    handleDialogClose,
+  ]);
 
   if (loading) {
     return (
@@ -309,7 +454,12 @@ export default function PerformanceAnalytics() {
             boxShadow: "0 8px 32px rgba(63, 81, 181, 0.15)",
           }}
         >
-          <CardContent sx={{ position: "relative" }}>
+          <CardContent
+            sx={{
+              position: "relative",
+              p: { xs: 2, sm: 3, md: 4 }, // Responsive padding
+            }}
+          >
             <Box
               sx={{
                 position: "absolute",
@@ -327,7 +477,7 @@ export default function PerformanceAnalytics() {
               <Box sx={{ display: "flex", alignItems: "center", mb: 4 }}>
                 <InsightsIcon
                   sx={{
-                    fontSize: 40,
+                    fontSize: { xs: 32, md: 40 }, // Smaller icon on mobile
                     color: "#3f51b5",
                     filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.2))",
                     mr: 2,
@@ -341,13 +491,16 @@ export default function PerformanceAnalytics() {
                       "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
+                    fontSize: { xs: "1.25rem", sm: "1.5rem" }, // Responsive font size
                   }}
                 >
                   {t("dashboard.performance.title")}
                 </Typography>
               </Box>
 
-              <Grid container spacing={3}>
+              <Grid container spacing={{ xs: 2, sm: 2, md: 3 }}>
+                {" "}
+                {/* Reduced spacing on smaller screens */}
                 {analytics.weakTopics.length > 0 && (
                   <Grid item xs={12} md={5}>
                     <motion.div
@@ -357,7 +510,7 @@ export default function PerformanceAnalytics() {
                     >
                       <Paper
                         sx={{
-                          p: 2.5,
+                          p: { xs: 1.5, sm: 2, md: 2.5 }, // Responsive padding
                           height: "100%",
                           borderRadius: "16px",
                           background: "#ffffff",
@@ -448,7 +601,7 @@ export default function PerformanceAnalytics() {
                                   },
                                 }}
                               >
-                                <Box sx={{ p: 1.5 }}>
+                                <Box sx={{ p: { xs: 1, sm: 1.5 } }}>
                                   <Box
                                     sx={{
                                       display: "flex",
@@ -531,6 +684,8 @@ export default function PerformanceAnalytics() {
                                       size="small"
                                       sx={{
                                         height: "22px",
+                                        minWidth: { xs: 62, sm: 70 },
+                                        maxWidth: { xs: 80, sm: 100 },
                                         bgcolor: "rgba(63, 81, 181, 0.1)",
                                         color: "#3f51b5",
                                         fontWeight: 500,
@@ -538,6 +693,10 @@ export default function PerformanceAnalytics() {
                                         transition: "all 0.3s ease",
                                         "& .MuiChip-label": {
                                           px: 1,
+                                          width: "100%",
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          whiteSpace: "nowrap",
                                         },
                                         "&:hover": {
                                           bgcolor: "rgba(63, 81, 181, 0.2)",
@@ -545,10 +704,36 @@ export default function PerformanceAnalytics() {
                                       }}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        generateReviewContent(
-                                          topic.name,
+                                        console.log(
+                                          "PerformanceAnalytics.js - Study Now button clicked for topic:",
+                                          topic
+                                        );
+                                        console.log(
+                                          "PerformanceAnalytics.js - Topic name:",
+                                          topic.name
+                                        );
+                                        console.log(
+                                          "PerformanceAnalytics.js - Topic language:",
                                           topic.language
                                         );
+
+                                        // Create a topic object with name and language
+                                        const topicObj = {
+                                          topic: topic.name,
+                                          language: topic.language,
+                                          setId: topic.setId,
+                                        };
+
+                                        console.log(
+                                          "PerformanceAnalytics.js - Created topic object:",
+                                          topicObj
+                                        );
+                                        console.log(
+                                          "PerformanceAnalytics.js - Topic setId:",
+                                          topic.setId
+                                        );
+
+                                        generateReviewContent(topicObj);
                                       }}
                                     />
                                     <Chip
@@ -556,6 +741,8 @@ export default function PerformanceAnalytics() {
                                       size="small"
                                       sx={{
                                         height: "22px",
+                                        minWidth: { xs: 98, sm: 120 },
+                                        maxWidth: { xs: 130, sm: 160 },
                                         bgcolor: "rgba(63, 81, 181, 0.1)",
                                         color: "#3f51b5",
                                         fontWeight: 500,
@@ -563,6 +750,10 @@ export default function PerformanceAnalytics() {
                                         transition: "all 0.3s ease",
                                         "& .MuiChip-label": {
                                           px: 1,
+                                          width: "100%",
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          whiteSpace: "nowrap",
                                         },
                                         "&:hover": {
                                           bgcolor: "rgba(63, 81, 181, 0.2)",
@@ -587,7 +778,6 @@ export default function PerformanceAnalytics() {
                     </motion.div>
                   </Grid>
                 )}
-
                 {analytics.recommendations.length > 0 && (
                   <Grid item xs={12} md={7}>
                     <motion.div
@@ -597,7 +787,7 @@ export default function PerformanceAnalytics() {
                     >
                       <Paper
                         sx={{
-                          p: 2.5,
+                          p: { xs: 1.5, sm: 2, md: 2.5 }, // Responsive padding
                           height: "100%",
                           borderRadius: "16px",
                           background: "#ffffff",
@@ -661,7 +851,7 @@ export default function PerformanceAnalytics() {
                               key={index}
                               elevation={0}
                               sx={{
-                                p: 2.5,
+                                p: { xs: 1.5, sm: 2, md: 2.5 }, // Responsive padding
                                 mb: 1.5,
                                 borderRadius: "16px",
                                 bgcolor: "#ffffff",
@@ -676,13 +866,30 @@ export default function PerformanceAnalytics() {
                                   borderColor: "rgba(124, 77, 255, 0.2)",
                                 },
                               }}
-                              onClick={() =>
-                                rec.type === "topic" &&
-                                generateReviewContent(
-                                  rec.topic,
-                                  rec.config?.language
-                                )
-                              }
+                              onClick={() => {
+                                if (rec.type === "topic") {
+                                  console.log(
+                                    "PerformanceAnalytics.js - Recommendation clicked:",
+                                    rec
+                                  );
+                                  console.log(
+                                    "PerformanceAnalytics.js - Recommendation topic:",
+                                    rec.topic
+                                  );
+                                  console.log(
+                                    "PerformanceAnalytics.js - Recommendation config:",
+                                    rec.config
+                                  );
+                                  console.log(
+                                    "PerformanceAnalytics.js - Recommendation language:",
+                                    rec.config?.language
+                                  );
+                                  generateReviewContent(
+                                    rec.topic,
+                                    rec.config?.language
+                                  );
+                                }
+                              }}
                             >
                               <Box
                                 sx={{
@@ -695,7 +902,7 @@ export default function PerformanceAnalytics() {
                                   <QuizIcon
                                     sx={{
                                       color: "#7c4dff",
-                                      fontSize: "24px",
+                                      fontSize: { xs: "20px", sm: "24px" }, // Smaller on mobile
                                       mt: 0.5,
                                     }}
                                   />
@@ -704,7 +911,7 @@ export default function PerformanceAnalytics() {
                                   <TopicIcon
                                     sx={{
                                       color: "#7c4dff",
-                                      fontSize: "24px",
+                                      fontSize: { xs: "20px", sm: "24px" }, // Smaller on mobile
                                       mt: 0.5,
                                     }}
                                   />
@@ -713,7 +920,7 @@ export default function PerformanceAnalytics() {
                                   <CardIcon
                                     sx={{
                                       color: "#7c4dff",
-                                      fontSize: "24px",
+                                      fontSize: { xs: "20px", sm: "24px" }, // Smaller on mobile
                                       mt: 0.5,
                                     }}
                                   />
@@ -723,7 +930,7 @@ export default function PerformanceAnalytics() {
                                     variant="body1"
                                     sx={{
                                       color: "#1a237e",
-                                      fontSize: "0.9rem",
+                                      fontSize: { xs: "0.85rem", sm: "0.9rem" }, // Smaller on mobile
                                       fontWeight: 500,
                                       mb: 0.5,
                                     }}
@@ -744,6 +951,8 @@ export default function PerformanceAnalytics() {
                                         size="small"
                                         sx={{
                                           height: "22px",
+                                          minWidth: { xs: 98, sm: 120 },
+                                          maxWidth: { xs: 130, sm: 160 },
                                           bgcolor: "rgba(124, 77, 255, 0.1)",
                                           color: "#7c4dff",
                                           fontWeight: 500,
@@ -751,6 +960,10 @@ export default function PerformanceAnalytics() {
                                           transition: "all 0.3s ease",
                                           "& .MuiChip-label": {
                                             px: 1,
+                                            width: "100%",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap",
                                           },
                                           "&:hover": {
                                             bgcolor: "rgba(124, 77, 255, 0.2)",
@@ -781,6 +994,8 @@ export default function PerformanceAnalytics() {
                                         size="small"
                                         sx={{
                                           height: "22px",
+                                          minWidth: { xs: 82, sm: 90 },
+                                          maxWidth: { xs: 120, sm: 140 },
                                           bgcolor: "rgba(124, 77, 255, 0.1)",
                                           color: "#7c4dff",
                                           fontWeight: 500,
@@ -788,6 +1003,10 @@ export default function PerformanceAnalytics() {
                                           transition: "all 0.3s ease",
                                           "& .MuiChip-label": {
                                             px: 1,
+                                            width: "100%",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap",
                                           },
                                           "&:hover": {
                                             bgcolor: "rgba(124, 77, 255, 0.2)",
@@ -814,7 +1033,8 @@ export default function PerformanceAnalytics() {
                 )}
               </Grid>
 
-              {renderReviewDialog()}
+              {/* Only render dialog when open to avoid unnecessary renders */}
+              {reviewDialogOpen ? memoizedReviewDialog : null}
             </Box>
           </CardContent>
         </Card>

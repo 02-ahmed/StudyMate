@@ -66,11 +66,18 @@ export default function ReviewContent() {
         setLoading(true);
         setError(null);
 
+        console.log(
+          "ReviewContent.js - loadContent called with topics:",
+          topics
+        );
+
         // First try to get content from sessionStorage (this is the content from the dialog)
         try {
           const storedContent = sessionStorage.getItem("currentReviewContent");
           if (storedContent) {
-            console.log("Using content from dialog via sessionStorage");
+            console.log(
+              "ReviewContent.js - Using content from dialog via sessionStorage"
+            );
             const parsedContent = JSON.parse(storedContent);
             setContent(parsedContent);
             setLoading(false);
@@ -108,30 +115,100 @@ export default function ReviewContent() {
           }
 
           if (savedReview) {
+            console.log("ReviewContent.js - Using saved review from database");
             setContent({ sections: savedReview.content });
             setLoading(false);
             return;
           }
 
           // If no saved content, generate new content
+          // Extract the language from the topic object
+          const topicObj = topics[0];
+          console.log(
+            "ReviewContent.js - Topic object for content generation:",
+            topicObj
+          );
+          console.log("ReviewContent.js - Topic object type:", typeof topicObj);
+          console.log(
+            "ReviewContent.js - Topic object keys:",
+            Object.keys(topicObj)
+          );
+
+          const contentLanguage = topicObj.language; // Get the language from the flashcard set
+          const setId = topicObj.setId; // Get the setId from the topic object
+          console.log(
+            "ReviewContent.js - Extracted language:",
+            contentLanguage
+          );
+          console.log("ReviewContent.js - Extracted setId:", setId);
+          console.log(
+            "ReviewContent.js - Language type:",
+            typeof contentLanguage
+          );
+
+          // Additional debugging for language
+          if (contentLanguage === null) {
+            console.log("ReviewContent.js - Language is null");
+          } else if (contentLanguage === undefined) {
+            console.log("ReviewContent.js - Language is undefined");
+          } else if (contentLanguage === "") {
+            console.log("ReviewContent.js - Language is empty string");
+          } else {
+            console.log("ReviewContent.js - Language value:", contentLanguage);
+          }
+
+          console.log(
+            "ReviewContent.js - Making API request with topic:",
+            topicObj.topic,
+            "and language:",
+            contentLanguage,
+            "and setId:",
+            setId
+          );
+
+          // Check if we have a topic name that matches a flashcard set
+          // First try to find the flashcard set by ID if available
+          if (setId) {
+            console.log("ReviewContent.js - Using setId for lookup:", setId);
+          } else {
+            console.log(
+              "ReviewContent.js - No setId available, will try to find by name"
+            );
+          }
+
           const response = await fetch("/api/generate-review-content", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              "x-user-id": user.id, // Include user ID for server-side logging
             },
             body: JSON.stringify({
               topic: topics[0].topic,
+              language: contentLanguage, // Include the language parameter
+              setId: setId, // Include the setId parameter
             }),
           });
+
+          console.log(
+            "ReviewContent.js - API response status:",
+            response.status
+          );
 
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
 
           const data = await response.json();
+          console.log(
+            "ReviewContent.js - Received data from API with language:",
+            data.language || "not specified"
+          );
           setContent(data);
         } else {
           // This was supposed to be opened from View Full Page but no content was found
+          console.log(
+            "ReviewContent.js - No content available for View Full Page"
+          );
           setError(
             "No content available. Please go back to the dashboard and try again."
           );

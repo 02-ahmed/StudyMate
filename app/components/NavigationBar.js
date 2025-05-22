@@ -147,8 +147,8 @@ function NavigationBarContent() {
               sx={{
                 borderRadius: 2,
                 mb: 1,
-                py: 1,
-                height: "48px",
+                py: 1.5,
+                height: "56px",
                 bgcolor: isActive(item.path)
                   ? "rgba(79, 70, 229, 0.08)"
                   : "transparent",
@@ -175,7 +175,7 @@ function NavigationBarContent() {
                   m: 0,
                   "& .MuiListItemText-primary": {
                     fontWeight: isActive(item.path) ? 600 : 500,
-                    fontSize: "0.875rem",
+                    fontSize: "0.95rem",
                     color: isActive(item.path) ? "#4f46e5" : "rgba(0,0,0,0.7)",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -514,7 +514,13 @@ function NavigationBarContent() {
                   </Box>
                 </Link>
 
-                <Box sx={{ flexGrow: 1, display: "flex", gap: 0.5 }}>
+                <Box
+                  sx={{
+                    flexGrow: 1,
+                    display: "flex",
+                    gap: { sm: 0.25, md: 0.5 },
+                  }}
+                >
                   {navigationItems.map((item) => (
                     <Link
                       key={item.path}
@@ -529,13 +535,13 @@ function NavigationBarContent() {
                             ? "#4f46e5"
                             : "rgba(0,0,0,0.7)",
                           fontWeight: isActive(item.path) ? 600 : 500,
-                          fontSize: "0.8rem",
+                          fontSize: { sm: "0.75rem", lg: "0.8rem" },
                           textTransform: "none",
                           borderRadius: 2,
-                          px: 1,
+                          px: { sm: 0.75, md: 1 },
                           py: 0.75,
                           minWidth: "auto",
-                          maxWidth: "120px",
+                          maxWidth: { sm: "90px", md: "100px", lg: "120px" },
                           height: "40px",
                           position: "relative",
                           overflow: "hidden",
@@ -580,17 +586,23 @@ function NavigationBarContent() {
             )}
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              {/* Language selector */}
+              {/* Language selector - Hide on mobile since it's in the drawer */}
               <Box
                 sx={{
-                  display: "flex",
+                  display: { xs: "none", sm: "flex" }, // Hide on mobile screens
                   alignItems: "center",
                   bgcolor: "rgba(79, 70, 229, 0.1)",
                   borderRadius: 1,
                   px: 1,
                 }}
               >
-                <TranslateIcon sx={{ color: "#4f46e5", fontSize: 20, mr: 1 }} />
+                <TranslateIcon
+                  sx={{
+                    color: "#4f46e5",
+                    fontSize: 20,
+                    mr: { sm: 0.5, lg: 1 },
+                  }}
+                />
                 <Select
                   value={language}
                   onChange={handleLanguageChange}
@@ -601,11 +613,12 @@ function NavigationBarContent() {
                     `${value}: ${SUPPORTED_LANGUAGES[value] || "Unknown"}`
                   }
                   sx={{
-                    minWidth: 120,
+                    minWidth: { sm: 100, lg: 120 },
                     "& .MuiSelect-select": {
                       py: 1,
                       color: "#4f46e5",
                       fontWeight: 500,
+                      fontSize: { sm: "0.75rem", lg: "0.875rem" },
                     },
                     "&:before, &:after": {
                       display: "none",

@@ -145,7 +145,7 @@ export default function TestStats() {
       <Paper
         key={index}
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           borderRadius: 2,
           border: "1px solid",
           borderColor: isCorrect ? "success.light" : "error.light",
@@ -153,8 +153,14 @@ export default function TestStats() {
           position: "relative",
         }}
       >
-        <Stack spacing={2}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+        <Stack spacing={{ xs: 1, sm: 2 }}>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontWeight: 600,
+              fontSize: { xs: "0.9rem", sm: "1rem" },
+            }}
+          >
             {`${index + 1}. ${question.question}`}
           </Typography>
 
@@ -162,7 +168,11 @@ export default function TestStats() {
             <Typography
               variant="body2"
               color="text.secondary"
-              sx={{ fontWeight: 500, mb: 0.5 }}
+              sx={{
+                fontWeight: 500,
+                mb: 0.5,
+                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              }}
             >
               {t("practice.yourAnswer", "Your answer:")}
             </Typography>
@@ -173,12 +183,19 @@ export default function TestStats() {
                 alignItems: "center",
                 gap: 1,
                 fontWeight: 500,
+                fontSize: { xs: "0.85rem", sm: "0.9rem" },
               }}
             >
               {isCorrect ? (
-                <CheckCircleOutlineIcon color="success" />
+                <CheckCircleOutlineIcon
+                  color="success"
+                  sx={{ fontSize: { xs: 18, sm: 20 } }}
+                />
               ) : (
-                <ErrorOutlineIcon color="error" />
+                <ErrorOutlineIcon
+                  color="error"
+                  sx={{ fontSize: { xs: 18, sm: 20 } }}
+                />
               )}
               {question.type === "trueFalse"
                 ? userAnswer
@@ -193,11 +210,21 @@ export default function TestStats() {
               <Typography
                 variant="body2"
                 color="text.secondary"
-                sx={{ fontWeight: 500, mb: 0.5 }}
+                sx={{
+                  fontWeight: 500,
+                  mb: 0.5,
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                }}
               >
                 {t("practice.correctAnswer", "Correct answer:")}
               </Typography>
-              <Typography sx={{ color: "success.dark", fontWeight: 500 }}>
+              <Typography
+                sx={{
+                  color: "success.dark",
+                  fontWeight: 500,
+                  fontSize: { xs: "0.85rem", sm: "0.9rem" },
+                }}
+              >
                 {question.type === "trueFalse"
                   ? correctAnswer
                     ? t("practice.true", "True")
@@ -220,6 +247,11 @@ export default function TestStats() {
               alignSelf: "flex-start",
               bgcolor: "background.paper",
               borderRadius: 1,
+              height: { xs: 22, sm: 24 },
+              "& .MuiChip-label": {
+                px: { xs: 1, sm: 1.5 },
+                fontSize: { xs: "0.65rem", sm: "0.75rem" },
+              },
             }}
           />
         </Stack>
@@ -241,14 +273,21 @@ export default function TestStats() {
           overflow: "visible",
         }}
       >
-        <CardContent sx={{ p: 4 }}>
+        <CardContent
+          sx={{
+            p: { xs: 2, sm: 3, md: 4 },
+            overflow: "hidden",
+            boxSizing: "border-box",
+          }}
+        >
           <Typography
             variant="h5"
             sx={{
-              mb: 4,
+              mb: { xs: 2, sm: 3, md: 4 },
               fontWeight: 600,
               color: "#1a237e",
               textAlign: "center",
+              fontSize: { xs: "1.25rem", sm: "1.5rem" },
             }}
           >
             {t("dashboard.stats.title")}
@@ -258,7 +297,7 @@ export default function TestStats() {
             sx={{
               display: "grid",
               gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
-              gap: 3,
+              gap: { xs: 2, sm: 2, md: 3 },
               mb: 4,
             }}
           >
@@ -269,15 +308,20 @@ export default function TestStats() {
               <Paper
                 elevation={3}
                 sx={{
-                  p: 3,
+                  p: { xs: 2, sm: 2.5, md: 3 },
                   borderRadius: 3,
-                  minWidth: 200,
+                  minWidth: "auto",
+                  width: "100%",
+                  minHeight: { xs: 120, sm: 130, md: 140 },
                   textAlign: "center",
                   background:
                     "linear-gradient(135deg, #3949ab 0%, #5c6bc0 100%)",
                   color: "white",
                   position: "relative",
                   overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
                 }}
               >
                 <Box
@@ -293,7 +337,19 @@ export default function TestStats() {
                 />
                 <Typography
                   variant="subtitle2"
-                  sx={{ mb: 1, color: "rgba(255,255,255,0.8)" }}
+                  sx={{
+                    mb: 1,
+                    color: "rgba(255,255,255,0.8)",
+                    height: { xs: 20, sm: 24 },
+                    fontSize: { xs: "0.7rem", sm: "0.75rem", md: "0.875rem" },
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    px: 1,
+                  }}
                 >
                   {t("dashboard.stats.averageScore")}
                 </Typography>
@@ -302,6 +358,7 @@ export default function TestStats() {
                   sx={{
                     fontWeight: "bold",
                     textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
+                    fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2rem" },
                   }}
                 >
                   {stats.averageScore.toFixed(1)}%
@@ -316,15 +373,20 @@ export default function TestStats() {
               <Paper
                 elevation={3}
                 sx={{
-                  p: 3,
+                  p: { xs: 2, sm: 2.5, md: 3 },
                   borderRadius: 3,
-                  minWidth: 200,
+                  minWidth: "auto",
+                  width: "100%",
+                  minHeight: { xs: 120, sm: 130, md: 140 },
                   textAlign: "center",
                   background:
                     "linear-gradient(135deg, #5c6bc0 0%, #7986cb 100%)",
                   color: "white",
                   position: "relative",
                   overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
                 }}
               >
                 <Box
@@ -340,7 +402,19 @@ export default function TestStats() {
                 />
                 <Typography
                   variant="subtitle2"
-                  sx={{ mb: 1, color: "rgba(255,255,255,0.8)" }}
+                  sx={{
+                    mb: 1,
+                    color: "rgba(255,255,255,0.8)",
+                    height: { xs: 20, sm: 24 },
+                    fontSize: { xs: "0.7rem", sm: "0.75rem", md: "0.875rem" },
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    px: 1,
+                  }}
                 >
                   {t("dashboard.stats.testsCompleted")}
                 </Typography>
@@ -349,6 +423,7 @@ export default function TestStats() {
                   sx={{
                     fontWeight: "bold",
                     textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
+                    fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2rem" },
                   }}
                 >
                   {stats.testsCompleted}
@@ -363,15 +438,20 @@ export default function TestStats() {
               <Paper
                 elevation={3}
                 sx={{
-                  p: 3,
+                  p: { xs: 2, sm: 2.5, md: 3 },
                   borderRadius: 3,
-                  minWidth: 200,
+                  minWidth: "auto",
+                  width: "100%",
+                  minHeight: { xs: 120, sm: 130, md: 140 },
                   textAlign: "center",
                   background:
                     "linear-gradient(135deg, #7986cb 0%, #9fa8da 100%)",
                   color: "white",
                   position: "relative",
                   overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
                 }}
               >
                 <Box
@@ -387,7 +467,19 @@ export default function TestStats() {
                 />
                 <Typography
                   variant="subtitle2"
-                  sx={{ mb: 1, color: "rgba(255,255,255,0.8)" }}
+                  sx={{
+                    mb: 1,
+                    color: "rgba(255,255,255,0.8)",
+                    height: { xs: 20, sm: 24 },
+                    fontSize: { xs: "0.7rem", sm: "0.75rem", md: "0.875rem" },
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    px: 1,
+                  }}
                 >
                   {t("dashboard.stats.timePracticed")}
                 </Typography>
@@ -396,6 +488,7 @@ export default function TestStats() {
                   sx={{
                     fontWeight: "bold",
                     textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
+                    fontSize: { xs: "1.5rem", sm: "1.75rem", md: "2rem" },
                   }}
                 >
                   {formatTime(stats.totalTimePracticed)}
@@ -423,9 +516,11 @@ export default function TestStats() {
             variant="outlined"
             sx={{
               borderRadius: 3,
-              overflow: "hidden",
+              overflow: "auto",
+              maxWidth: "100%",
               "& .MuiTableCell-root": {
                 borderColor: "rgba(63, 81, 181, 0.1)",
+                padding: { xs: "8px 12px", sm: "16px" },
               },
               "& .MuiTableRow-root": {
                 cursor: "pointer",
@@ -433,26 +528,56 @@ export default function TestStats() {
               boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
             }}
           >
-            <Table>
+            <Table sx={{ minWidth: { xs: 450, sm: 650 } }}>
               <TableHead>
                 <TableRow
                   sx={{
                     background: "rgba(63, 81, 181, 0.05)",
                   }}
                 >
-                  <TableCell sx={{ fontWeight: 600, color: "#1a237e" }}>
+                  <TableCell
+                    sx={{
+                      fontWeight: 600,
+                      color: "#1a237e",
+                      width: { xs: "35%", sm: "30%", md: "auto" },
+                    }}
+                  >
                     {t("dashboard.stats.flashcardSet", "Flashcard Set")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: "#1a237e" }}>
+                  <TableCell
+                    sx={{
+                      fontWeight: 600,
+                      color: "#1a237e",
+                      display: { xs: "none", sm: "table-cell" },
+                    }}
+                  >
                     {t("dashboard.stats.date", "Date")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: "#1a237e" }}>
+                  <TableCell
+                    sx={{
+                      fontWeight: 600,
+                      color: "#1a237e",
+                      width: { xs: "25%", sm: "auto" },
+                    }}
+                  >
                     {t("dashboard.stats.score", "Score")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: "#1a237e" }}>
+                  <TableCell
+                    sx={{
+                      fontWeight: 600,
+                      color: "#1a237e",
+                      width: { xs: "25%", sm: "auto" },
+                    }}
+                  >
                     {t("dashboard.stats.questions", "Questions")}
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, color: "#1a237e" }}>
+                  <TableCell
+                    sx={{
+                      fontWeight: 600,
+                      color: "#1a237e",
+                      display: { xs: "none", md: "table-cell" },
+                    }}
+                  >
                     {t("dashboard.stats.time", "Time")}
                   </TableCell>
                 </TableRow>
@@ -479,7 +604,7 @@ export default function TestStats() {
                           sx={{
                             fontWeight: 600,
                             color: "#3949ab",
-                            maxWidth: 200,
+                            maxWidth: { xs: 120, sm: 200 },
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
@@ -488,6 +613,7 @@ export default function TestStats() {
                             borderBottom: "2px solid transparent",
                             transition: "border-color 0.2s ease-in-out",
                             paddingBottom: "2px",
+                            fontSize: { xs: "0.8rem", sm: "inherit" },
                             "tr:hover &": {
                               borderBottomColor: "#3949ab",
                             },
@@ -496,7 +622,11 @@ export default function TestStats() {
                           {test.setName || "Untitled Set"}
                         </Typography>
                       </TableCell>
-                      <TableCell>{formatDate(test.dateTaken)}</TableCell>
+                      <TableCell
+                        sx={{ display: { xs: "none", sm: "table-cell" } }}
+                      >
+                        {formatDate(test.dateTaken)}
+                      </TableCell>
                       <TableCell>
                         <Box
                           sx={{
@@ -517,6 +647,7 @@ export default function TestStats() {
                               display: "flex",
                               alignItems: "center",
                               gap: 0.5,
+                              fontSize: { xs: "0.85rem", sm: "inherit" },
                             }}
                           >
                             {test.score.toFixed(1)}%
@@ -524,11 +655,18 @@ export default function TestStats() {
                         </Box>
                       </TableCell>
                       <TableCell>
-                        <Typography sx={{ fontWeight: 500 }}>
+                        <Typography
+                          sx={{
+                            fontWeight: 500,
+                            fontSize: { xs: "0.8rem", sm: "inherit" },
+                          }}
+                        >
                           {test.correctAnswers} / {test.totalQuestions}
                         </Typography>
                       </TableCell>
-                      <TableCell>
+                      <TableCell
+                        sx={{ display: { xs: "none", md: "table-cell" } }}
+                      >
                         <Typography sx={{ color: "text.secondary" }}>
                           {formatTime(test.timeSpentSeconds)}
                         </Typography>
@@ -563,6 +701,8 @@ export default function TestStats() {
           sx: {
             borderRadius: 3,
             boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+            margin: { xs: 1, sm: 2, md: 3 },
+            width: { xs: "calc(100% - 16px)", sm: "auto" },
           },
         }}
       >
@@ -571,38 +711,66 @@ export default function TestStats() {
             pb: 1,
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: { xs: "flex-start", sm: "center" },
+            flexDirection: { xs: "column", sm: "row" },
+            padding: { xs: "16px 16px 8px", sm: "16px 24px 8px" },
           }}
         >
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "#1a237e" }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 600,
+                color: "#1a237e",
+                fontSize: { xs: "1rem", sm: "1.25rem" },
+              }}
+            >
               {t("practice.testResults", "Test Review")}
             </Typography>
-            <Typography variant="subtitle2" color="text.secondary">
+            <Typography
+              variant="subtitle2"
+              color="text.secondary"
+              sx={{
+                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              }}
+            >
               {selectedTest?.setName} - {formatDate(selectedTest?.dateTaken)}
             </Typography>
           </Box>
-          <IconButton onClick={handleCloseDialog} size="small">
+          <IconButton
+            onClick={handleCloseDialog}
+            size="small"
+            sx={{
+              position: { xs: "absolute", sm: "static" },
+              top: { xs: 8, sm: "auto" },
+              right: { xs: 8, sm: "auto" },
+            }}
+          >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
 
-        <DialogContent sx={{ pt: 2 }}>
+        <DialogContent sx={{ pt: 2, px: { xs: 2, sm: 3 } }}>
           {/* Test Summary */}
           <Box
             sx={{
               display: "flex",
-              gap: 2,
+              flexDirection: { xs: "column", sm: "row" },
+              gap: { xs: 1.5, sm: 2 },
               mb: 3,
-              p: 2,
+              p: { xs: 1.5, sm: 2 },
               bgcolor: "background.paper",
               borderRadius: 2,
               border: "1px solid",
               borderColor: "divider",
             }}
           >
-            <Box>
-              <Typography variant="body2" color="text.secondary">
+            <Box sx={{ width: { xs: "100%", sm: "auto" } }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" } }}
+              >
                 {t("dashboard.stats.score", "Score")}
               </Typography>
               <Typography
@@ -615,31 +783,52 @@ export default function TestStats() {
                       ? "#ff9800"
                       : "#f44336",
                   fontWeight: 600,
+                  fontSize: { xs: "1.1rem", sm: "1.25rem" },
                 }}
               >
                 {selectedTest?.score.toFixed(1)}%
               </Typography>
             </Box>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
+            <Box sx={{ width: { xs: "100%", sm: "auto" } }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" } }}
+              >
                 {t("dashboard.stats.questions", "Questions")}
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: { xs: "1.1rem", sm: "1.25rem" },
+                }}
+              >
                 {selectedTest?.correctAnswers} / {selectedTest?.totalQuestions}
               </Typography>
             </Box>
-            <Box>
-              <Typography variant="body2" color="text.secondary">
+            <Box sx={{ width: { xs: "100%", sm: "auto" } }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontSize: { xs: "0.7rem", sm: "0.75rem" } }}
+              >
                 {t("dashboard.stats.time", "Time")}
               </Typography>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: { xs: "1.1rem", sm: "1.25rem" },
+                }}
+              >
                 {formatTime(selectedTest?.timeSpentSeconds)}
               </Typography>
             </Box>
           </Box>
 
           {/* Questions List */}
-          <Stack spacing={2}>
+          <Stack spacing={{ xs: 1.5, sm: 2 }}>
             {selectedTest?.questionDetails?.map((question, index) =>
               renderQuestionReview(question, index)
             )}
