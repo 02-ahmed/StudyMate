@@ -305,7 +305,6 @@ export default function GenerateContent() {
         return;
       }
 
-      console.log("Starting loading - text mode");
       setLoading(true);
       try {
         const response = await fetch("/api/generate", {
@@ -343,7 +342,6 @@ export default function GenerateContent() {
           "An error occurred while generating summary notes. Please try again."
         );
       } finally {
-        console.log("Ending loading - text mode");
         setLoading(false);
       }
     } else {
@@ -353,7 +351,6 @@ export default function GenerateContent() {
         return;
       }
 
-      console.log("Starting loading - file mode");
       setLoading(true);
       const formData = new FormData();
       formData.append("file", file);
@@ -386,7 +383,6 @@ export default function GenerateContent() {
         console.error("Error processing file:", error);
         alert("An error occurred while processing the file. Please try again.");
       } finally {
-        console.log("Ending loading - file mode");
         setLoading(false);
       }
     }

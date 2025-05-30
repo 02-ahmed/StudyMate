@@ -14,13 +14,13 @@ export const SUPPORTED_LANGUAGES = {
 };
 
 // Add some debug logging
-console.log("=== LANGUAGE CONTEXT MODULE (APP) LOADED ===");
-console.log("Module path: %s", import.meta.url);
-console.log("Supported languages:", Object.keys(SUPPORTED_LANGUAGES));
-console.log(
-  "Supported language display names:",
-  Object.values(SUPPORTED_LANGUAGES)
-);
+// console.log("=== LANGUAGE CONTEXT MODULE (APP) LOADED ===");
+// console.log("Module path: %s", import.meta.url);
+// console.log("Supported languages:", Object.keys(SUPPORTED_LANGUAGES));
+// console.log(
+//   "Supported language display names:",
+//   Object.values(SUPPORTED_LANGUAGES)
+// );
 
 // Create context with default values
 const LanguageContext = createContext({
@@ -36,22 +36,15 @@ export function LanguageProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const { user, isLoaded } = useUser();
 
-  console.log("LanguageProvider initialized, default language:", language);
-  console.log("User loaded:", isLoaded);
-  console.log("User available:", !!user);
-
   // Load user's language preference from Firebase
   useEffect(() => {
     async function loadLanguagePreference() {
-      console.log("Loading language preference from Firebase");
       if (!isLoaded || !user) {
-        console.log("User not loaded or not available, using default language");
         setIsLoading(false);
         return;
       }
 
       try {
-        console.log("Fetching language preference for user:", user.id);
         // Get user preferences document
         const prefsRef = doc(db, "users", user.id, "preferences", "language");
         const prefsDoc = await getDoc(prefsRef);
@@ -59,28 +52,17 @@ export function LanguageProvider({ children }) {
         if (prefsDoc.exists()) {
           // Use stored preference
           const storedLanguage = prefsDoc.data().value;
-          console.log("Found stored language preference:", storedLanguage);
 
           if (SUPPORTED_LANGUAGES[storedLanguage]) {
-            console.log(
-              "Setting language to stored preference:",
-              storedLanguage
-            );
             setLanguage(storedLanguage);
           } else {
-            console.log(
-              "Stored language not supported, using default:",
-              language
-            );
           }
         } else {
-          console.log("No language preference found, using default:", language);
         }
       } catch (error) {
         console.error("Error loading language preference:", error);
       } finally {
         setIsLoading(false);
-        console.log("Language loading complete");
       }
     }
 
@@ -90,13 +72,6 @@ export function LanguageProvider({ children }) {
   // Update language and save to Firestore
   const changeLanguage = async (newLanguage) => {
     try {
-      console.log(
-        "📣 LanguageContext: Changing language from",
-        language,
-        "to",
-        newLanguage
-      );
-
       // Validate the language is supported
       if (!(newLanguage in SUPPORTED_LANGUAGES)) {
         console.error(
@@ -108,23 +83,17 @@ export function LanguageProvider({ children }) {
 
       // Update state immediately for responsive UI
       setLanguage(newLanguage);
-      console.log("📣 LanguageContext: Language state updated to", newLanguage);
 
       // Save to Firebase if user is logged in
       if (user) {
         try {
-          console.log(
-            "Saving language preference to Firebase for user:",
-            user.id
-          );
           const prefsRef = doc(db, "users", user.id, "preferences", "language");
           await setDoc(prefsRef, { value: newLanguage }, { merge: true });
-          console.log("Language preference saved successfully to database");
         } catch (error) {
           console.error("Error saving language preference to database:", error);
         }
       } else {
-        console.log("User not logged in, not saving preference to Firebase");
+        // console.log("User not logged in, not saving preference to Firebase");
       }
     } catch (error) {
       console.error(

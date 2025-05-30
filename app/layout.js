@@ -19,6 +19,21 @@ const StoreUserInfo = dynamic(() => import("./components/StoreUserInfo"), {
   ssr: false,
 });
 
+// Add metadata configuration
+export const metadata = {
+  title: "StudyMate",
+  description:
+    "Unleash your potential with AI-powered flashcards, smart notes, personalized learning analytics & more",
+  icons: {
+    icon: [
+      { url: "/images/favicon.png", sizes: "any", type: "image/png" },
+      { url: "/images/logo2.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: { url: "/images/favicon.png" },
+    apple: { url: "/images/favicon.png", sizes: "180x180", type: "image/png" },
+  },
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">

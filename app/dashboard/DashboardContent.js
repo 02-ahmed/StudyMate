@@ -28,15 +28,6 @@ export default function DashboardContent() {
   const { user, isLoaded, isSignedIn } = useUser();
   const router = useRouter();
   const { t, language } = useTranslation();
-  console.log("🔍 Current language in DashboardContent:", language);
-  console.log(
-    "🔍 Translation for 'nav.learningJourney':",
-    t("nav.learningJourney")
-  );
-  console.log(
-    "🔍 Translation for 'titles.studyAchievement':",
-    t("titles.studyAchievement")
-  );
   const [stats, setStats] = useState({
     totalNotes: 0,
     averageScore: 0,
@@ -51,12 +42,8 @@ export default function DashboardContent() {
 
   // New effect to log all flashcard sets
   useEffect(() => {
-    console.log("=== DASHBOARD: FLASHCARD SETS LOGGING EFFECT TRIGGERED ===");
-
     const logFlashcardSets = async () => {
       if (isLoaded && isSignedIn && user) {
-        console.log(`🔍 Logging all flashcard sets for user: ${user.id}`);
-
         try {
           const flashcardSetsRef = collection(
             db,
@@ -66,50 +53,12 @@ export default function DashboardContent() {
           );
           const snapshot = await getDocs(flashcardSetsRef);
 
-          console.log(`Found ${snapshot.size} flashcard sets`);
-
           if (snapshot.empty) {
-            console.log("⚠️ No flashcard sets found for this user");
           } else {
-            console.log("--- FLASHCARD SETS DETAILS (FROM DASHBOARD) ---");
-
             snapshot.forEach((docSnap, index) => {
               const data = docSnap.data();
-              console.log(
-                `========== FLASHCARD SET ${index + 1}: ${
-                  docSnap.id
-                } ==========`
-              );
-              console.log(`📝 Name: ${data.name || "Unnamed"}`);
-              console.log(`🌐 Language: ${data.language || "not set"}`);
-              console.log(`🔍 Language type: ${typeof data.language}`);
-              console.log(`🔍 Raw language value: "${data.language}"`);
-              console.log(
-                `🔍 Is language field present: ${"language" in data}`
-              );
-              console.log(
-                `🔍 Created at: ${
-                  data.createdAt
-                    ? typeof data.createdAt.toDate === "function"
-                      ? data.createdAt.toDate().toString()
-                      : data.createdAt.toString()
-                    : "unknown"
-                }`
-              );
-              console.log(
-                `📚 Flashcards count: ${
-                  data.flashcards ? data.flashcards.length : 0
-                }`
-              );
-
-              // Log a sample of the flashcards if available
               if (data.flashcards && data.flashcards.length > 0) {
-                console.log(
-                  `First flashcard: ${JSON.stringify(data.flashcards[0])}`
-                );
               }
-
-              console.log("============================================");
             });
           }
         } catch (error) {
@@ -117,15 +66,6 @@ export default function DashboardContent() {
           console.error("Error details:", error.message);
           console.error("Error stack:", error.stack);
         }
-      } else {
-        console.log(
-          "User not loaded or not signed in yet, cannot log flashcard sets"
-        );
-        console.log(
-          `isLoaded: ${isLoaded}, isSignedIn: ${isSignedIn}, user: ${
-            user ? "exists" : "null"
-          }`
-        );
       }
     };
 

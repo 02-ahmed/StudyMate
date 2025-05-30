@@ -46,85 +46,85 @@ export default function ReviewContent() {
   const { language } = useLanguage();
   const { t } = useTranslation();
 
-  console.log("=== REVIEW CONTENT COMPONENT INITIALIZED ===");
-  console.log("UI Language context:", language);
-  console.log("Search params:", Object.fromEntries(searchParams.entries()));
+  // console.log("=== REVIEW CONTENT COMPONENT INITIALIZED ===");
+  // console.log("UI Language context:", language);
+  // console.log("Search params:", Object.fromEntries(searchParams.entries()));
 
   useEffect(() => {
-    console.log("=== REVIEW CONTENT TOPICS EFFECT TRIGGERED ===");
+    // console.log("=== REVIEW CONTENT TOPICS EFFECT TRIGGERED ===");
     const topicsParam = searchParams.get("topics");
-    console.log("Raw topics param:", topicsParam);
+    // console.log("Raw topics param:", topicsParam);
 
     if (topicsParam) {
       try {
         const decodedTopics = JSON.parse(decodeURIComponent(topicsParam));
-        console.log("Decoded topics from URL:", decodedTopics);
-        console.log("Raw topics param from URL:", topicsParam);
-        console.log("Decoded topics[0]:", decodedTopics[0]);
-        console.log(
-          "All properties in decoded topics[0]:",
-          Object.getOwnPropertyNames(decodedTopics[0])
-        );
-        console.log(
-          "All values in decoded topics[0]:",
-          Object.values(decodedTopics[0])
-        );
-        console.log(
-          "JSON stringified topics[0]:",
-          JSON.stringify(decodedTopics[0])
-        );
+        // console.log("Decoded topics from URL:", decodedTopics);
+        // console.log("Raw topics param from URL:", topicsParam);
+        // console.log("Decoded topics[0]:", decodedTopics[0]);
+        // console.log(
+        //   "All properties in decoded topics[0]:",
+        //   Object.getOwnPropertyNames(decodedTopics[0])
+        // );
+        // console.log(
+        //   "All values in decoded topics[0]:",
+        //   Object.values(decodedTopics[0])
+        // );
+        // console.log(
+        //   "JSON stringified topics[0]:",
+        //   JSON.stringify(decodedTopics[0])
+        // );
 
         // Check if language property exists in the topic
-        console.log("========== TOPIC LANGUAGE CHECK ==========");
-        console.log(
-          "Topic has language property:",
-          "language" in decodedTopics[0]
-        );
-        console.log("Topic language value:", decodedTopics[0].language);
-        console.log(
-          "Topic language value (quoted):",
-          `"${decodedTopics[0].language}"`
-        );
-        console.log("Topic language type:", typeof decodedTopics[0].language);
-        console.log(
-          "Is topic language null?",
-          decodedTopics[0].language === null
-        );
-        console.log(
-          "Is topic language undefined?",
-          decodedTopics[0].language === undefined
-        );
-        console.log(
-          "Is topic language empty string?",
-          decodedTopics[0].language === ""
-        );
-        console.log(
-          "Topic language string length:",
-          decodedTopics[0].language ? decodedTopics[0].language.length : 0
-        );
-        console.log(
-          "Topic language in SUPPORTED_LANGUAGES:",
-          decodedTopics[0].language in SUPPORTED_LANGUAGES
-        );
-        console.log("Supported languages:", Object.keys(SUPPORTED_LANGUAGES));
-        console.log("==========================================");
+        // console.log("========== TOPIC LANGUAGE CHECK ==========");
+        // console.log(
+        //   "Topic has language property:",
+        //   "language" in decodedTopics[0]
+        // );
+        // console.log("Topic language value:", decodedTopics[0].language);
+        // console.log(
+        //   "Topic language value (quoted):",
+        //   `"${decodedTopics[0].language}"`
+        // );
+        // console.log("Topic language type:", typeof decodedTopics[0].language);
+        // console.log(
+        //   "Is topic language null?",
+        //   decodedTopics[0].language === null
+        // );
+        // console.log(
+        //   "Is topic language undefined?",
+        //   decodedTopics[0].language === undefined
+        // );
+        // console.log(
+        //   "Is topic language empty string?",
+        //   decodedTopics[0].language === ""
+        // );
+        // console.log(
+        //   "Topic language string length:",
+        //   decodedTopics[0].language ? decodedTopics[0].language.length : 0
+        // );
+        // console.log(
+        //   "Topic language in SUPPORTED_LANGUAGES:",
+        //   decodedTopics[0].language in SUPPORTED_LANGUAGES
+        // );
+        // console.log("Supported languages:", Object.keys(SUPPORTED_LANGUAGES));
+        // console.log("==========================================");
 
         setTopics(decodedTopics);
         if (decodedTopics.length > 0) {
           setCurrentTopic(decodedTopics[0]);
-          console.log("Set current topic:", decodedTopics[0]);
-          console.log("Topic language:", decodedTopics[0].language);
-          console.log("Topic language type:", typeof decodedTopics[0].language);
-          console.log("Is language null?", decodedTopics[0].language === null);
-          console.log(
-            "Is language undefined?",
-            decodedTopics[0].language === undefined
-          );
-          console.log(
-            "Topic language value:",
-            JSON.stringify(decodedTopics[0].language)
-          );
-          console.log("Topic language exists?", "language" in decodedTopics[0]);
+          // console.log("Set current topic:", decodedTopics[0]);
+          // console.log("Topic language:", decodedTopics[0].language);
+          // console.log("Topic language type:", typeof decodedTopics[0].language);
+          // console.log("Is language null?", decodedTopics[0].language === null);
+          // console.log(
+          //   "Is language undefined?",
+          //   decodedTopics[0].language === undefined
+          // );
+          // console.log(
+          //   "Topic language value:",
+          //   JSON.stringify(decodedTopics[0].language)
+          // );
+          // console.log("Topic language exists?", "language" in decodedTopics[0]);
         }
       } catch (error) {
         console.error("Error parsing topics:", error);
@@ -132,51 +132,51 @@ export default function ReviewContent() {
         console.error("Error stack:", error.stack);
       }
     } else {
-      console.log("No topics parameter found in URL");
+      // console.log("No topics parameter found in URL");
     }
     setLoading(false);
   }, [searchParams]);
 
   // Check if language parameter is in URL and set it as the active language
   useEffect(() => {
-    console.log("=== REVIEW CONTENT LANGUAGE EFFECT TRIGGERED ===");
+    // console.log("=== REVIEW CONTENT LANGUAGE EFFECT TRIGGERED ===");
     const urlLanguage = searchParams.get("language");
-    console.log("URL language parameter:", urlLanguage);
+    // console.log("URL language parameter:", urlLanguage);
 
     if (urlLanguage && SUPPORTED_LANGUAGES[urlLanguage]) {
-      console.log(`Language parameter found in URL: ${urlLanguage}`);
+      // console.log(`Language parameter found in URL: ${urlLanguage}`);
       // If URL has a language parameter that's different from the current context language,
       // we should update our local state to use this language
       if (urlLanguage !== language) {
-        console.log(
-          `URL language (${urlLanguage}) is different from context language (${language})`
-        );
+        // console.log(
+        //   `URL language (${urlLanguage}) is different from context language (${language})`
+        // );
         // We'll use this URL language for content generation
       }
     } else {
-      console.log(
-        `No valid language parameter in URL. Using context language: ${language}`
-      );
+      // console.log(
+      //   `No valid language parameter in URL. Using context language: ${language}`
+      // );
     }
   }, [searchParams, language]);
 
   useEffect(() => {
-    console.log("=== GENERATE CONTENT EFFECT TRIGGERED ===");
-    console.log("Current topic:", currentTopic);
-    console.log("Language:", language);
+    // console.log("=== GENERATE CONTENT EFFECT TRIGGERED ===");
+    // console.log("Current topic:", currentTopic);
+    // console.log("Language:", language);
 
     if (currentTopic) {
-      console.log("Calling generateContent with:", currentTopic);
+      // console.log("Calling generateContent with:", currentTopic);
       generateContent(currentTopic);
     } else {
-      console.log("No current topic set, skipping content generation");
+      // console.log("No current topic set, skipping content generation");
     }
   }, [currentTopic, language, searchParams]);
 
   const generateContent = async (topic) => {
-    console.log("=== GENERATE CONTENT FUNCTION CALLED ===");
-    console.log("Topic parameter:", topic);
-    console.log("Topic parameter type:", typeof topic);
+    // console.log("=== GENERATE CONTENT FUNCTION CALLED ===");
+    // console.log("Topic parameter:", topic);
+    // console.log("Topic parameter type:", typeof topic);
 
     try {
       setLoading(true);
@@ -184,61 +184,61 @@ export default function ReviewContent() {
       // Get the topic object
       const topicObj = typeof topic === "string" ? { topic } : topic;
 
-      console.log("Topic object:", topicObj);
-      console.log("Topic object type:", typeof topicObj);
-      console.log("Topic object keys:", Object.keys(topicObj));
-      console.log("Topic object stringified:", JSON.stringify(topicObj));
-      console.log("Topic object language:", topicObj.language);
-      console.log("Topic object language (quoted):", `"${topicObj.language}"`);
-      console.log("Topic object language type:", typeof topicObj.language);
-      console.log(
-        "Topic object language value:",
-        JSON.stringify(topicObj.language)
-      );
-      console.log("Is topic object language null?", topicObj.language === null);
-      console.log(
-        "Is topic object language undefined?",
-        topicObj.language === undefined
-      );
-      console.log(
-        "Is topic object language empty string?",
-        topicObj.language === ""
-      );
-      console.log(
-        "Topic object language string length:",
-        topicObj.language ? topicObj.language.length : 0
-      );
+      // console.log("Topic object:", topicObj);
+      // console.log("Topic object type:", typeof topicObj);
+      // console.log("Topic object keys:", Object.keys(topicObj));
+      // console.log("Topic object stringified:", JSON.stringify(topicObj));
+      // console.log("Topic object language:", topicObj.language);
+      // console.log("Topic object language (quoted):", `"${topicObj.language}"`);
+      // console.log("Topic object language type:", typeof topicObj.language);
+      // console.log(
+      //   "Topic object language value:",
+      //   JSON.stringify(topicObj.language)
+      // );
+      // console.log("Is topic object language null?", topicObj.language === null);
+      // console.log(
+      //   "Is topic object language undefined?",
+      //   topicObj.language === undefined
+      // );
+      // console.log(
+      //   "Is topic object language empty string?",
+      //   topicObj.language === ""
+      // );
+      // console.log(
+      //   "Topic object language string length:",
+      //   topicObj.language ? topicObj.language.length : 0
+      // );
 
       // IMPORTANT: Use ONLY the language from the topic object
       // This comes directly from the flashcard set's language
       // Do NOT fall back to UI context language
       let contentLanguage = topicObj.language;
-      console.log("Content language from topic:", contentLanguage);
-      console.log("Content language (quoted):", `"${contentLanguage}"`);
-      console.log("Content language type:", typeof contentLanguage);
-      console.log("Is content language null?", contentLanguage === null);
-      console.log(
-        "Is content language undefined?",
-        contentLanguage === undefined
-      );
-      console.log("Is content language empty string?", contentLanguage === "");
-      console.log(
-        "Content language string length:",
-        contentLanguage ? contentLanguage.length : 0
-      );
-      console.log(
-        "Content language in SUPPORTED_LANGUAGES:",
-        contentLanguage in SUPPORTED_LANGUAGES
-      );
+      // console.log("Content language from topic:", contentLanguage);
+      // console.log("Content language (quoted):", `"${contentLanguage}"`);
+      // console.log("Content language type:", typeof contentLanguage);
+      // console.log("Is content language null?", contentLanguage === null);
+      // console.log(
+      //   "Is content language undefined?",
+      //   contentLanguage === undefined
+      // );
+      // console.log("Is content language empty string?", contentLanguage === "");
+      // console.log(
+      //   "Content language string length:",
+      //   contentLanguage ? contentLanguage.length : 0
+      // );
+      // console.log(
+      //   "Content language in SUPPORTED_LANGUAGES:",
+      //   contentLanguage in SUPPORTED_LANGUAGES
+      // );
 
       // If no language is specified, API will handle the default
       // We're not setting any fallbacks here to ensure we use ONLY what comes from the flashcard set
 
-      console.log("Final content language:", contentLanguage);
+      // console.log("Final content language:", contentLanguage);
 
-      console.log(
-        `Generating content for topic "${topicObj.topic}" in language: ${contentLanguage}`
-      );
+      // console.log(
+      //   `Generating content for topic "${topicObj.topic}" in language: ${contentLanguage}`
+      // );
 
       // IMPORTANT FIX: Ensure language is explicitly included in the request body
       // Only include the language if it's a non-empty string
@@ -249,48 +249,48 @@ export default function ReviewContent() {
       // Only add language if it's a valid string
       if (typeof contentLanguage === "string" && contentLanguage) {
         requestBody.language = contentLanguage;
-        console.log("Added language to request body:", contentLanguage);
+        // console.log("Added language to request body:", contentLanguage);
       } else {
-        console.log(
-          "Language not added to request body because it's not a valid string"
-        );
-        console.log("Language value:", contentLanguage);
-        console.log("Language type:", typeof contentLanguage);
+        // console.log(
+        //   "Language not added to request body because it's not a valid string"
+        // );
+        // console.log("Language value:", contentLanguage);
+        // console.log("Language type:", typeof contentLanguage);
       }
 
-      console.log("========== API REQUEST BODY ==========");
-      console.log("API request body:", JSON.stringify(requestBody));
-      console.log("API request body keys:", Object.keys(requestBody));
-      console.log("API request body language:", requestBody.language);
-      console.log(
-        "API request body language (quoted):",
-        `"${requestBody.language}"`
-      );
-      console.log(
-        "API request body language type:",
-        typeof requestBody.language
-      );
-      console.log(
-        "Is request body language null?",
-        requestBody.language === null
-      );
-      console.log(
-        "Is request body language undefined?",
-        requestBody.language === undefined
-      );
-      console.log(
-        "Is request body language empty string?",
-        requestBody.language === ""
-      );
-      console.log(
-        "Request body language string length:",
-        requestBody.language ? requestBody.language.length : 0
-      );
-      console.log(
-        "Is language property in request body?",
-        "language" in requestBody
-      );
-      console.log("======================================");
+      // console.log("========== API REQUEST BODY ==========");
+      // console.log("API request body:", JSON.stringify(requestBody));
+      // console.log("API request body keys:", Object.keys(requestBody));
+      // console.log("API request body language:", requestBody.language);
+      // console.log(
+      //   "API request body language (quoted):",
+      //   `"${requestBody.language}"`
+      // );
+      // console.log(
+      //   "API request body language type:",
+      //   typeof requestBody.language
+      // );
+      // console.log(
+      //   "Is request body language null?",
+      //   requestBody.language === null
+      // );
+      // console.log(
+      //   "Is request body language undefined?",
+      //   requestBody.language === undefined
+      // );
+      // console.log(
+      //   "Is request body language empty string?",
+      //   requestBody.language === ""
+      // );
+      // console.log(
+      //   "Request body language string length:",
+      //   requestBody.language ? requestBody.language.length : 0
+      // );
+      // console.log(
+      //   "Is language property in request body?",
+      //   "language" in requestBody
+      // );
+      // console.log("======================================");
 
       // Get user ID from client-side if available
       // Try multiple sources to ensure we get a user ID
@@ -299,21 +299,21 @@ export default function ReviewContent() {
         // First try window.clerkUserInfo
         if (window.clerkUserInfo && window.clerkUserInfo.id) {
           userId = window.clerkUserInfo.id;
-          console.log("Retrieved user ID from window.clerkUserInfo:", userId);
+          // console.log("Retrieved user ID from window.clerkUserInfo:", userId);
         }
         // Then try localStorage
         else if (typeof localStorage !== "undefined") {
           userId = localStorage.getItem("userId");
-          console.log(
-            "Retrieved user ID from localStorage:",
-            userId || "not found"
-          );
+          // console.log(
+          //   "Retrieved user ID from localStorage:",
+          //   userId || "not found"
+          // );
         }
       } catch (error) {
         console.error("Error retrieving user ID:", error);
       }
 
-      console.log("Final user ID for API call:", userId || "not available");
+      // console.log("Final user ID for API call:", userId || "not available");
 
       // Log the headers we're sending for debugging
       const headers = {
@@ -321,7 +321,7 @@ export default function ReviewContent() {
         "x-user-id": userId || "",
       };
 
-      console.log("API request headers:", headers);
+      // console.log("API request headers:", headers);
 
       const response = await fetch("/api/generate-review-content", {
         method: "POST",
@@ -329,8 +329,8 @@ export default function ReviewContent() {
         body: JSON.stringify(requestBody),
       });
 
-      console.log("API response status:", response.status);
-      console.log("API response OK:", response.ok);
+      // console.log("API response status:", response.status);
+      // console.log("API response OK:", response.ok);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -339,7 +339,7 @@ export default function ReviewContent() {
       }
 
       const data = await response.json();
-      console.log("API response data keys:", Object.keys(data));
+      // console.log("API response data keys:", Object.keys(data));
 
       if (data.error) {
         console.error("API returned error:", data.error);
@@ -349,16 +349,16 @@ export default function ReviewContent() {
       // Map the API response to the content structure
       // The API returns data.sections which contains the content fields
       const sections = data.sections || {};
-      console.log("API sections keys:", Object.keys(sections));
+      // console.log("API sections keys:", Object.keys(sections));
 
-      console.log(
-        "Received API response. Content language should be:",
-        contentLanguage
-      );
-      console.log(
-        "First 50 chars of content:",
-        sections.detailedNotes?.substring(0, 50) || "No content"
-      );
+      // console.log(
+      //   "Received API response. Content language should be:",
+      //   contentLanguage
+      // );
+      // console.log(
+      //   "First 50 chars of content:",
+      //   sections.detailedNotes?.substring(0, 50) || "No content"
+      // );
 
       setContent({
         introduction: sections.detailedNotes || "",
@@ -370,7 +370,7 @@ export default function ReviewContent() {
         },
       });
 
-      console.log("Content set successfully in language:", contentLanguage);
+      // console.log("Content set successfully in language:", contentLanguage);
     } catch (error) {
       console.error("Error in generateContent:", error);
       console.error("Error details:", error.message);

@@ -53,10 +53,7 @@ function NavigationBarContent() {
   const { t } = useTranslation();
 
   const handleLanguageChange = (event) => {
-    console.log("Language change requested:", event.target.value);
-    console.log("Current language before change:", language);
     changeLanguage(event.target.value);
-    console.log("Language change function called");
   };
 
   const isActive = (path) => pathname === path;

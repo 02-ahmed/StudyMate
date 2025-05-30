@@ -1,19 +1,12 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
-// Log when the file is first loaded
-console.log("=== API ROUTE LOADED ===");
-console.log("API_KEY value:", process.env.API_KEY);
-
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 export async function POST(request) {
   try {
-    console.log("=== POST REQUEST RECEIVED ===");
-
-    // Log the request body
     const body = await request.json();
-    console.log("Request body:", body);
+
     const { topic } = body;
 
     if (!process.env.API_KEY) {
@@ -21,10 +14,8 @@ export async function POST(request) {
       throw new Error("API key is not configured");
     }
 
-    console.log("Creating Gemini model with API key:", process.env.API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    console.log("Generating content for topic:", topic);
     const prompt = `
       I need a comprehensive learning guide about ${topic}.
       Please provide:
@@ -55,13 +46,11 @@ export async function POST(request) {
 
     const result = await model.generateContent(prompt);
 
-    console.log("Content generated successfully");
     const response = result.response.text();
 
     // Parse the response into sections
-    console.log("Raw response:", response);
+
     const sections = response.split(/\d\.\s+/);
-    console.log("Parsed sections:", sections);
 
     // Structure the content
     const structuredContent = {
@@ -100,7 +89,6 @@ export async function POST(request) {
       },
     };
 
-    console.log("Sending response:", structuredContent);
     return NextResponse.json(structuredContent);
   } catch (error) {
     console.error("=== ERROR IN API ROUTE ===");

@@ -10,10 +10,6 @@ import {
   where,
 } from "firebase/firestore";
 
-// Log when the file is first loaded
-console.log("=== API ROUTE LOADED ===");
-console.log("API_KEY value:", process.env.API_KEY ? "[PRESENT]" : "[MISSING]");
-
 // Map of language codes to full language names
 const LANGUAGES = {
   en: "English",
@@ -38,37 +34,17 @@ const LANGUAGES = {
   ko: "Korean",
 };
 
-console.log("Available languages:", Object.keys(LANGUAGES));
-
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 export async function POST(request) {
-  console.log("=== GENERATE REVIEW CONTENT API ENDPOINT CALLED ===");
-  console.log("Request method:", request.method);
-  console.log(
-    "Request headers:",
-    Object.fromEntries(request.headers.entries())
-  );
-
   try {
     const requestBody = await request.json();
-    console.log("Request body received:", requestBody);
-    console.log("Request body type:", typeof requestBody);
-    console.log("Request body keys:", Object.keys(requestBody));
-    console.log("Raw request body (stringified):", JSON.stringify(requestBody));
 
     // Extract userId from headers if available
     const userId = request.headers.get("x-user-id") || null;
-    console.log("User ID from headers:", userId || "not provided");
-    console.log("User ID type:", typeof userId);
-    console.log("User ID length:", userId ? userId.length : 0);
-    console.log("User ID starts with 'user_':", userId?.startsWith("user_"));
 
     // Extract topic and other parameters from request body
     const { topic, setId, language: requestLanguage = "en" } = requestBody;
-    console.log("Extracted topic:", topic);
-    console.log("Extracted setId:", setId);
-    console.log("Extracted request language:", requestLanguage);
 
     // Initialize language variable that will be determined by priority:
     // 1. Language from flashcard set (highest priority)
@@ -78,8 +54,6 @@ export async function POST(request) {
 
     // Try to find the flashcard set using setId (most reliable) or by topic name
     if (userId) {
-      console.log(`🔍 Looking for flashcard set for user: ${userId}`);
-
       try {
         const flashcardSetsRef = collection(
           db,
@@ -91,21 +65,12 @@ export async function POST(request) {
 
         // First try to find by setId if available (most reliable)
         if (setId) {
-          console.log(`🔍 Looking for flashcard set with ID: "${setId}"`);
           const docRef = doc(db, "users", userId, "flashcardSets", setId);
           const docSnap = await getDoc(docRef);
 
           if (docSnap.exists()) {
             flashcardSet = docSnap.data();
-            console.log(`✅ Found flashcard set with ID: "${setId}"`);
-            console.log(
-              `Flashcard set name: ${flashcardSet.name || "unnamed"}`
-            );
-            console.log(
-              `Flashcard set language: ${flashcardSet.language || "not set"}`
-            );
 
-            // Add the setId to the flashcard set data for reference
             flashcardSet.setId = setId;
           } else {
             console.log(`⚠️ No flashcard set found with ID: "${setId}"`);
@@ -114,13 +79,11 @@ export async function POST(request) {
 
         // If no setId or set not found by ID, try to find by name
         if (!flashcardSet && topic) {
-          console.log(`🔍 Looking for flashcard set with name: "${topic}"`);
           const q = query(flashcardSetsRef, where("name", "==", topic));
           const snapshot = await getDocs(q);
 
           if (!snapshot.empty) {
             flashcardSet = snapshot.docs[0].data();
-            console.log(`✅ Found flashcard set with name: "${topic}"`);
           } else {
             console.log(`⚠️ No flashcard set found with name: "${topic}"`);
           }
@@ -128,19 +91,10 @@ export async function POST(request) {
 
         // If we found a flashcard set, extract its language
         if (flashcardSet) {
-          console.log(
-            `Flashcard set language: ${flashcardSet.language || "not set"}`
-          );
-          console.log(`Flashcard set name: ${flashcardSet.name || "unnamed"}`);
-
           if (flashcardSet.language) {
             language = flashcardSet.language;
-            console.log(`📌 Using language from flashcard set: "${language}"`);
 
             // Add a debug checkpoint to ensure language is preserved
-            console.log(
-              `🔍 CHECKPOINT - Language after setting from flashcard: "${language}"`
-            );
           } else {
             console.log(
               `⚠️ Flashcard set doesn't have a language set, using request language: "${language}"`
@@ -164,89 +118,31 @@ export async function POST(request) {
     // Log flashcard sets on the server side if we have a user ID
     if (userId) {
       try {
-        console.log("🔍 === SERVER-SIDE FLASHCARD SETS CHECK === 🔍");
-        console.log(`Checking flashcard sets for user: ${userId}`);
-        console.log(
-          `User ID format valid: ${
-            typeof userId === "string" && userId.length > 0
-          }`
-        );
-
         if (!userId || typeof userId !== "string" || userId.length === 0) {
-          console.log("⚠️ Invalid user ID format, cannot query Firestore");
-          console.log(`User ID: "${userId}"`);
-          console.log(`User ID type: ${typeof userId}`);
         } else {
           console.log("✅ User ID format is valid for Firestore query");
 
           try {
-            console.log(
-              `Creating collection reference to users/${userId}/flashcardSets`
-            );
             const flashcardSetsRef = collection(
               db,
               "users",
               userId,
               "flashcardSets"
             );
-            console.log("Collection reference created successfully");
 
             try {
-              console.log("Executing Firestore query...");
               const snapshot = await getDocs(flashcardSetsRef);
-              console.log(
-                `Query executed. Found ${snapshot.size} flashcard sets on server`
-              );
 
               if (snapshot.empty) {
-                console.log(
-                  "⚠️ WARNING: No flashcard sets found on server for this user"
-                );
-                console.log("This could indicate:");
-                console.log("1. The user has not created any flashcard sets");
-                console.log("2. The user ID might be incorrect");
-                console.log(
-                  "3. There might be a permissions issue with Firestore"
-                );
               } else {
                 console.log(
                   `✅ Successfully found ${snapshot.size} flashcard sets`
                 );
-                console.log("--- FLASHCARD SETS DETAILS ---");
 
                 let index = 0;
                 snapshot.forEach((docSnap) => {
                   index++;
                   const data = docSnap.data();
-                  console.log(
-                    `========== FLASHCARD SET ${index}: ${docSnap.id} ==========`
-                  );
-                  console.log(`📝 Name: ${data.name || "Unnamed"}`);
-                  console.log(`🌐 Language: ${data.language || "not set"}`);
-                  console.log(`🔍 Language type: ${typeof data.language}`);
-                  console.log(`🔍 Raw language value: "${data.language}"`);
-                  console.log(
-                    `🔍 Stringified language: ${JSON.stringify(data.language)}`
-                  );
-                  console.log(
-                    `🔍 Is language field present: ${"language" in data}`
-                  );
-                  console.log(
-                    `🔍 Created at: ${
-                      data.createdAt
-                        ? typeof data.createdAt.toDate === "function"
-                          ? data.createdAt.toDate()
-                          : data.createdAt
-                        : "unknown"
-                    }`
-                  );
-                  console.log(
-                    `📚 Flashcards count: ${
-                      data.flashcards ? data.flashcards.length : 0
-                    }`
-                  );
-                  console.log(`🔍 Full data: ${JSON.stringify(data)}`);
-                  console.log("============================================");
                 });
               }
             } catch (snapshotError) {
@@ -281,35 +177,7 @@ export async function POST(request) {
       console.log(
         "⚠️ No user ID available for server-side flashcard set check"
       );
-      console.log("This could be because:");
-      console.log("1. The user is not authenticated");
-      console.log("2. The StoreUserInfo component didn't store the user ID");
-      console.log("3. The x-user-id header was not sent from the client");
     }
-
-    // Add another checkpoint to verify language is still correct before processing
-    console.log(`🔍 CHECKPOINT - Language before processing: "${language}"`);
-
-    console.log("========== API REQUEST PROCESSING ==========");
-    console.log("Final topic:", topic);
-    console.log("Final language:", language);
-    console.log("Final language (quoted):", `"${language}"`);
-    console.log("Final language type:", typeof language);
-    console.log("Is language null?", language === null);
-    console.log("Is language undefined?", language === undefined);
-    console.log("Is language empty string?", language === "");
-    console.log("Language string length:", language ? language.length : 0);
-    console.log("===========================================");
-
-    // Add a debug log to trace the language value before validation
-    console.log(`🔍 DEBUG - Language before validation: "${language}"`);
-
-    // IMPORTANT: Log the supported languages to see if our language code is valid
-    console.log(
-      "Supported languages in LANGUAGES object:",
-      Object.keys(LANGUAGES)
-    );
-    console.log("Is language directly in LANGUAGES?", language in LANGUAGES);
 
     // Check if language is a valid language code but might be in a different format
     // For example, 'es' vs 'es-ES' or 'es_ES'
@@ -317,7 +185,6 @@ export async function POST(request) {
     if (!LANGUAGES[language]) {
       // Try to find a matching language code
       const languageCode = language.split(/[-_]/)[0].toLowerCase();
-      console.log(`Trying to match language code: "${languageCode}"`);
 
       // Check if the base language code exists in our LANGUAGES object
       const matchingKey = Object.keys(LANGUAGES).find(
@@ -327,9 +194,6 @@ export async function POST(request) {
       );
 
       if (matchingKey) {
-        console.log(
-          `Found matching language code: "${matchingKey}" for "${language}"`
-        );
         languageMatch = matchingKey;
       } else {
         console.log(`No matching language code found for "${language}"`);
@@ -339,41 +203,8 @@ export async function POST(request) {
     // Ensure we have a valid language code
     // If language is not in our supported languages map, default to English
     const validLanguage = LANGUAGES[languageMatch] ? languageMatch : "en";
-    console.log("========== LANGUAGE VALIDATION ==========");
-    console.log("Original language from request/flashcard:", language);
-    console.log("Language match found:", languageMatch);
-    console.log("Final validated language:", validLanguage);
-    console.log("Validated language (quoted):", `"${validLanguage}"`);
-    console.log("Is language valid?", LANGUAGES[languageMatch] ? "yes" : "no");
-    console.log("Supported languages:", Object.keys(LANGUAGES));
-    console.log(
-      "Is language in supported languages?",
-      languageMatch in LANGUAGES
-    );
-    console.log(
-      "Why defaulting to English:",
-      !LANGUAGES[languageMatch]
-        ? "Language not supported"
-        : "Using provided language"
-    );
-
-    console.log("========================================");
 
     const languageName = LANGUAGES[validLanguage] || "English";
-    console.log("Language name:", languageName);
-
-    // Add a debug log to trace the language name
-    console.log(
-      `🔍 DEBUG - Language name for content generation: "${languageName}" (from code: ${validLanguage})`
-    );
-
-    console.log("=== GENERATE REVIEW CONTENT API CALLED ===");
-    console.log(`Topic: "${topic}"`);
-    console.log(`Final language code: "${validLanguage}"`);
-    console.log(`Language name: "${languageName}"`);
-    console.log(
-      `Generating review content for topic: "${topic}" in language: ${validLanguage} (${languageName})`
-    );
 
     if (!process.env.API_KEY) {
       console.error("API_KEY is missing or undefined!");
@@ -383,7 +214,6 @@ export async function POST(request) {
       );
     }
 
-    console.log("Creating generative model instance");
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
       generationConfig: {

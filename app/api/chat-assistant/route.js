@@ -21,7 +21,6 @@ export async function POST(req) {
     });
 
     const data = await req.json();
-    console.log("Received request with message:", data.msg);
 
     // Extract language from context
     const userContext = data.context || {};
@@ -29,7 +28,6 @@ export async function POST(req) {
 
     // Get full language name from code
     const languageName = LANGUAGES[language] || "English";
-    console.log(`Using language: ${language} (${languageName})`);
 
     // Add current context if available
     let contextPrompt = userContext.currentTopic
@@ -52,10 +50,6 @@ export async function POST(req) {
       Array.isArray(data.messages) &&
       data.messages.length > 0
     ) {
-      console.log(
-        `Processing conversation history with ${data.messages.length} messages`
-      );
-
       // Skip any messages that are flagged as welcome messages
       const filteredMessages = data.messages.filter(
         (msg) => !msg.isWelcomeMessage
@@ -97,9 +91,6 @@ export async function POST(req) {
 
     // Double-check that history starts with a user message
     if (formattedHistory.length === 0 || formattedHistory[0].role !== "user") {
-      console.log(
-        "History doesn't start with user message, using single message approach"
-      );
       // If not, don't use history (API requirement)
       formattedHistory = [];
     }
@@ -107,15 +98,8 @@ export async function POST(req) {
     // Truncate conversation history if it's too long (to prevent streaming errors)
     // Keep only the last 10 messages maximum
     if (formattedHistory.length > 10) {
-      console.log(
-        `Truncating conversation history from ${formattedHistory.length} to 10 messages`
-      );
       formattedHistory = formattedHistory.slice(-10);
     }
-
-    console.log(
-      `Using conversation history with ${formattedHistory.length} formatted messages`
-    );
 
     // Add context to the user's message if applicable
     const userMessage = contextPrompt
@@ -165,19 +149,12 @@ async function getNonStreamingResponse(
     try {
       if (formattedHistory.length >= 2 && formattedHistory[0].role === "user") {
         // We have at least a user-model exchange, use chat
-        console.log(
-          `Starting chat with history (non-streaming) - attempt ${
-            retryCount + 1
-          }`
-        );
 
         try {
           const chat = model.startChat({
             history: formattedHistory,
           });
 
-          console.log("Sending message to chat with history");
-          console.log(`Using language: ${language}`);
           // Ensure language instruction is included in the message
           const messageWithLanguage = userMessage.includes(
             "IMPORTANT: Please respond in"
@@ -190,7 +167,7 @@ async function getNonStreamingResponse(
         } catch (chatError) {
           console.error("Error starting chat with history:", chatError);
           // If there's an error with the history, fall back to single message approach
-          console.log("Falling back to single message approach");
+
           const messageWithLanguage = userMessage.includes(
             "IMPORTANT: Please respond in"
           )
@@ -201,11 +178,6 @@ async function getNonStreamingResponse(
         }
       } else {
         // No history or incomplete history, use single message
-        console.log(
-          `Using single message without history (non-streaming) - attempt ${
-            retryCount + 1
-          }`
-        );
 
         const messageWithLanguage = userMessage.includes(
           "IMPORTANT: Please respond in"
@@ -216,10 +188,6 @@ async function getNonStreamingResponse(
         responseText = result.response.text();
       }
 
-      console.log(
-        "Generated response:",
-        responseText.substring(0, 100) + "..."
-      );
       return responseText;
     } catch (error) {
       console.error(

@@ -5,14 +5,14 @@ let useLanguageHook = () => ({ language: "en" }); // Fallback
 try {
   const { useLanguage } = require("../contexts/LanguageContext.js");
   useLanguageHook = useLanguage;
-  console.log("Successfully imported useLanguage from LanguageContext");
+  // console.log("Successfully imported useLanguage from LanguageContext");
 } catch (error) {
   console.error("Failed to import useLanguage, using fallback:", error);
 }
 
 // Debug logging
-console.log("=== TRANSLATE MODULE (APP) LOADED ===");
-console.log("Translate app module path: %s", import.meta.url);
+// console.log("=== TRANSLATE MODULE (APP) LOADED ===");
+// console.log("Translate app module path: %s", import.meta.url);
 
 /**
  * Get translated text for a given key and language

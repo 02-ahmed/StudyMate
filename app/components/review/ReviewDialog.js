@@ -136,24 +136,8 @@ export default function ReviewDialog({
   };
 
   const handleViewFullPage = () => {
-    if (!topic || !content) {
-      setSnackbar({
-        open: true,
-        message: "Cannot view full page: content is not ready",
-        severity: "error",
-      });
+    if (!topic) {
       return;
-    }
-
-    console.log(
-      "ReviewDialog.js - handleViewFullPage called with topic:",
-      topic
-    );
-    console.log("ReviewDialog.js - Topic type:", typeof topic);
-    if (typeof topic === "object") {
-      console.log("ReviewDialog.js - Topic object keys:", Object.keys(topic));
-      console.log("ReviewDialog.js - Topic language:", topic.language);
-      console.log("ReviewDialog.js - Topic setId:", topic.setId);
     }
 
     // Store the current content in sessionStorage
@@ -170,10 +154,6 @@ export default function ReviewDialog({
       setId: typeof topic === "object" && topic.setId ? topic.setId : undefined,
       useStoredContent: true,
     };
-    console.log(
-      "ReviewDialog.js - Navigating to full page with topic data:",
-      topicData
-    );
     const topicParam = encodeURIComponent(JSON.stringify([topicData]));
 
     // Navigate to full page

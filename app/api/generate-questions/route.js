@@ -27,10 +27,6 @@ const LANGUAGES = {
 export async function POST(request) {
   try {
     const requestBody = await request.json();
-    console.log("Request body received:", requestBody);
-    console.log("Request body type:", typeof requestBody);
-    console.log("Request body keys:", Object.keys(requestBody));
-    console.log("Raw request body (stringified):", JSON.stringify(requestBody));
 
     // Extract parameters from request body
     const {
@@ -40,30 +36,8 @@ export async function POST(request) {
       language = "en",
     } = requestBody;
 
-    console.log("========== API REQUEST PROCESSING ==========");
-    console.log("Number of flashcards:", flashcards ? flashcards.length : 0);
-    console.log("Number of questions:", numQuestions);
-    console.log("Question types:", questionTypes);
-    console.log("Extracted language:", language);
-    console.log("Extracted language (quoted):", `"${language}"`);
-    console.log("Extracted language type:", typeof language);
-    console.log("Is language null?", language === null);
-    console.log("Is language undefined?", language === undefined);
-    console.log("Is language empty string?", language === "");
-    console.log("Language string length:", language ? language.length : 0);
-    console.log("Is language in request body?", "language" in requestBody);
-    console.log(
-      "Request body language value:",
-      JSON.stringify(requestBody.language)
-    );
-    console.log("Raw language from request body:", requestBody.language);
-    console.log("Raw language type:", typeof requestBody.language);
-    console.log("Raw language quoted:", `"${requestBody.language}"`);
-    console.log("===========================================");
-
     // Validate input parameters
     if (!flashcards || !Array.isArray(flashcards) || flashcards.length === 0) {
-      console.log("Error: Invalid flashcards array");
       return NextResponse.json(
         { error: "Invalid flashcards array" },
         { status: 400 }
@@ -71,7 +45,6 @@ export async function POST(request) {
     }
 
     if (typeof numQuestions !== "number" || numQuestions < 1) {
-      console.log("Error: Invalid numQuestions parameter");
       return NextResponse.json(
         { error: "Invalid numQuestions parameter" },
         { status: 400 }
@@ -88,7 +61,6 @@ export async function POST(request) {
     }
 
     if (!Array.isArray(questionTypes) || questionTypes.length === 0) {
-      console.log("Error: Invalid questionTypes parameter");
       return NextResponse.json(
         { error: "Invalid questionTypes parameter" },
         { status: 400 }
@@ -98,24 +70,8 @@ export async function POST(request) {
     // Ensure we have a valid language code
     // If language is not in our supported languages map, default to English
     const validLanguage = LANGUAGES[language] ? language : "en";
-    console.log("========== LANGUAGE VALIDATION ==========");
-    console.log("Validated language:", validLanguage);
-    console.log("Validated language (quoted):", `"${validLanguage}"`);
-    console.log("Is language valid?", LANGUAGES[language] ? "yes" : "no");
-    console.log("Supported languages:", Object.keys(LANGUAGES));
-    console.log("Is language in supported languages?", language in LANGUAGES);
-    console.log(
-      "Why defaulting to English:",
-      !LANGUAGES[language]
-        ? "Language not supported"
-        : "Using provided language"
-    );
-    console.log("========================================");
 
     const languageName = LANGUAGES[validLanguage] || "English";
-    console.log(
-      `Using ${languageName} (${validLanguage}) for question generation`
-    );
 
     // Format flashcards into a study material
     const studyMaterial = flashcards

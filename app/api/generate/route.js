@@ -190,7 +190,7 @@ export async function POST(req) {
     });
 
     const text = await result.response.text();
-    console.log("Raw response:", text); // Debug log
+    // Debug log
 
     try {
       // First try direct JSON parse
@@ -204,9 +204,7 @@ export async function POST(req) {
 
       return NextResponse.json(cleanedFlashcards);
     } catch (error) {
-      console.log(
-        "Initial JSON parse failed, attempting to fix truncated JSON"
-      ); // Debug log
+      // Debug log
 
       // Try to fix truncated JSON by finding the last complete flashcard
       const lastCompleteCard = text.lastIndexOf('}, {"front"');
@@ -222,11 +220,7 @@ export async function POST(req) {
           }));
 
           return NextResponse.json(cleanedFlashcards);
-        } catch (error) {
-          console.log(
-            "Failed to fix truncated JSON, falling back to text conversion"
-          );
-        }
+        } catch (error) {}
       }
 
       // If all else fails, convert text to flashcards
@@ -267,7 +261,7 @@ export async function POST(req) {
       });
 
       const text = await result.response.text();
-      console.log("Raw response:", text); // Debug log
+      // Debug log
 
       try {
         const flashcards = JSON.parse(text);
@@ -295,7 +289,6 @@ export async function POST(req) {
       });
 
       const text = await result.response.text();
-      console.log("Raw response:", text); // Debug log
 
       try {
         const flashcards = JSON.parse(text);

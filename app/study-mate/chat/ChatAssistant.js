@@ -101,9 +101,6 @@ export default function ChatAssistant({ userId }) {
       setError(null); // Clear any previous errors
 
       try {
-        console.log(`Loading flashcard set data for set ID: ${selectedSet}`);
-        console.log(`Current sessionTracker state:`, sessionTracker);
-
         // Get the flashcard set data
         const docRef = doc(db, "users", userId, "flashcardSets", selectedSet);
         const docSnap = await getDoc(docRef);
@@ -116,10 +113,6 @@ export default function ChatAssistant({ userId }) {
           const trackedSessionId = sessionTracker[selectedSet];
 
           if (trackedSessionId) {
-            console.log(
-              `Using tracked session ID for ${setData.name}: ${trackedSessionId}`
-            );
-
             try {
               // Try to get the session directly by ID first
               const sessionDocRef = doc(
@@ -149,15 +142,15 @@ export default function ChatAssistant({ userId }) {
                   };
                 }
                 setMessages(existingMessages);
-                console.log(
-                  `Loaded tracked chat session for set "${setData.name}" with ${existingMessages.length} messages`
-                );
+                // console.log(
+                //   `Loaded tracked chat session for set "${setData.name}" with ${existingMessages.length} messages`
+                // );
                 setLoadingHistory(false);
                 return;
               } else {
-                console.log(
-                  `Tracked session ID ${trackedSessionId} not found, falling back to query`
-                );
+                // console.log(
+                //   `Tracked session ID ${trackedSessionId} not found, falling back to query`
+                // );
                 // Session not found (might have been deleted), continue to regular query
               }
             } catch (err) {
@@ -176,9 +169,9 @@ export default function ChatAssistant({ userId }) {
             );
 
             // Simplified query that doesn't require a composite index
-            console.log(
-              `Querying for chat sessions with flashcardSetId == ${selectedSet}`
-            );
+            // console.log(
+            //   `Querying for chat sessions with flashcardSetId == ${selectedSet}`
+            // );
 
             const q = query(
               chatSessionsRef,
@@ -186,7 +179,7 @@ export default function ChatAssistant({ userId }) {
             );
 
             const querySnapshot = await getDocs(q);
-            console.log(`Query returned ${querySnapshot.size} documents`);
+            // console.log(`Query returned ${querySnapshot.size} documents`);
 
             // If we have results, find the most recent one ourselves
             if (!querySnapshot.empty) {
@@ -211,16 +204,16 @@ export default function ChatAssistant({ userId }) {
                 const sessionId = mostRecentSession.id;
                 const sessionData = mostRecentSession.data;
 
-                console.log(`Found session document with ID: ${sessionId}`);
-                console.log(`Session data:`, {
-                  flashcardSetId: sessionData.flashcardSetId,
-                  messageCount:
-                    sessionData.messageCount ||
-                    sessionData.messages?.length ||
-                    0,
-                  createdAt: sessionData.createdAt,
-                  updatedAt: sessionData.updatedAt,
-                });
+                // console.log(`Found session document with ID: ${sessionId}`);
+                // console.log(`Session data:`, {
+                //   flashcardSetId: sessionData.flashcardSetId,
+                //   messageCount:
+                //     sessionData.messageCount ||
+                //     sessionData.messages?.length ||
+                //     0,
+                //   createdAt: sessionData.createdAt,
+                //   updatedAt: sessionData.updatedAt,
+                // });
 
                 // Found a matching session, load its messages
                 setChatSessionId(sessionId);
@@ -244,17 +237,17 @@ export default function ChatAssistant({ userId }) {
                   };
                 }
                 setMessages(existingMessages);
-                console.log(
-                  `Loaded existing chat session for set "${setData.name}" with ${existingMessages.length} messages`
-                );
+                // console.log(
+                //   `Loaded existing chat session for set "${setData.name}" with ${existingMessages.length} messages`
+                // );
               } else {
                 // Pass the current flashcard set data instead of just the name
                 createWelcomeMessage(setData);
               }
             } else {
-              console.log(
-                `No chat sessions found for flashcardSetId: ${selectedSet}`
-              );
+              // console.log(
+              //   `No chat sessions found for flashcardSetId: ${selectedSet}`
+              // );
               // Pass the current flashcard set data instead of just the name
               createWelcomeMessage(setData);
             }
@@ -303,11 +296,11 @@ export default function ChatAssistant({ userId }) {
       }
 
       // No matching session found for this set, start fresh with welcome message
-      console.log(
-        `No existing chat session found for set "${setName}". Creating new session in ${
-          language || "en"
-        } language.`
-      );
+      // console.log(
+      //   `No existing chat session found for set "${setName}". Creating new session in ${
+      //     language || "en"
+      //   } language.`
+      // );
 
       const welcomeMessage = {
         role: "model",
@@ -484,7 +477,7 @@ export default function ChatAssistant({ userId }) {
           "chatSessions",
           chatSessionId
         );
-        console.log(`Updating existing chat session: ${chatSessionId}`);
+        // console.log(`Updating existing chat session: ${chatSessionId}`);
         await updateDoc(sessionRef, {
           messages: finalMessages,
           updatedAt: serverTimestamp(),
@@ -492,9 +485,9 @@ export default function ChatAssistant({ userId }) {
         });
       } else {
         // Create new session
-        console.log(
-          `Creating new chat session for flashcard set: ${selectedSet}`
-        );
+        // console.log(
+        //   `Creating new chat session for flashcard set: ${selectedSet}`
+        // );
         const chatSessionsRef = collection(db, "users", userId, "chatSessions");
         const newSession = await addDoc(chatSessionsRef, {
           name: `Chat about ${selectedSetData?.name || "flashcards"}`,
@@ -646,7 +639,7 @@ export default function ChatAssistant({ userId }) {
           "chatSessions",
           chatSessionId
         );
-        console.log(`Clearing existing chat session: ${chatSessionId}`);
+        // console.log(`Clearing existing chat session: ${chatSessionId}`);
         await updateDoc(sessionRef, {
           messages: [welcomeMessage],
           updatedAt: serverTimestamp(),
@@ -654,9 +647,9 @@ export default function ChatAssistant({ userId }) {
         });
       } else {
         // If there's no existing session, create a new one
-        console.log(
-          `Creating new chat session for flashcard set: ${selectedSet}`
-        );
+        // console.log(
+        //   `Creating new chat session for flashcard set: ${selectedSet}`
+        // );
         const chatSessionsRef = collection(db, "users", userId, "chatSessions");
         const newSession = await addDoc(chatSessionsRef, {
           name: `Chat about ${setName}`,
@@ -775,7 +768,7 @@ export default function ChatAssistant({ userId }) {
               labelId="flashcard-set-label"
               value={selectedSet}
               onChange={(e) => {
-                console.log(`Flashcard set changed to: ${e.target.value}`);
+                // console.log(`Flashcard set changed to: ${e.target.value}`);
                 setSelectedSet(e.target.value);
               }}
               label={t("flashcardSet")}
