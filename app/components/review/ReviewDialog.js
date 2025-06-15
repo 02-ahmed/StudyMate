@@ -27,6 +27,8 @@ import OpenInFullIcon from "@mui/icons-material/OpenInFull";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../../contexts/LanguageContext";
 import useTranslation from "../../hooks/useTranslation";
+import ArticleIcon from "@mui/icons-material/Article";
+import YouTubeIcon from "@mui/icons-material/YouTube";
 
 export default function ReviewDialog({
   open,
@@ -101,7 +103,7 @@ export default function ReviewDialog({
   }, [loading]); // Remove loadingMessages dependency to avoid rerenders
 
   const handleSaveReview = async () => {
-    if (!user || !content?.sections) return;
+    if (!user || !content) return;
 
     try {
       setSaving(true);
@@ -109,7 +111,7 @@ export default function ReviewDialog({
       const reviewDoc = doc(reviewsRef);
 
       await setDoc(reviewDoc, {
-        content: content.sections,
+        content: content,
         topics: [topic],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -248,9 +250,8 @@ export default function ReviewDialog({
               }}
               aria-label={t("buttons.viewFullPage", "View Full Page")}
             >
-              <OpenInFullIcon sx={{ fontSize: "1.2rem" }} />
+              <OpenInFullIcon sx={{ fontSize: "1rem" }} />
             </IconButton>
-
             <IconButton
               onClick={handleSaveReview}
               disabled={saving}
@@ -275,24 +276,14 @@ export default function ReviewDialog({
               {saving ? (
                 <CircularProgress size={16} color="inherit" />
               ) : (
-                <SaveIcon sx={{ fontSize: "1.2rem" }} />
+                <SaveIcon sx={{ fontSize: "1rem" }} />
               )}
             </IconButton>
           </Box>
         )}
       </DialogTitle>
 
-      <DialogContent sx={{ mt: 2 }}>
-        <Alert severity="info" sx={{ mb: 2 }}>
-          <Typography variant="body2">
-            🧪{" "}
-            {t(
-              "messages.betaFeature",
-              "This feature is in beta. The content generation is experimental and may not always produce perfect results."
-            )}
-          </Typography>
-        </Alert>
-
+      <DialogContent dividers>
         {loading ? (
           <Box
             sx={{
@@ -300,41 +291,57 @@ export default function ReviewDialog({
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              my: 4,
-              gap: 2,
+              minHeight: "400px",
+              textAlign: "center",
             }}
           >
-            <CircularProgress />
-            <Typography variant="body1" color="text.secondary" align="center">
+            <CircularProgress sx={{ mb: 3 }} />
+
+            <Typography variant="body1" color="textSecondary">
               {loadingMessage}
             </Typography>
           </Box>
+        ) : content?.error ? (
+          <Alert severity="error">
+            {t(
+              "studyGuide.errors.generationFailed",
+              "Failed to generate study guide."
+            )}{" "}
+            {content.details}
+          </Alert>
         ) : (
           <Stack spacing={3}>
-            <NotesSection content={content?.sections?.detailedNotes} />
-            <ExplanationsSection content={content?.sections?.explanations} />
+            <Alert severity="info" icon={<span className="wave">🧪</span>}>
+              {t(
+                "messages.betaFeature",
+                "This feature is in beta. The content generation is experimental and may not always produce perfect results."
+              )}
+            </Alert>
+            <NotesSection content={content?.detailedNotes} />
+            <ExplanationsSection content={content?.explanations} />
             <ResourcesSection
-              resources={content?.sections?.studyResources}
+              resources={content?.studyResources}
               type="academic"
             />
-            <ResourcesSection
-              resources={content?.sections?.videoContent}
-              type="video"
-            />
-            <PracticeSection content={content?.sections?.practiceContent} />
+            <ResourcesSection resources={content?.videoContent} type="video" />
+            <PracticeSection content={content?.practiceContent} />
           </Stack>
         )}
-
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={handleCloseSnackbar}
-        >
-          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
       </DialogContent>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Dialog>
   );
 }

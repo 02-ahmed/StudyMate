@@ -90,7 +90,7 @@ export default function PerformanceAnalytics() {
     averageScore: 0,
   });
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-  const [topicForReview, setTopicForReview] = useState("");
+  const [topicForReview, setTopicForReview] = useState(null);
   const { language } = useLanguage();
 
   // Memoize the current UI language to prevent unnecessary re-renders
@@ -132,47 +132,13 @@ export default function PerformanceAnalytics() {
     [t]
   );
 
-  // Memoize the topic data separately from the render function
-  const processedTopicData = useMemo(() => {
-    // Extract topic name, language, and setId
-    let topicName = topicForReview;
-    let extractedLanguage = undefined;
-    let setId = null;
-
-    if (typeof topicForReview === "object") {
-      // If topic is an object, extract the topic name, language, and setId
-      if (topicForReview.topic) {
-        topicName = topicForReview.topic;
-      }
-
-      if (topicForReview.language) {
-        extractedLanguage = topicForReview.language;
-      }
-
-      if (topicForReview.setId) {
-        setId = topicForReview.setId;
-      }
-    }
-
-    return {
-      topicName,
-      extractedLanguage,
-      setId,
-      topicObj: {
-        topic: topicName,
-        language: extractedLanguage || currentLanguage,
-        setId: setId,
-      },
-    };
-  }, [topicForReview, currentLanguage]);
-
   const loadAnalytics = useCallback(async () => {
     // Extra protection against multiple loads
     if (!user || analyticsLoaded || analyticsLoadingRef.current) return;
 
     // Set loading ref to true to prevent concurrent loads
     analyticsLoadingRef.current = true;
-
+    setLoading(true);
     try {
       const testResultsRef = collection(db, "users", user.id, "testResults");
       const querySnapshot = await getDocs(testResultsRef);
@@ -241,7 +207,10 @@ export default function PerformanceAnalytics() {
       const weakTopics = Array.from(topicStats.values())
         .map((stats) => ({
           ...stats,
-          accuracy: (stats.correctAnswers / stats.totalQuestions) * 100,
+          accuracy:
+            stats.totalQuestions > 0
+              ? (stats.correctAnswers / stats.totalQuestions) * 100
+              : 0,
         }))
         .sort((a, b) => a.accuracy - b.accuracy)
         .slice(0, 5); // Keep only the 5 weakest topics
@@ -271,7 +240,6 @@ export default function PerformanceAnalytics() {
 
       // Topic-based recommendations
       if (weakTopics.length > 0) {
-        // Make sure we have a topic object with language - only log once
         const topicWithLanguage = {
           topic: weakTopics[0].name,
           language: weakTopics[0].language,
@@ -337,94 +305,93 @@ export default function PerformanceAnalytics() {
   };
 
   const generateReviewContent = async (topicObj) => {
-    setReviewLoading(true);
-    setReviewDialogOpen(true);
-    setTopicForReview(topicObj);
-
-    // Remove debug logs to prevent re-render triggers
-    // Extract topic name, setId and language
-    let topicName = topicObj;
-    let extractedLanguage = undefined;
-    let setId = null;
-
-    if (typeof topicObj === "object") {
-      // If topic is an object, extract the topic name, setId and language
-      if (topicObj.topic) {
-        topicName = topicObj.topic;
-      }
-
-      if (topicObj.setId) {
-        setId = topicObj.setId;
-      }
-
-      if (topicObj.language) {
-        extractedLanguage = topicObj.language;
-      }
-    }
-
-    // Use the language from the topic object or parameter if available, otherwise fall back to UI language
-    const contentLanguage = extractedLanguage || currentLanguage;
-
     try {
       const response = await fetch("/api/generate-review-content", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": user.id, // Include user ID for server-side lookup
+          "x-user-id": user?.id || "",
         },
-        body: JSON.stringify({
-          topic: topicName,
-          setId: setId, // Pass the setId to allow direct lookup
-          language: contentLanguage,
-        }),
+        body: JSON.stringify(topicObj),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error("API error response:", errorText);
+        throw new Error(`Server error: ${errorText}`);
       }
 
-      const data = await response.json();
-      setReviewContent(data);
+      // Handle streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedData = "";
+
+      // Read the entire stream
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulatedData += decoder.decode(value, { stream: true });
+      }
+
+      // Now that we have the full string, clean and parse it once.
+      const cleanedData = accumulatedData
+        .replace(/```json\n?|\n?```/g, "")
+        .trim();
+
+      try {
+        const finalContent = JSON.parse(cleanedData);
+        setReviewContent(finalContent);
+      } catch (error) {
+        console.error("Failed to parse final JSON:", error);
+        console.error("Raw data received:", cleanedData);
+        throw new Error("Invalid JSON response from server");
+      }
     } catch (error) {
       console.error("Error generating review content:", error);
-      setReviewContent(null);
+      setReviewContent({
+        error: "Failed to generate review content.",
+        details: error.message,
+      });
     } finally {
       setReviewLoading(false);
     }
   };
 
-  // Memoize any click handlers that are passed to the memoized dialog
-  const handleDialogClose = useCallback(() => {
+  const handleOpenReview = (topic) => {
+    debugLog("handleOpenReview triggered for topic:", topic);
+    setTopicForReview(topic);
+    setReviewDialogOpen(true);
+    setReviewContent(null);
+    setReviewLoading(true);
+  };
+
+  useEffect(() => {
+    if (reviewDialogOpen && topicForReview) {
+      const topicName = topicForReview.name || topicForReview.topic;
+      const topicLanguage = topicForReview.language;
+      const topicSetId = topicForReview.setId;
+
+      const topicObj = {
+        topic: topicName,
+        language: topicLanguage,
+        setId: topicSetId,
+      };
+
+      debugLog(
+        "useEffect triggering generateReviewContent for topic:",
+        topicObj
+      );
+      generateReviewContent(topicObj);
+    }
+  }, [reviewDialogOpen, topicForReview]);
+
+  const handleCloseReview = useCallback(() => {
     setReviewDialogOpen(false);
+    setTopicForReview(null);
     setReviewContent(null);
     setReviewLoading(false);
   }, []);
-
-  // Instead of using useCallback for renderReviewDialog, memoize the Dialog component directly
-  const memoizedReviewDialog = useMemo(() => {
-    // If the dialog is not open, return null or empty fragment to prevent any unnecessary rendering
-    if (!reviewDialogOpen) {
-      return null;
-    }
-
-    const { topicObj } = processedTopicData;
-
-    return (
-      <ReviewDialog
-        open={reviewDialogOpen}
-        onClose={handleDialogClose}
-        content={reviewContent}
-        loading={reviewLoading}
-        topic={topicObj}
-      />
-    );
-  }, [
-    processedTopicData,
-    reviewDialogOpen, // This dependency ensures we only render when the dialog actually opens/closes
-    reviewContent,
-    reviewLoading,
-    handleDialogClose,
-  ]);
 
   if (loading) {
     return (
@@ -704,36 +671,7 @@ export default function PerformanceAnalytics() {
                                       }}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        console.log(
-                                          "PerformanceAnalytics.js - Study Now button clicked for topic:",
-                                          topic
-                                        );
-                                        console.log(
-                                          "PerformanceAnalytics.js - Topic name:",
-                                          topic.name
-                                        );
-                                        console.log(
-                                          "PerformanceAnalytics.js - Topic language:",
-                                          topic.language
-                                        );
-
-                                        // Create a topic object with name and language
-                                        const topicObj = {
-                                          topic: topic.name,
-                                          language: topic.language,
-                                          setId: topic.setId,
-                                        };
-
-                                        console.log(
-                                          "PerformanceAnalytics.js - Created topic object:",
-                                          topicObj
-                                        );
-                                        console.log(
-                                          "PerformanceAnalytics.js - Topic setId:",
-                                          topic.setId
-                                        );
-
-                                        generateReviewContent(topicObj);
+                                        handleOpenReview(topic);
                                       }}
                                     />
                                     <Chip
@@ -868,26 +806,7 @@ export default function PerformanceAnalytics() {
                               }}
                               onClick={() => {
                                 if (rec.type === "topic") {
-                                  console.log(
-                                    "PerformanceAnalytics.js - Recommendation clicked:",
-                                    rec
-                                  );
-                                  console.log(
-                                    "PerformanceAnalytics.js - Recommendation topic:",
-                                    rec.topic
-                                  );
-                                  console.log(
-                                    "PerformanceAnalytics.js - Recommendation config:",
-                                    rec.config
-                                  );
-                                  console.log(
-                                    "PerformanceAnalytics.js - Recommendation language:",
-                                    rec.config?.language
-                                  );
-                                  generateReviewContent(
-                                    rec.topic,
-                                    rec.config?.language
-                                  );
+                                  handleOpenReview(rec.topic);
                                 }
                               }}
                             >
@@ -973,7 +892,7 @@ export default function PerformanceAnalytics() {
                                           e.stopPropagation();
                                           router.push(
                                             `/practice?topic=${encodeURIComponent(
-                                              rec.topic
+                                              rec.topic.topic
                                             )}`
                                           );
                                         }}
@@ -1033,8 +952,17 @@ export default function PerformanceAnalytics() {
                 )}
               </Grid>
 
-              {/* Only render dialog when open to avoid unnecessary renders */}
-              {reviewDialogOpen ? memoizedReviewDialog : null}
+              <AnimatePresence>
+                {reviewDialogOpen && (
+                  <ReviewDialog
+                    open={reviewDialogOpen}
+                    onClose={handleCloseReview}
+                    content={reviewContent}
+                    loading={reviewLoading}
+                    topic={topicForReview}
+                  />
+                )}
+              </AnimatePresence>
             </Box>
           </CardContent>
         </Card>
