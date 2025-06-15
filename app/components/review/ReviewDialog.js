@@ -250,9 +250,8 @@ export default function ReviewDialog({
               }}
               aria-label={t("buttons.viewFullPage", "View Full Page")}
             >
-              <OpenInFullIcon sx={{ fontSize: "1.2rem" }} />
+              <OpenInFullIcon sx={{ fontSize: "1rem" }} />
             </IconButton>
-
             <IconButton
               onClick={handleSaveReview}
               disabled={saving}
@@ -277,7 +276,7 @@ export default function ReviewDialog({
               {saving ? (
                 <CircularProgress size={16} color="inherit" />
               ) : (
-                <SaveIcon sx={{ fontSize: "1.2rem" }} />
+                <SaveIcon sx={{ fontSize: "1rem" }} />
               )}
             </IconButton>
           </Box>
@@ -297,9 +296,7 @@ export default function ReviewDialog({
             }}
           >
             <CircularProgress sx={{ mb: 3 }} />
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              {t("studyGuide.loading.title", "Generating Your Study Guide...")}
-            </Typography>
+
             <Typography variant="body1" color="textSecondary">
               {loadingMessage}
             </Typography>
@@ -314,9 +311,9 @@ export default function ReviewDialog({
           </Alert>
         ) : (
           <Stack spacing={3}>
-            <Alert severity="info" icon={<span className="wave">👋</span>}>
+            <Alert severity="info" icon={<span className="wave">🧪</span>}>
               {t(
-                "studyGuide.betaMessage",
+                "messages.betaFeature",
                 "This feature is in beta. The content generation is experimental and may not always produce perfect results."
               )}
             </Alert>
@@ -327,23 +324,24 @@ export default function ReviewDialog({
               type="academic"
             />
             <ResourcesSection resources={content?.videoContent} type="video" />
-            <PracticeSection
-              practiceContent={content?.practiceContent}
-              practiceQuestions={content?.practiceQuestions}
-            />
+            <PracticeSection content={content?.practiceContent} />
           </Stack>
         )}
-
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={handleCloseSnackbar}
-        >
-          <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
       </DialogContent>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Dialog>
   );
 }
