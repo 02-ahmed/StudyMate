@@ -27,6 +27,8 @@ import OpenInFullIcon from "@mui/icons-material/OpenInFull";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "../../contexts/LanguageContext";
 import useTranslation from "../../hooks/useTranslation";
+import ArticleIcon from "@mui/icons-material/Article";
+import YouTubeIcon from "@mui/icons-material/YouTube";
 
 export default function ReviewDialog({
   open,
@@ -101,7 +103,7 @@ export default function ReviewDialog({
   }, [loading]); // Remove loadingMessages dependency to avoid rerenders
 
   const handleSaveReview = async () => {
-    if (!user || !content?.sections) return;
+    if (!user || !content) return;
 
     try {
       setSaving(true);
@@ -109,7 +111,7 @@ export default function ReviewDialog({
       const reviewDoc = doc(reviewsRef);
 
       await setDoc(reviewDoc, {
-        content: content.sections,
+        content: content,
         topics: [topic],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -282,17 +284,7 @@ export default function ReviewDialog({
         )}
       </DialogTitle>
 
-      <DialogContent sx={{ mt: 2 }}>
-        <Alert severity="info" sx={{ mb: 2 }}>
-          <Typography variant="body2">
-            🧪{" "}
-            {t(
-              "messages.betaFeature",
-              "This feature is in beta. The content generation is experimental and may not always produce perfect results."
-            )}
-          </Typography>
-        </Alert>
-
+      <DialogContent dividers>
         {loading ? (
           <Box
             sx={{
@@ -300,28 +292,45 @@ export default function ReviewDialog({
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              my: 4,
-              gap: 2,
+              minHeight: "400px",
+              textAlign: "center",
             }}
           >
-            <CircularProgress />
-            <Typography variant="body1" color="text.secondary" align="center">
+            <CircularProgress sx={{ mb: 3 }} />
+            <Typography variant="h6" sx={{ mb: 1 }}>
+              {t("studyGuide.loading.title", "Generating Your Study Guide...")}
+            </Typography>
+            <Typography variant="body1" color="textSecondary">
               {loadingMessage}
             </Typography>
           </Box>
+        ) : content?.error ? (
+          <Alert severity="error">
+            {t(
+              "studyGuide.errors.generationFailed",
+              "Failed to generate study guide."
+            )}{" "}
+            {content.details}
+          </Alert>
         ) : (
           <Stack spacing={3}>
-            <NotesSection content={content?.sections?.detailedNotes} />
-            <ExplanationsSection content={content?.sections?.explanations} />
+            <Alert severity="info" icon={<span className="wave">👋</span>}>
+              {t(
+                "studyGuide.betaMessage",
+                "This feature is in beta. The content generation is experimental and may not always produce perfect results."
+              )}
+            </Alert>
+            <NotesSection content={content?.detailedNotes} />
+            <ExplanationsSection content={content?.explanations} />
             <ResourcesSection
-              resources={content?.sections?.studyResources}
+              resources={content?.studyResources}
               type="academic"
             />
-            <ResourcesSection
-              resources={content?.sections?.videoContent}
-              type="video"
+            <ResourcesSection resources={content?.videoContent} type="video" />
+            <PracticeSection
+              practiceContent={content?.practiceContent}
+              practiceQuestions={content?.practiceQuestions}
             />
-            <PracticeSection content={content?.sections?.practiceContent} />
           </Stack>
         )}
 

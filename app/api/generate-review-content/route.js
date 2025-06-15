@@ -258,183 +258,66 @@ export async function POST(request) {
           },
           // 5-7 practice questions
         ]
-      }
+      },
+      "practiceQuestions": [
+        {
+          "question": "Question text IN ${languageName.toUpperCase()}",
+          "options": [
+            "Option 1 IN ${languageName.toUpperCase()}",
+            "Option 2 IN ${languageName.toUpperCase()}",
+            "Option 3 IN ${languageName.toUpperCase()}",
+            "Option 4 IN ${languageName.toUpperCase()}"
+          ],
+          "correctAnswer": "Correct answer IN ${languageName.toUpperCase()}"
+        }
+        // 5-10 practice questions
+      ]
     }
     
-    DO NOT include headers, bullet points, or section markers.
-    DO NOT include any text outside of the JSON structure.
-    ENSURE all URLs in studyResources and videoContent are real, working URLs.
-    ENSURE you include 3-5 relevant resources in both studyResources and videoContent.
-    REMEMBER: ALL TEXT MUST BE IN ${languageName.toUpperCase()} - THIS IS THE MOST IMPORTANT REQUIREMENT.
+    IMPORTANT: 
+    - Ensure the JSON is well-formed and can be parsed directly.
+    - Do not include any text or formatting outside of the main JSON object.
+    - Validate the JSON structure before outputting.
     `;
 
-    console.log("Prompt length:", prompt.length);
-    console.log("First 100 chars of prompt:", prompt.substring(0, 100));
-    console.log(`Language emphasis: ${languageName.toUpperCase()}`);
-
-    // Call the Gemini API to generate content based on the prompt
-    console.log("Calling Gemini API...");
-    let response;
-    try {
-      response = await model.generateContent(prompt);
-      console.log("Received response from Gemini API");
-      const responseText = response.response.text();
-      console.log("Response text length:", responseText.length);
-      console.log("First 100 chars:", responseText.substring(0, 100));
-
-      // Clean the response text of any markdown code blocks
-      const cleanedText = responseText.replace(/```json\n?|\n?```/g, "").trim();
-      console.log("Cleaned text length:", cleanedText.length);
-
-      // Parse the JSON response
-      let content;
-      try {
-        console.log("Attempting to parse JSON response");
-        content = JSON.parse(cleanedText);
-        console.log("Successfully parsed JSON");
-        console.log("Content keys:", Object.keys(content));
-      } catch (error) {
-        console.error("Failed to parse AI response as JSON:", error);
-        console.error("Error message:", error.message);
-        console.log("Raw response:", responseText);
-        console.log("Cleaned response:", cleanedText);
-
-        // Attempt to fix common JSON issues
+    // Use streaming for the response
+    const stream = new ReadableStream({
+      async start(controller) {
         try {
-          console.log("Attempting secondary JSON parsing with fixes");
-          // Try to fix any remaining formatting issues
-          const furtherCleanedText = cleanedText
-            .replace(/[\u201C\u201D]/g, '"') // Replace smart quotes
-            .replace(/[\u2018\u2019]/g, "'") // Replace smart single quotes
-            .replace(/\n/g, " ") // Remove newlines
-            .trim();
-          content = JSON.parse(furtherCleanedText);
-          console.log("Secondary parsing successful");
-        } catch (secondError) {
-          console.error("Failed second attempt to parse JSON:", secondError);
-          console.error("Second error message:", secondError.message);
-          return NextResponse.json(
-            { error: "Invalid response format from AI" },
-            { status: 500 }
-          );
+          const result = await model.generateContentStream({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+          });
+
+          // Stream the response from the AI
+          for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+            controller.enqueue(new TextEncoder().encode(chunkText));
+          }
+
+          controller.close();
+        } catch (error) {
+          console.error("Error generating review content:", error);
+          const errorJson = JSON.stringify({
+            error: "Error generating review content",
+            details: error.message,
+          });
+          controller.enqueue(new TextEncoder().encode(errorJson));
+          controller.close();
         }
-      }
+      },
+    });
 
-      console.log("Checking for missing resources");
-      // Add default resources if none were generated
-      if (!content.studyResources || content.studyResources.length === 0) {
-        console.log("No study resources found, adding defaults");
-        content.studyResources = [
-          {
-            title:
-              languageName === "English"
-                ? "Google Scholar Research"
-                : languageName === "Spanish"
-                ? "Investigación en Google Scholar"
-                : "Recherche Google Scholar",
-            url: `https://scholar.google.com/scholar?q=${encodeURIComponent(
-              topic
-            )}&hl=${validLanguage}`,
-            description:
-              languageName === "English"
-                ? `Latest academic research on ${topic}`
-                : languageName === "Spanish"
-                ? `Investigación académica reciente sobre ${topic}`
-                : `Dernières recherches académiques sur ${topic}`,
-          },
-          {
-            title:
-              languageName === "English"
-                ? "Coursera Courses"
-                : languageName === "Spanish"
-                ? "Cursos de Coursera"
-                : "Cours Coursera",
-            url: `https://www.coursera.org/search?query=${encodeURIComponent(
-              topic
-            )}&language=${validLanguage}`,
-            description:
-              languageName === "English"
-                ? `Online courses related to ${topic}`
-                : languageName === "Spanish"
-                ? `Cursos en línea relacionados con ${topic}`
-                : `Cours en ligne liés à ${topic}`,
-          },
-        ];
-      } else {
-        console.log("Study resources count:", content.studyResources.length);
-      }
-
-      if (!content.videoContent || content.videoContent.length === 0) {
-        console.log("No video content found, adding defaults");
-        content.videoContent = [
-          {
-            title:
-              languageName === "English"
-                ? "Educational Lectures"
-                : languageName === "Spanish"
-                ? "Conferencias Educativas"
-                : "Conférences Éducatives",
-            url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
-              topic
-            )}+lecture&hl=${validLanguage}`,
-            description:
-              languageName === "English"
-                ? `University-level lectures on ${topic}`
-                : languageName === "Spanish"
-                ? `Conferencias de nivel universitario sobre ${topic}`
-                : `Conférences de niveau universitaire sur ${topic}`,
-          },
-          {
-            title:
-              languageName === "English"
-                ? "Tutorial Videos"
-                : languageName === "Spanish"
-                ? "Videos de Tutoriales"
-                : "Vidéos Tutoriels",
-            url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
-              topic
-            )}+tutorial&hl=${validLanguage}`,
-            description:
-              languageName === "English"
-                ? `Step-by-step tutorials on ${topic}`
-                : languageName === "Spanish"
-                ? `Tutoriales paso a paso sobre ${topic}`
-                : `Tutoriels étape par étape sur ${topic}`,
-          },
-        ];
-      } else {
-        console.log("Video content count:", content.videoContent.length);
-      }
-
-      // Before returning the response
-      console.log(
-        `Generated content in ${languageName}. Content length: ${
-          JSON.stringify(content).length
-        } characters`
-      );
-      console.log("Content keys:", Object.keys(content));
-      console.log(
-        "Detailed notes first 50 chars:",
-        content.detailedNotes?.substring(0, 50)
-      );
-
-      console.log("Returning response with content");
-      return NextResponse.json({ sections: content });
-    } catch (error) {
-      console.error("Error generating review content:", error);
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-      return NextResponse.json(
-        { error: "Failed to generate review content" },
-        { status: 500 }
-      );
-    }
+    // Return a streaming response
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "application/json",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
   } catch (error) {
-    console.error("Error generating review content:", error);
-    console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
+    console.error("Error in generate-review-content:", error);
     return NextResponse.json(
-      { error: "Failed to generate review content" },
+      { error: "Failed to generate review content", details: error.message },
       { status: 500 }
     );
   }

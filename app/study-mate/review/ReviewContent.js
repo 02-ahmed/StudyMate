@@ -258,6 +258,11 @@ export default function ReviewContent() {
         // console.log("Language type:", typeof contentLanguage);
       }
 
+      // Add the setId if available, to find the flashcard set more reliably
+      if (topicObj.setId) {
+        requestBody.setId = topicObj.setId;
+      }
+
       // console.log("========== API REQUEST BODY ==========");
       // console.log("API request body:", JSON.stringify(requestBody));
       // console.log("API request body keys:", Object.keys(requestBody));
@@ -333,55 +338,55 @@ export default function ReviewContent() {
       // console.log("API response OK:", response.ok);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("API error response:", errorText);
-        throw new Error(`Server error: ${errorText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      // console.log("API response data keys:", Object.keys(data));
+      // Handle streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedJson = "";
 
-      if (data.error) {
-        console.error("API returned error:", data.error);
-        throw new Error(data.error);
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        accumulatedJson += decoder.decode(value, { stream: true });
+
+        // Try to parse the accumulated JSON
+        try {
+          // Find the last complete JSON object
+          const lastValidJsonEnd = accumulatedJson.lastIndexOf("}");
+          if (lastValidJsonEnd !== -1) {
+            const jsonString = accumulatedJson.substring(
+              0,
+              lastValidJsonEnd + 1
+            );
+
+            // Attempt to parse only the complete part of the JSON
+            const parsedContent = JSON.parse(jsonString);
+
+            // Update the state with the streamed content
+            setContent((prevContent) => ({
+              ...prevContent,
+              ...parsedContent,
+              detailedNotes:
+                (prevContent.detailedNotes || "") +
+                (parsedContent.detailedNotes || ""),
+              explanations:
+                (prevContent.explanations || "") +
+                (parsedContent.explanations || ""),
+            }));
+          }
+        } catch (error) {
+          // Incomplete JSON, wait for more chunks
+          console.log("Incomplete JSON, waiting for more chunks...");
+        }
       }
 
-      // Map the API response to the content structure
-      // The API returns data.sections which contains the content fields
-      const sections = data.sections || {};
-      // console.log("API sections keys:", Object.keys(sections));
-
-      // console.log(
-      //   "Received API response. Content language should be:",
-      //   contentLanguage
-      // );
-      // console.log(
-      //   "First 50 chars of content:",
-      //   sections.detailedNotes?.substring(0, 50) || "No content"
-      // );
-
-      setContent({
-        introduction: sections.detailedNotes || "",
-        conceptExplanation: sections.explanations || "",
-        relatedConcepts: sections.practiceContent || "",
-        resources: {
-          articles: sections.studyResources || [],
-          videos: sections.videoContent || [],
-        },
-      });
-
-      // console.log("Content set successfully in language:", contentLanguage);
+      setLoading(false);
     } catch (error) {
-      console.error("Error in generateContent:", error);
-      console.error("Error details:", error.message);
-      console.error("Error stack:", error.stack);
-      setContent({
-        introduction: "Error generating content. Please try again later.",
-        conceptExplanation: error.message,
-        relatedConcepts: "",
-        resources: { articles: [], videos: [] },
-      });
-    } finally {
+      console.error("Error generating review content:", error);
       setLoading(false);
     }
   };
