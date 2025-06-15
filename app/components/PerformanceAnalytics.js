@@ -321,31 +321,43 @@ export default function PerformanceAnalytics() {
         throw new Error(`Server error: ${errorText}`);
       }
 
-      // Handle streaming response
+      // Handle streaming response with a more robust method
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let accumulatedData = "";
+      let accumulatedJson = "";
+      let lastGoodContent = null;
 
-      // Read the entire stream
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-        accumulatedData += decoder.decode(value, { stream: true });
+        if (done) {
+          break; // Exit loop when stream is finished
+        }
+
+        accumulatedJson += decoder.decode(value, { stream: true });
+
+        // Try to parse the accumulated data. This is expected to fail until the JSON is complete.
+        try {
+          const cleanedData = accumulatedJson
+            .replace(/```json\n?|\n?```/g, "")
+            .trim();
+
+          if (cleanedData) {
+            lastGoodContent = JSON.parse(cleanedData);
+          }
+        } catch (error) {
+          // This is expected, it means we have incomplete JSON.
+          // We'll just wait for more chunks.
+          debugLog("Incomplete JSON chunk, waiting for more data...");
+        }
       }
 
-      // Now that we have the full string, clean and parse it once.
-      const cleanedData = accumulatedData
-        .replace(/```json\n?|\n?```/g, "")
-        .trim();
-
-      try {
-        const finalContent = JSON.parse(cleanedData);
-        setReviewContent(finalContent);
-      } catch (error) {
-        console.error("Failed to parse final JSON:", error);
-        console.error("Raw data received:", cleanedData);
-        throw new Error("Invalid JSON response from server");
+      if (lastGoodContent) {
+        setReviewContent(lastGoodContent);
+      } else {
+        console.error("Failed to parse any valid JSON from the stream.");
+        console.error("Final raw data received:", accumulatedJson);
+        throw new Error("Invalid or empty JSON response from server");
       }
     } catch (error) {
       console.error("Error generating review content:", error);
