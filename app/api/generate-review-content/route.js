@@ -72,8 +72,9 @@ export async function POST(request) {
 
           if (docSnap.exists()) {
             flashcardSet = docSnap.data();
-
+            // Store additional metadata about the set
             flashcardSet.setId = setId;
+            flashcardSet.id = setId;
           } else {
             console.log(`⚠️ No flashcard set found with ID: "${setId}"`);
           }
@@ -91,16 +92,19 @@ export async function POST(request) {
           }
         }
 
-        // If we found a flashcard set, extract its language
+        // If we found a flashcard set, extract its language and tags
         if (flashcardSet) {
           if (flashcardSet.language) {
             language = flashcardSet.language;
-
-            // Add a debug checkpoint to ensure language is preserved
           } else {
             console.log(
               `⚠️ Flashcard set doesn't have a language set, using request language: "${language}"`
             );
+          }
+
+          // Extract the tags if available
+          if (flashcardSet.tags && Array.isArray(flashcardSet.tags)) {
+            flashcardSet.hasTags = true;
           }
         } else {
           console.log(

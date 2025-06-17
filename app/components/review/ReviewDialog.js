@@ -110,11 +110,56 @@ export default function ReviewDialog({
       const reviewsRef = collection(db, "users", user.id, "savedReviews");
       const reviewDoc = doc(reviewsRef);
 
+      // Properly format the topic to ensure it's not nested
+      let topicToSave;
+
+      if (typeof topic === "string") {
+        // If topic is just a string, use it directly
+        topicToSave = { topic };
+      } else if (typeof topic === "object") {
+        // If topic is an object, extract relevant properties
+        if (topic.topic && typeof topic.topic === "object") {
+          // Handle nested topic objects (from performance analytics)
+          topicToSave = {
+            topic: topic.topic.name || "Unknown Topic",
+            setId: topic.setId || topic.topic.setId,
+            language: topic.language || topic.topic.language,
+            // Include accuracy metrics if available
+            ...(topic.topic.accuracy !== undefined && {
+              accuracy: topic.topic.accuracy,
+            }),
+            ...(topic.topic.correctAnswers !== undefined && {
+              correctAnswers: topic.topic.correctAnswers,
+            }),
+            ...(topic.topic.totalQuestions !== undefined && {
+              totalQuestions: topic.topic.totalQuestions,
+            }),
+          };
+        } else {
+          // Normal topic object
+          topicToSave = {
+            topic: topic.name || topic.topic || "Unknown Topic",
+            ...(topic.setId && { setId: topic.setId }),
+            ...(topic.language && { language: topic.language }),
+            ...(topic.accuracy !== undefined && { accuracy: topic.accuracy }),
+            ...(topic.correctAnswers !== undefined && {
+              correctAnswers: topic.correctAnswers,
+            }),
+            ...(topic.totalQuestions !== undefined && {
+              totalQuestions: topic.totalQuestions,
+            }),
+          };
+        }
+      } else {
+        // Fallback for unexpected types
+        topicToSave = { topic: "Unknown Topic" };
+      }
+
       // Properly format the content for storage
       // The ReviewContent component expects content to be in a 'sections' property
       await setDoc(reviewDoc, {
         content: { sections: content }, // Wrap content in a sections object
-        topics: [topic],
+        topics: [topicToSave],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -154,17 +199,53 @@ export default function ReviewDialog({
       JSON.stringify(formattedContent)
     );
 
-    // Add a flag to the topic parameter
-    // Make sure we preserve the language property if it exists in the topic object
-    const topicData = {
-      topic: typeof topic === "string" ? topic : topic.topic || topic,
-      language:
-        typeof topic === "object" && topic.language
-          ? topic.language
-          : undefined,
-      setId: typeof topic === "object" && topic.setId ? topic.setId : undefined,
-      useStoredContent: true,
-    };
+    // Properly format the topic to ensure it's not nested, using same logic as handleSaveReview
+    let topicData;
+
+    if (typeof topic === "string") {
+      // If topic is just a string, use it directly
+      topicData = { topic, useStoredContent: true };
+    } else if (typeof topic === "object") {
+      // If topic is an object, extract relevant properties
+      if (topic.topic && typeof topic.topic === "object") {
+        // Handle nested topic objects (from performance analytics)
+        topicData = {
+          topic: topic.topic.name || "Unknown Topic",
+          setId: topic.setId || topic.topic.setId,
+          language: topic.language || topic.topic.language,
+          // Include accuracy metrics if available
+          ...(topic.topic.accuracy !== undefined && {
+            accuracy: topic.topic.accuracy,
+          }),
+          ...(topic.topic.correctAnswers !== undefined && {
+            correctAnswers: topic.topic.correctAnswers,
+          }),
+          ...(topic.topic.totalQuestions !== undefined && {
+            totalQuestions: topic.topic.totalQuestions,
+          }),
+          useStoredContent: true,
+        };
+      } else {
+        // Normal topic object
+        topicData = {
+          topic: topic.name || topic.topic || "Unknown Topic",
+          ...(topic.setId && { setId: topic.setId }),
+          ...(topic.language && { language: topic.language }),
+          ...(topic.accuracy !== undefined && { accuracy: topic.accuracy }),
+          ...(topic.correctAnswers !== undefined && {
+            correctAnswers: topic.correctAnswers,
+          }),
+          ...(topic.totalQuestions !== undefined && {
+            totalQuestions: topic.totalQuestions,
+          }),
+          useStoredContent: true,
+        };
+      }
+    } else {
+      // Fallback for unexpected types
+      topicData = { topic: "Unknown Topic", useStoredContent: true };
+    }
+
     const topicParam = encodeURIComponent(JSON.stringify([topicData]));
 
     // Navigate to full page

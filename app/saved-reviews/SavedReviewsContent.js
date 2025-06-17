@@ -18,7 +18,14 @@ import {
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { db } from "../../utils/firebase";
-import { collection, query, getDocs, deleteDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  getDocs,
+  deleteDoc,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SchoolIcon from "@mui/icons-material/School";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -49,7 +56,63 @@ export default function SavedReviewsContent() {
         createdAt: doc.data().createdAt?.toDate(),
       }));
 
-      setReviews(reviewsData.sort((a, b) => b.createdAt - a.createdAt));
+      // First sort by date
+      const sortedReviews = reviewsData.sort(
+        (a, b) => b.createdAt - a.createdAt
+      );
+
+      // Then fetch tags for each review
+      const reviewsWithTags = [];
+      for (const review of sortedReviews) {
+        let setId = null;
+
+        // Try to extract setId from the review topics
+        if (review.topics && review.topics.length > 0) {
+          const topic = review.topics[0];
+          if (typeof topic === "object") {
+            if (topic.setId) {
+              setId = topic.setId;
+            } else if (
+              topic.topic &&
+              typeof topic.topic === "object" &&
+              topic.topic.setId
+            ) {
+              setId = topic.topic.setId;
+            }
+          }
+        }
+
+        // If we found a setId, try to fetch the flashcard set to get its tags
+        if (setId) {
+          try {
+            const flashcardSetRef = doc(
+              db,
+              "users",
+              user.id,
+              "flashcardSets",
+              setId
+            );
+            const flashcardSetSnap = await getDoc(flashcardSetRef);
+
+            if (flashcardSetSnap.exists()) {
+              const flashcardSetData = flashcardSetSnap.data();
+              if (
+                flashcardSetData.tags &&
+                Array.isArray(flashcardSetData.tags)
+              ) {
+                // Add tags to the review object
+                review.fetchedTags = flashcardSetData.tags;
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching tags for set ${setId}:`, error);
+          }
+        }
+
+        reviewsWithTags.push(review);
+      }
+
+      setReviews(reviewsWithTags);
     } catch (error) {
       console.error("Error loading saved reviews:", error);
       setError("Failed to load saved reviews");
@@ -81,10 +144,41 @@ export default function SavedReviewsContent() {
   };
 
   const handleViewReview = (review) => {
+    // Format topics properly for the URL
+    const formattedTopics = (review.topics || [review.topic] || []).map(
+      (topic) => {
+        if (typeof topic === "string") {
+          // If topic is a string, create a simple object with just the topic property
+          return { topic };
+        } else if (topic && typeof topic === "object") {
+          // Start with a clean object that has only the properties we need
+          const cleanTopic = {};
+
+          // Add topic name (required)
+          if (topic.topic) {
+            cleanTopic.topic = topic.topic;
+          } else if (topic.name) {
+            cleanTopic.topic = topic.name;
+          } else {
+            cleanTopic.topic = "Unknown Topic";
+          }
+
+          // Only add these specific properties if they exist
+          if (topic.language) cleanTopic.language = topic.language;
+          if (topic.setId) cleanTopic.setId = topic.setId;
+          if (topic.tags && Array.isArray(topic.tags))
+            cleanTopic.tags = topic.tags;
+
+          return cleanTopic;
+        }
+
+        // Fallback case for any other formats
+        return { topic: "Unknown Topic" };
+      }
+    );
+
     router.push(
-      `/review?topics=${encodeURIComponent(
-        JSON.stringify(review.topics.map((topic) => ({ topic })))
-      )}`
+      `/review?topics=${encodeURIComponent(JSON.stringify(formattedTopics))}`
     );
   };
 
@@ -180,21 +274,91 @@ export default function SavedReviewsContent() {
                               textOverflow: "ellipsis",
                             }}
                           >
-                            {t("reviewGuide")}
+                            {(() => {
+                              // Get the first topic to display as title
+                              const topics =
+                                review.topics || [review.topic] || [];
+                              if (topics.length === 0) return t("reviewGuide");
+
+                              const firstTopic = topics[0];
+
+                              // Handle string topics directly
+                              if (typeof firstTopic === "string")
+                                return firstTopic;
+
+                              // Handle object topics (regular case)
+                              if (
+                                firstTopic &&
+                                typeof firstTopic === "object"
+                              ) {
+                                // Check for nested topic object (from performance analytics)
+                                if (
+                                  firstTopic.topic &&
+                                  typeof firstTopic.topic === "object"
+                                ) {
+                                  return (
+                                    firstTopic.topic.name ||
+                                    firstTopic.name ||
+                                    t("reviewGuide")
+                                  );
+                                } else {
+                                  return (
+                                    firstTopic.topic ||
+                                    firstTopic.name ||
+                                    t("reviewGuide")
+                                  );
+                                }
+                              }
+
+                              return t("reviewGuide");
+                            })()}
                           </Typography>
                         </Box>
                         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                          {(review.topics || [review.topic] || []).map(
-                            (topic, index) => (
-                              <Chip
-                                key={index}
-                                label={topic}
-                                color="primary"
-                                variant="outlined"
-                                size="small"
-                              />
-                            )
-                          )}
+                          {(() => {
+                            // Extract all tags from all topics
+                            const topicsArray =
+                              review.topics || [review.topic] || [];
+                            let allTags = [];
+
+                            // Collect all tags from all topics
+                            topicsArray.forEach((topic) => {
+                              if (
+                                typeof topic === "object" &&
+                                topic.tags &&
+                                Array.isArray(topic.tags)
+                              ) {
+                                allTags = [...allTags, ...topic.tags];
+                              }
+                            });
+
+                            // Include fetched tags from the flashcard set
+                            if (
+                              review.fetchedTags &&
+                              Array.isArray(review.fetchedTags)
+                            ) {
+                              allTags = [...allTags, ...review.fetchedTags];
+                            }
+
+                            // Remove duplicates
+                            const uniqueTags = [...new Set(allTags)];
+
+                            // If we have tags, display them
+                            if (uniqueTags.length > 0) {
+                              return uniqueTags.map((tag, index) => (
+                                <Chip
+                                  key={`tag-${index}`}
+                                  label={tag}
+                                  color="default"
+                                  variant="outlined"
+                                  size="small"
+                                />
+                              ));
+                            }
+
+                            // If no tags, return null (show nothing)
+                            return null;
+                          })()}
                         </Box>
                       </Box>
                       <Box sx={{ display: "flex", gap: 1 }}>

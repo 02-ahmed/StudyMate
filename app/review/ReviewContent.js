@@ -36,6 +36,7 @@ import {
   query,
   where,
   getDocs,
+  getDoc,
 } from "firebase/firestore";
 import { useLanguage } from "../contexts/LanguageContext";
 import useTranslation from "../hooks/useTranslation";
@@ -107,7 +108,13 @@ export default function ReviewContent() {
           }
 
           if (savedReview) {
-            setContent({ sections: savedReview.content });
+            // Check if content is an object with a sections property
+            if (savedReview.content && savedReview.content.sections) {
+              setContent({ sections: savedReview.content.sections });
+            } else {
+              // Ensure content is wrapped in a sections object
+              setContent({ sections: savedReview.content });
+            }
             setLoading(false);
             return;
           }
@@ -115,8 +122,47 @@ export default function ReviewContent() {
           // If no saved content, generate new content
           // Extract the language from the topic object
           const topicObj = topics[0];
-          const contentLanguage = topicObj.language; // Get the language from the flashcard set
-          const setId = topicObj.setId; // Get the setId from the topic object
+
+          // Make sure we have a valid topic string
+          const topicName =
+            typeof topicObj.topic === "string"
+              ? topicObj.topic
+              : typeof topicObj.topic === "object"
+              ? JSON.stringify(topicObj.topic)
+              : "Unknown Topic";
+
+          // Extract other properties safely
+          const contentLanguage = topicObj.language || "en"; // Get the language from the flashcard set, default to English
+          const setId = topicObj.setId || null; // Get the setId from the topic object
+
+          // Try to fetch additional metadata about the flashcard set if we have a setId
+          let flashcardTags = [];
+          if (setId) {
+            try {
+              const flashcardSetRef = doc(
+                db,
+                "users",
+                user.id,
+                "flashcardSets",
+                setId
+              );
+              const flashcardSetSnap = await getDoc(flashcardSetRef);
+
+              if (flashcardSetSnap.exists()) {
+                const flashcardSetData = flashcardSetSnap.data();
+                if (
+                  flashcardSetData.tags &&
+                  Array.isArray(flashcardSetData.tags)
+                ) {
+                  flashcardTags = flashcardSetData.tags;
+                  // Store tags in the topic object to be used later when saving
+                  topicObj.tags = flashcardSetData.tags;
+                }
+              }
+            } catch (error) {
+              console.error("Error fetching flashcard set data:", error);
+            }
+          }
 
           const response = await fetch("/api/generate-review-content", {
             method: "POST",
@@ -125,7 +171,7 @@ export default function ReviewContent() {
               "x-user-id": user.id, // Include user ID for server-side logging
             },
             body: JSON.stringify({
-              topic: topics[0].topic,
+              topic: topicName,
               language: contentLanguage, // Include the language parameter
               setId: setId, // Include the setId parameter
             }),
@@ -164,8 +210,18 @@ export default function ReviewContent() {
 
     try {
       const topics = JSON.parse(decodeURIComponent(topicsParam));
-      if (!topics?.[0]?.topic) {
-        setError("Invalid topic format");
+
+      // Additional validation and clean-up of topic objects
+      if (!Array.isArray(topics) || topics.length === 0) {
+        setError("Invalid topic format: not an array or empty array");
+        setLoading(false);
+        return;
+      }
+
+      // Make sure first topic has the expected topic property
+      const firstTopic = topics[0];
+      if (!firstTopic || typeof firstTopic !== "object" || !firstTopic.topic) {
+        setError("Invalid topic format: missing required 'topic' property");
         setLoading(false);
         return;
       }
@@ -197,13 +253,37 @@ export default function ReviewContent() {
         ? JSON.parse(decodeURIComponent(topicsParam))
         : [];
 
+      // Extract topic metadata for saving
+      const topicsData = topics.map((t) => {
+        if (typeof t === "string") {
+          return t;
+        } else {
+          // Extract only the necessary properties
+          return {
+            topic: t.topic,
+            // Include these only if they exist
+            ...(t.language && { language: t.language }),
+            ...(t.setId && { setId: t.setId }),
+            ...(t.tags && Array.isArray(t.tags) && { tags: t.tags }),
+            ...(t.accuracy !== undefined && { accuracy: t.accuracy }),
+            ...(t.correctAnswers !== undefined && {
+              correctAnswers: t.correctAnswers,
+            }),
+            ...(t.totalQuestions !== undefined && {
+              totalQuestions: t.totalQuestions,
+            }),
+            ...(t.name !== undefined && { name: t.name }),
+          };
+        }
+      });
+
       // Ensure we're storing content in the correct structure
       // It might be coming directly as sections or nested in a sections property
       const contentToSave = content.sections ? content.sections : content;
 
       await setDoc(reviewDoc, {
         content: contentToSave,
-        topics: topics.map((t) => t.topic),
+        topics: topicsData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
