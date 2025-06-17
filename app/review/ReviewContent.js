@@ -86,28 +86,90 @@ export default function ReviewContent() {
         // If we're here, there's no content in sessionStorage
         // Only load from database or generate if this is not from the "View Full Page" button
         if (!topics[0].useStoredContent) {
-          // Find saved content in database
-          const reviewsRef = collection(db, "users", user.id, "savedReviews");
-          const queries = [
-            query(
-              reviewsRef,
-              where("topics", "array-contains", topics[0].topic)
-            ),
-            query(reviewsRef, where("topic", "==", topics[0].topic)),
-          ];
+          // Find saved content in database - use the exact review ID from the URL if provided
+          const urlParams = new URLSearchParams(window.location.search);
+          const reviewId = urlParams.get("reviewId");
 
           let savedReview = null;
-          for (const q of queries) {
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-              savedReview = querySnapshot.docs
-                .map((doc) => ({ id: doc.id, ...doc.data() }))
-                .sort((a, b) => b.updatedAt - a.updatedAt)[0];
-              break;
+
+          if (reviewId) {
+            // If a specific review ID is provided, fetch that exact review
+            try {
+              const reviewRef = doc(
+                db,
+                "users",
+                user.id,
+                "savedReviews",
+                reviewId
+              );
+              const reviewSnap = await getDoc(reviewRef);
+
+              if (reviewSnap.exists()) {
+                savedReview = { id: reviewSnap.id, ...reviewSnap.data() };
+              }
+            } catch (error) {
+              console.error("Error fetching specific review:", error);
+            }
+          }
+
+          // If no review ID was provided or the specific review wasn't found, try to find by topic
+          if (!savedReview) {
+            const reviewsRef = collection(db, "users", user.id, "savedReviews");
+
+            // Get the topic value, handling both string and object cases
+            const topicValue =
+              typeof topics[0].topic === "string"
+                ? topics[0].topic
+                : topics[0].topic?.name ||
+                  topics[0].topic?.topic ||
+                  "Unknown Topic";
+
+            // Try different query approaches
+            const queryAttempts = [
+              // Direct topic match in topics array using array-contains
+              query(
+                reviewsRef,
+                where("topics", "array-contains", { topic: topicValue })
+              ),
+              // Try with just the string value
+              query(reviewsRef, where("topics", "array-contains", topicValue)),
+              // Topic field direct match
+              query(reviewsRef, where("topic", "==", topicValue)),
+            ];
+
+            for (const q of queryAttempts) {
+              try {
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                  savedReview = querySnapshot.docs
+                    .map((doc) => ({ id: doc.id, ...doc.data() }))
+                    .sort((a, b) => {
+                      // Sort by updatedAt if available, otherwise fall back to createdAt
+                      const dateA = b.updatedAt || b.createdAt;
+                      const dateB = a.updatedAt || a.createdAt;
+                      return dateA - dateB;
+                    })[0];
+                  break;
+                }
+              } catch (err) {
+                console.error("Error in query attempt:", err);
+                // Continue to the next query attempt
+              }
             }
           }
 
           if (savedReview) {
+            // Add debug information about found review
+            console.log("Found saved review:", {
+              id: savedReview.id,
+              topic: savedReview.topics?.[0]?.topic || "Unknown",
+              hasContent: !!savedReview.content,
+              contentType: savedReview.content
+                ? typeof savedReview.content
+                : "N/A",
+              hasSections: savedReview.content?.sections ? "Yes" : "No",
+            });
+
             // Check if content is an object with a sections property
             if (savedReview.content && savedReview.content.sections) {
               setContent({ sections: savedReview.content.sections });
@@ -209,6 +271,16 @@ export default function ReviewContent() {
     }
 
     try {
+      // Check if reviewId is present - if so, clear sessionStorage to prevent using cached content
+      const reviewId = searchParams.get("reviewId");
+      if (reviewId) {
+        try {
+          sessionStorage.removeItem("currentReviewContent");
+        } catch (error) {
+          console.error("Error clearing sessionStorage:", error);
+        }
+      }
+
       const topics = JSON.parse(decodeURIComponent(topicsParam));
 
       // Additional validation and clean-up of topic objects

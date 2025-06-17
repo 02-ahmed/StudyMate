@@ -177,8 +177,11 @@ export default function SavedReviewsContent() {
       }
     );
 
+    // Include the specific review ID in the URL to ensure we load the exact review
     router.push(
-      `/review?topics=${encodeURIComponent(JSON.stringify(formattedTopics))}`
+      `/review?topics=${encodeURIComponent(
+        JSON.stringify(formattedTopics)
+      )}&reviewId=${review.id}`
     );
   };
 
