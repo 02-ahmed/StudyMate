@@ -195,6 +195,7 @@ const en = {
     takeAction: "Take Action",
     studyNow: "Study Now",
     practiceThisTopic: "Practice This Topic",
+    backToSavedReviews: "Back to Saved Reviews",
   },
 
   // Page titles

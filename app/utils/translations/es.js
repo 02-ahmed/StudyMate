@@ -195,6 +195,7 @@ const es = {
     takeAction: "Tomar Acción",
     studyNow: "Estudiar Ahora",
     practiceThisTopic: "Practicar Este Tema",
+    backToSavedReviews: "Volver a Reseñas Guardadas",
   },
 
   // Page titles

@@ -26,6 +26,7 @@ import YouTubeIcon from "@mui/icons-material/YouTube";
 import ArticleIcon from "@mui/icons-material/Article";
 import LightbulbIcon from "@mui/icons-material/Lightbulb";
 import SaveIcon from "@mui/icons-material/Save";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "../../utils/firebase";
 import {
@@ -40,6 +41,7 @@ import {
 } from "firebase/firestore";
 import { useLanguage } from "../contexts/LanguageContext";
 import useTranslation from "../hooks/useTranslation";
+import { useRouter } from "next/navigation";
 
 // Import the same section components used in the dialog
 import NotesSection from "../components/review/NotesSection";
@@ -54,12 +56,14 @@ export default function ReviewContent() {
   const [content, setContent] = useState(null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [isViewingSavedReview, setIsViewingSavedReview] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
   const { t } = useTranslation();
+  const router = useRouter();
 
   const loadContent = useCallback(
     async (topics) => {
@@ -106,6 +110,8 @@ export default function ReviewContent() {
 
               if (reviewSnap.exists()) {
                 savedReview = { id: reviewSnap.id, ...reviewSnap.data() };
+                // Mark that we're viewing a saved review
+                setIsViewingSavedReview(true);
               }
             } catch (error) {
               console.error("Error fetching specific review:", error);
@@ -149,6 +155,8 @@ export default function ReviewContent() {
                       const dateB = a.updatedAt || a.createdAt;
                       return dateA - dateB;
                     })[0];
+                  // Mark that we're viewing a saved review
+                  setIsViewingSavedReview(true);
                   break;
                 }
               } catch (err) {
@@ -384,6 +392,11 @@ export default function ReviewContent() {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
+  const handleBackToSavedReviews = () => {
+    // Navigate back to saved reviews page
+    router.push("/saved-reviews");
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
@@ -437,18 +450,15 @@ export default function ReviewContent() {
                 color: "text.secondary",
                 fontSize: { xs: "0.875rem", sm: "1rem" },
               }}
-            >
-              {t(
-                "studyGuide.comprehensive",
-                "Comprehensive review materials to help you master these topics"
-              )}
-            </Typography>
+            ></Typography>
           </Box>
           <Button
             variant="contained"
-            startIcon={<SaveIcon />}
-            onClick={handleSaveReview}
-            disabled={saving || !user}
+            startIcon={isViewingSavedReview ? <ArrowBackIcon /> : <SaveIcon />}
+            onClick={
+              isViewingSavedReview ? handleBackToSavedReviews : handleSaveReview
+            }
+            disabled={!isViewingSavedReview && (saving || !user)}
             sx={{
               background: "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
               boxShadow: "0 3px 5px 2px rgba(63, 81, 181, .3)",
@@ -461,9 +471,11 @@ export default function ReviewContent() {
               },
             }}
           >
-            {saving
+            {isViewingSavedReview
+              ? t("buttons.backToSavedReviews", "Back to Saved Reviews")
+              : saving
               ? t("messages.loading", "Saving...")
-              : t("buttons.save", "SAVE STUDY GUIDE")}
+              : t("buttons.save", "Save Study Guide")}
           </Button>
         </Box>
 
