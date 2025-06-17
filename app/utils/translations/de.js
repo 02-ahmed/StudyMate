@@ -28,7 +28,7 @@ const de = {
   selectFile: "Datei auswählen",
   dragAndDrop: "Ziehen und ablegen oder klicken zum Durchsuchen",
   supportedFileTypes:
-    "Unterstützte Dateitypen: PDF, Word, PowerPoint, Text, Bilder",
+    "Unterstützte Dateitypen: Nur PDF, Textdateien und Bilder (PNG, JPEG, GIF, WebP). Maximale Dateigröße: 1MB",
   generate: "Zusammenfassungsnotizen generieren",
 
   // Generate page loading messages

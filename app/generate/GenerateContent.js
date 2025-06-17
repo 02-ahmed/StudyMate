@@ -86,10 +86,6 @@ export default function GenerateContent() {
   const allowedTypes = [
     "application/pdf", // PDF
     "text/plain", // Text
-    "application/vnd.ms-powerpoint", // PPT
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation", // PPTX
-    "application/msword", // DOC
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // DOCX
     "image/png", // PNG
     "image/jpeg", // JPG/JPEG
     "image/gif", // GIF
@@ -264,7 +260,7 @@ export default function GenerateContent() {
       // Check if file type is supported
       if (!allowedTypes.includes(selectedFile.type)) {
         setFileError(
-          "Unsupported file type. Please upload a PDF, Word document, or PowerPoint presentation."
+          "Unsupported file type. Please upload a PDF, text file, or image (PNG, JPEG, GIF, WebP)."
         );
         event.target.value = null; // Reset file input
         return;
@@ -647,7 +643,7 @@ export default function GenerateContent() {
                   />
 
                   <input
-                    accept=".pdf,.txt,.ppt,.pptx,.doc,.docx,.png,.jpg,.jpeg,.gif,.webp"
+                    accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp"
                     style={{ display: "none" }}
                     id="file-upload"
                     type="file"
