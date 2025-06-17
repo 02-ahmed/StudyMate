@@ -369,6 +369,17 @@ const en = {
       button: "Launch Your Success",
     },
   },
+
+  // Accessibility features
+  accessibility: {
+    textToSpeech: {
+      listen: "Listen",
+      stopListening: "Stop",
+      notSupported: "Text-to-speech not supported in this browser",
+      speakFront: "Speak question",
+      speakBack: "Speak answer",
+    },
+  },
 };
 
 export default en;

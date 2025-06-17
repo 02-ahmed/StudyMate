@@ -374,6 +374,17 @@ const es = {
       button: "Inicia Tu Éxito",
     },
   },
+
+  // Accessibility features
+  accessibility: {
+    textToSpeech: {
+      listen: "Escuchar",
+      stopListening: "Detener",
+      notSupported: "La síntesis de voz no es compatible con este navegador",
+      speakFront: "Leer pregunta",
+      speakBack: "Leer respuesta",
+    },
+  },
 };
 
 export default es;

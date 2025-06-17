@@ -25,6 +25,7 @@ import { db } from "../../../utils/firebase";
 import { SUPPORTED_LANGUAGES } from "../../contexts/LanguageContext";
 import { cleanFlashcardContent } from "@/utils/schemas";
 import useTranslation from "../../hooks/useTranslation";
+import TextToSpeech from "../../components/TextToSpeech";
 
 export default function FlashcardsIdContent({ params }) {
   const { user } = useUser();
@@ -158,6 +159,14 @@ export default function FlashcardsIdContent({ params }) {
     router.push("/notes");
   };
 
+  // Get the current text to be displayed (and potentially spoken)
+  const getCurrentText = () => {
+    if (!flashcards[currentIndex]) return "";
+    return isFlipped
+      ? cleanFlashcardContent(flashcards[currentIndex].back)
+      : cleanFlashcardContent(flashcards[currentIndex].front);
+  };
+
   if (loading) {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
@@ -201,7 +210,7 @@ export default function FlashcardsIdContent({ params }) {
         maxHeight: "100vh",
         overflow: "auto",
         justifyContent: "space-between",
-        gap: 1, // Increased gap
+        gap: 1,
       }}
     >
       {/* Top Section - Header */}
@@ -211,14 +220,14 @@ export default function FlashcardsIdContent({ params }) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            mb: { xs: 0.5, sm: 0.75 }, // Slightly increased margin
+            mb: { xs: 0.5, sm: 0.75 },
           }}
         >
           <Button
             onClick={handleBack}
             startIcon={<ArrowBackIcon sx={{ fontSize: "1rem" }} />}
             size="small"
-            sx={{ py: 0.5, px: 1, fontSize: "0.85rem" }} // Slightly larger button
+            sx={{ py: 0.5, px: 1, fontSize: "0.85rem" }}
           >
             {t("flashcards.backToNotes", "Back to Notes")}
           </Button>
@@ -231,18 +240,18 @@ export default function FlashcardsIdContent({ params }) {
             variant="outlined"
             size="small"
             sx={{
-              height: 26, // Slightly taller
-              "& .MuiChip-label": { px: 1, fontSize: "0.75rem" }, // Slightly larger font
+              height: 26,
+              "& .MuiChip-label": { px: 1, fontSize: "0.75rem" },
             }}
           />
         </Box>
         <Typography
           variant="h6"
           sx={{
-            mb: 0.5, // Slightly increased margin
+            mb: 0.5,
             textAlign: "center",
-            lineHeight: 1.2, // Slightly increased line height
-            fontSize: { xs: "1.1rem", sm: "1.2rem", md: "1.35rem" }, // Slightly larger font
+            lineHeight: 1.2,
+            fontSize: { xs: "1.1rem", sm: "1.2rem", md: "1.35rem" },
           }}
         >
           {name || t("flashcards.untitledSet", "Untitled Set")}
@@ -250,25 +259,12 @@ export default function FlashcardsIdContent({ params }) {
         <Box sx={{ display: "flex", justifyContent: "center", mb: 0.5 }}>
           <Typography
             variant="body2"
-            sx={{ color: "text.secondary", fontSize: "0.8rem" }} // Slightly larger font
+            sx={{ color: "text.secondary", fontSize: "0.8rem" }}
           >
-            {console.log("Translation params:", {
-              key: "flashcards.cardCount",
-              language,
-              currentIndex: currentIndex + 1,
-              total: flashcards.length,
-            })}
             {t("flashcards.cardCount", {
               current: currentIndex + 1,
               total: flashcards.length,
             })}
-            {console.log(
-              "Translation result:",
-              t("flashcards.cardCount", {
-                current: currentIndex + 1,
-                total: flashcards.length,
-              })
-            )}
           </Typography>
         </Box>
       </Box>
@@ -277,20 +273,40 @@ export default function FlashcardsIdContent({ params }) {
       <Card
         onClick={handleFlip}
         sx={{
-          height: { xs: "25vh", sm: "28vh", md: "32vh" }, // Increased heights but still smaller than original
-          minHeight: "160px", // Increased minimum height
-          maxHeight: "280px", // Increased maximum height cap
+          height: { xs: "25vh", sm: "28vh", md: "32vh" },
+          minHeight: "160px",
+          maxHeight: "280px",
           width: "100%",
           cursor: "pointer",
           perspective: "1000px",
           backgroundColor: "transparent",
-          my: 0.5, // Slightly more margin
+          my: 0.5,
           boxShadow: "0 1px 5px rgba(0,0,0,0.06)",
           flexGrow: 0,
           flexShrink: 1,
           display: "flex",
+          position: "relative", // For positioning the TTS button
         }}
       >
+        {/* Text-to-speech button using our reusable component */}
+        <TextToSpeech
+          text={getCurrentText()}
+          language={language}
+          tooltipText={
+            isFlipped
+              ? t("accessibility.textToSpeech.speakBack", "Speak answer")
+              : t("accessibility.textToSpeech.speakFront", "Speak question")
+          }
+          sx={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            zIndex: 10,
+            backgroundColor: "rgba(255,255,255,0.7)",
+            borderRadius: "50%",
+          }}
+        />
+
         <Box
           sx={{
             position: "relative",
@@ -301,6 +317,7 @@ export default function FlashcardsIdContent({ params }) {
             transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
           }}
         >
+          {/* Front of card */}
           <CardContent
             sx={{
               position: "absolute",
@@ -312,7 +329,7 @@ export default function FlashcardsIdContent({ params }) {
               justifyContent: "center",
               backgroundColor: "#fff",
               overflowY: "auto",
-              padding: "14px !important", // Slightly more padding
+              padding: "14px !important",
               "&::-webkit-scrollbar": {
                 width: "4px",
               },
@@ -332,7 +349,7 @@ export default function FlashcardsIdContent({ params }) {
             <Box
               sx={{
                 width: "100%",
-                padding: "0 14px", // Slightly more padding
+                padding: "0 14px",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
@@ -344,7 +361,7 @@ export default function FlashcardsIdContent({ params }) {
                   width: "100%",
                   wordBreak: "break-word",
                   whiteSpace: "normal",
-                  fontSize: "1rem", // Slightly larger font
+                  fontSize: "1rem",
                   lineHeight: 1.4,
                   textAlign: "center",
                 }}
@@ -354,6 +371,7 @@ export default function FlashcardsIdContent({ params }) {
             </Box>
           </CardContent>
 
+          {/* Back of card */}
           <CardContent
             sx={{
               position: "absolute",
@@ -366,7 +384,7 @@ export default function FlashcardsIdContent({ params }) {
               backgroundColor: "#fff",
               transform: "rotateY(180deg)",
               overflowY: "auto",
-              padding: "14px !important", // Slightly more padding
+              padding: "14px !important",
               "&::-webkit-scrollbar": {
                 width: "4px",
               },
@@ -386,7 +404,7 @@ export default function FlashcardsIdContent({ params }) {
             <Box
               sx={{
                 width: "100%",
-                padding: "0 14px", // Slightly more padding
+                padding: "0 14px",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
@@ -398,7 +416,7 @@ export default function FlashcardsIdContent({ params }) {
                   width: "100%",
                   wordBreak: "break-word",
                   whiteSpace: "normal",
-                  fontSize: "1rem", // Slightly larger font
+                  fontSize: "1rem",
                   lineHeight: 1.4,
                   textAlign: "center",
                 }}
@@ -415,8 +433,8 @@ export default function FlashcardsIdContent({ params }) {
         sx={{
           display: "flex",
           justifyContent: "center",
-          gap: 2, // Slightly increased gap
-          mt: 0.5, // Slightly increased margin
+          gap: 2,
+          mt: 0.5,
           mb: 0.5,
           flexShrink: 0,
           position: "sticky",

@@ -384,6 +384,18 @@ const fr = {
       button: "Lancez Votre Réussite",
     },
   },
+
+  // Accessibility features
+  accessibility: {
+    textToSpeech: {
+      listen: "Écouter",
+      stopListening: "Arrêter",
+      notSupported:
+        "La synthèse vocale n'est pas prise en charge par ce navigateur",
+      speakFront: "Lire la question",
+      speakBack: "Lire la réponse",
+    },
+  },
 };
 
 export default fr;
