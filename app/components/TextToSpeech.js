@@ -47,7 +47,12 @@ export default function TextToSpeech({
   }, [isSpeaking]);
 
   // Handle speak button click
-  const handleSpeak = () => {
+  const handleSpeak = (event) => {
+    // Stop event propagation to prevent parent elements from handling the click
+    if (event) {
+      event.stopPropagation();
+    }
+
     if (!speechSupported || !text) return;
 
     if (isSpeaking) {
