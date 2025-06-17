@@ -382,6 +382,17 @@ const de = {
       button: "Starten Sie Ihren Erfolg",
     },
   },
+
+  // Accessibility features
+  accessibility: {
+    textToSpeech: {
+      listen: "Anhören",
+      stopListening: "Stoppen",
+      notSupported: "Sprachsynthese wird in diesem Browser nicht unterstützt",
+      speakFront: "Frage vorlesen",
+      speakBack: "Antwort vorlesen",
+    },
+  },
 };
 
 export default de;

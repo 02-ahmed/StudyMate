@@ -42,6 +42,7 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { createFlashcardSet, cleanFlashcardContent } from "../../utils/schemas";
 import { useLanguage } from "../contexts/LanguageContext";
 import useTranslation from "../hooks/useTranslation";
+import TextToSpeech from "../components/TextToSpeech";
 
 // Import Quill dynamically to avoid SSR issues
 const ReactQuill = dynamic(() => import("react-quill"), {
@@ -1027,7 +1028,15 @@ export default function GenerateContent() {
               <Grid item xs={12} sm={6} md={4} key={index}>
                 <Fade in={true} timeout={300 + index * 100}>
                   <Card
-                    onClick={() => {
+                    onClick={(e) => {
+                      // Don't flip if the click was on the text-to-speech button or its children
+                      if (
+                        e.target.closest(".MuiTooltip-popper") ||
+                        e.target.closest("button")
+                      ) {
+                        return;
+                      }
+
                       const newFlipped = [...flipped];
                       newFlipped[index] = !newFlipped[index];
                       setFlipped(newFlipped);
@@ -1063,6 +1072,36 @@ export default function GenerateContent() {
                       },
                     }}
                   >
+                    <TextToSpeech
+                      text={
+                        typeof flashcard === "string"
+                          ? cleanFlashcardContent(flashcard)
+                          : flipped[index]
+                          ? cleanFlashcardContent(flashcard.back)
+                          : cleanFlashcardContent(flashcard.front)
+                      }
+                      language={language}
+                      tooltipText={
+                        flipped[index]
+                          ? t(
+                              "accessibility.textToSpeech.speakBack",
+                              "Speak answer"
+                            )
+                          : t(
+                              "accessibility.textToSpeech.speakFront",
+                              "Speak question"
+                            )
+                      }
+                      sx={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        zIndex: 10,
+                        backgroundColor: "rgba(255,255,255,0.7)",
+                        borderRadius: "50%",
+                      }}
+                    />
+
                     <CardContent sx={{ height: "100%", p: 0 }}>
                       <Box sx={{ perspective: "1000px", height: "100%" }}>
                         <Box
