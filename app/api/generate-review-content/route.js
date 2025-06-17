@@ -10,6 +10,8 @@ import {
   where,
 } from "firebase/firestore";
 
+export const maxDuration = 60;
+
 // Map of language codes to full language names
 const LANGUAGES = {
   en: "English",

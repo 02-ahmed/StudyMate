@@ -2,8 +2,6 @@
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
-console.log("=== FIREBASE INITIALIZATION STARTED ===");
-
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,14 +12,7 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-console.log("Firebase Config Available:", !!firebaseConfig.apiKey);
-console.log("Firebase Project ID:", firebaseConfig.projectId || "MISSING");
-console.log("Apps already initialized:", getApps().length);
-
 // Initialize Firebase only if it hasn't been initialized already
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
-console.log("Firebase app initialized:", !!app);
 
 export const db = getFirestore(app);
-console.log("Firestore database initialized:", !!db);
-console.log("=== FIREBASE INITIALIZATION COMPLETED ===");
