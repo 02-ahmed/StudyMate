@@ -202,6 +202,7 @@ const de = {
     takeAction: "Maßnahmen ergreifen",
     studyNow: "Jetzt lernen",
     practiceThisTopic: "Dieses Thema üben",
+    backToSavedReviews: "Zurück zu gespeicherten Übersichten",
   },
 
   // Page titles

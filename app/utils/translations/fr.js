@@ -205,6 +205,7 @@ const fr = {
     takeAction: "Agir",
     studyNow: "Étudier Maintenant",
     practiceThisTopic: "Pratiquer Ce Sujet",
+    backToSavedReviews: "Retour aux Révisions Sauvegardées",
   },
 
   // Page titles

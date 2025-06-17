@@ -26,6 +26,7 @@ import YouTubeIcon from "@mui/icons-material/YouTube";
 import ArticleIcon from "@mui/icons-material/Article";
 import LightbulbIcon from "@mui/icons-material/Lightbulb";
 import SaveIcon from "@mui/icons-material/Save";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { db } from "../../utils/firebase";
 import {
@@ -36,9 +37,11 @@ import {
   query,
   where,
   getDocs,
+  getDoc,
 } from "firebase/firestore";
 import { useLanguage } from "../contexts/LanguageContext";
 import useTranslation from "../hooks/useTranslation";
+import { useRouter } from "next/navigation";
 
 // Import the same section components used in the dialog
 import NotesSection from "../components/review/NotesSection";
@@ -53,12 +56,14 @@ export default function ReviewContent() {
   const [content, setContent] = useState(null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [isViewingSavedReview, setIsViewingSavedReview] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
   const { t } = useTranslation();
+  const router = useRouter();
 
   const loadContent = useCallback(
     async (topics) => {
@@ -85,29 +90,101 @@ export default function ReviewContent() {
         // If we're here, there's no content in sessionStorage
         // Only load from database or generate if this is not from the "View Full Page" button
         if (!topics[0].useStoredContent) {
-          // Find saved content in database
-          const reviewsRef = collection(db, "users", user.id, "savedReviews");
-          const queries = [
-            query(
-              reviewsRef,
-              where("topics", "array-contains", topics[0].topic)
-            ),
-            query(reviewsRef, where("topic", "==", topics[0].topic)),
-          ];
+          // Find saved content in database - use the exact review ID from the URL if provided
+          const urlParams = new URLSearchParams(window.location.search);
+          const reviewId = urlParams.get("reviewId");
 
           let savedReview = null;
-          for (const q of queries) {
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-              savedReview = querySnapshot.docs
-                .map((doc) => ({ id: doc.id, ...doc.data() }))
-                .sort((a, b) => b.updatedAt - a.updatedAt)[0];
-              break;
+
+          if (reviewId) {
+            // If a specific review ID is provided, fetch that exact review
+            try {
+              const reviewRef = doc(
+                db,
+                "users",
+                user.id,
+                "savedReviews",
+                reviewId
+              );
+              const reviewSnap = await getDoc(reviewRef);
+
+              if (reviewSnap.exists()) {
+                savedReview = { id: reviewSnap.id, ...reviewSnap.data() };
+                // Mark that we're viewing a saved review
+                setIsViewingSavedReview(true);
+              }
+            } catch (error) {
+              console.error("Error fetching specific review:", error);
+            }
+          }
+
+          // If no review ID was provided or the specific review wasn't found, try to find by topic
+          if (!savedReview) {
+            const reviewsRef = collection(db, "users", user.id, "savedReviews");
+
+            // Get the topic value, handling both string and object cases
+            const topicValue =
+              typeof topics[0].topic === "string"
+                ? topics[0].topic
+                : topics[0].topic?.name ||
+                  topics[0].topic?.topic ||
+                  "Unknown Topic";
+
+            // Try different query approaches
+            const queryAttempts = [
+              // Direct topic match in topics array using array-contains
+              query(
+                reviewsRef,
+                where("topics", "array-contains", { topic: topicValue })
+              ),
+              // Try with just the string value
+              query(reviewsRef, where("topics", "array-contains", topicValue)),
+              // Topic field direct match
+              query(reviewsRef, where("topic", "==", topicValue)),
+            ];
+
+            for (const q of queryAttempts) {
+              try {
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                  savedReview = querySnapshot.docs
+                    .map((doc) => ({ id: doc.id, ...doc.data() }))
+                    .sort((a, b) => {
+                      // Sort by updatedAt if available, otherwise fall back to createdAt
+                      const dateA = b.updatedAt || b.createdAt;
+                      const dateB = a.updatedAt || a.createdAt;
+                      return dateA - dateB;
+                    })[0];
+                  // Mark that we're viewing a saved review
+                  setIsViewingSavedReview(true);
+                  break;
+                }
+              } catch (err) {
+                console.error("Error in query attempt:", err);
+                // Continue to the next query attempt
+              }
             }
           }
 
           if (savedReview) {
-            setContent({ sections: savedReview.content });
+            // Add debug information about found review
+            console.log("Found saved review:", {
+              id: savedReview.id,
+              topic: savedReview.topics?.[0]?.topic || "Unknown",
+              hasContent: !!savedReview.content,
+              contentType: savedReview.content
+                ? typeof savedReview.content
+                : "N/A",
+              hasSections: savedReview.content?.sections ? "Yes" : "No",
+            });
+
+            // Check if content is an object with a sections property
+            if (savedReview.content && savedReview.content.sections) {
+              setContent({ sections: savedReview.content.sections });
+            } else {
+              // Ensure content is wrapped in a sections object
+              setContent({ sections: savedReview.content });
+            }
             setLoading(false);
             return;
           }
@@ -115,8 +192,47 @@ export default function ReviewContent() {
           // If no saved content, generate new content
           // Extract the language from the topic object
           const topicObj = topics[0];
-          const contentLanguage = topicObj.language; // Get the language from the flashcard set
-          const setId = topicObj.setId; // Get the setId from the topic object
+
+          // Make sure we have a valid topic string
+          const topicName =
+            typeof topicObj.topic === "string"
+              ? topicObj.topic
+              : typeof topicObj.topic === "object"
+              ? JSON.stringify(topicObj.topic)
+              : "Unknown Topic";
+
+          // Extract other properties safely
+          const contentLanguage = topicObj.language || "en"; // Get the language from the flashcard set, default to English
+          const setId = topicObj.setId || null; // Get the setId from the topic object
+
+          // Try to fetch additional metadata about the flashcard set if we have a setId
+          let flashcardTags = [];
+          if (setId) {
+            try {
+              const flashcardSetRef = doc(
+                db,
+                "users",
+                user.id,
+                "flashcardSets",
+                setId
+              );
+              const flashcardSetSnap = await getDoc(flashcardSetRef);
+
+              if (flashcardSetSnap.exists()) {
+                const flashcardSetData = flashcardSetSnap.data();
+                if (
+                  flashcardSetData.tags &&
+                  Array.isArray(flashcardSetData.tags)
+                ) {
+                  flashcardTags = flashcardSetData.tags;
+                  // Store tags in the topic object to be used later when saving
+                  topicObj.tags = flashcardSetData.tags;
+                }
+              }
+            } catch (error) {
+              console.error("Error fetching flashcard set data:", error);
+            }
+          }
 
           const response = await fetch("/api/generate-review-content", {
             method: "POST",
@@ -125,7 +241,7 @@ export default function ReviewContent() {
               "x-user-id": user.id, // Include user ID for server-side logging
             },
             body: JSON.stringify({
-              topic: topics[0].topic,
+              topic: topicName,
               language: contentLanguage, // Include the language parameter
               setId: setId, // Include the setId parameter
             }),
@@ -163,9 +279,29 @@ export default function ReviewContent() {
     }
 
     try {
+      // Check if reviewId is present - if so, clear sessionStorage to prevent using cached content
+      const reviewId = searchParams.get("reviewId");
+      if (reviewId) {
+        try {
+          sessionStorage.removeItem("currentReviewContent");
+        } catch (error) {
+          console.error("Error clearing sessionStorage:", error);
+        }
+      }
+
       const topics = JSON.parse(decodeURIComponent(topicsParam));
-      if (!topics?.[0]?.topic) {
-        setError("Invalid topic format");
+
+      // Additional validation and clean-up of topic objects
+      if (!Array.isArray(topics) || topics.length === 0) {
+        setError("Invalid topic format: not an array or empty array");
+        setLoading(false);
+        return;
+      }
+
+      // Make sure first topic has the expected topic property
+      const firstTopic = topics[0];
+      if (!firstTopic || typeof firstTopic !== "object" || !firstTopic.topic) {
+        setError("Invalid topic format: missing required 'topic' property");
         setLoading(false);
         return;
       }
@@ -197,9 +333,37 @@ export default function ReviewContent() {
         ? JSON.parse(decodeURIComponent(topicsParam))
         : [];
 
+      // Extract topic metadata for saving
+      const topicsData = topics.map((t) => {
+        if (typeof t === "string") {
+          return t;
+        } else {
+          // Extract only the necessary properties
+          return {
+            topic: t.topic,
+            // Include these only if they exist
+            ...(t.language && { language: t.language }),
+            ...(t.setId && { setId: t.setId }),
+            ...(t.tags && Array.isArray(t.tags) && { tags: t.tags }),
+            ...(t.accuracy !== undefined && { accuracy: t.accuracy }),
+            ...(t.correctAnswers !== undefined && {
+              correctAnswers: t.correctAnswers,
+            }),
+            ...(t.totalQuestions !== undefined && {
+              totalQuestions: t.totalQuestions,
+            }),
+            ...(t.name !== undefined && { name: t.name }),
+          };
+        }
+      });
+
+      // Ensure we're storing content in the correct structure
+      // It might be coming directly as sections or nested in a sections property
+      const contentToSave = content.sections ? content.sections : content;
+
       await setDoc(reviewDoc, {
-        content: content.sections,
-        topics: topics.map((t) => t.topic),
+        content: contentToSave,
+        topics: topicsData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -226,6 +390,11 @@ export default function ReviewContent() {
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleBackToSavedReviews = () => {
+    // Navigate back to saved reviews page
+    router.push("/saved-reviews");
   };
 
   if (loading) {
@@ -281,18 +450,15 @@ export default function ReviewContent() {
                 color: "text.secondary",
                 fontSize: { xs: "0.875rem", sm: "1rem" },
               }}
-            >
-              {t(
-                "studyGuide.comprehensive",
-                "Comprehensive review materials to help you master these topics"
-              )}
-            </Typography>
+            ></Typography>
           </Box>
           <Button
             variant="contained"
-            startIcon={<SaveIcon />}
-            onClick={handleSaveReview}
-            disabled={saving || !user}
+            startIcon={isViewingSavedReview ? <ArrowBackIcon /> : <SaveIcon />}
+            onClick={
+              isViewingSavedReview ? handleBackToSavedReviews : handleSaveReview
+            }
+            disabled={!isViewingSavedReview && (saving || !user)}
             sx={{
               background: "linear-gradient(45deg, #3f51b5 30%, #7986cb 90%)",
               boxShadow: "0 3px 5px 2px rgba(63, 81, 181, .3)",
@@ -305,9 +471,11 @@ export default function ReviewContent() {
               },
             }}
           >
-            {saving
+            {isViewingSavedReview
+              ? t("buttons.backToSavedReviews", "Back to Saved Reviews")
+              : saving
               ? t("messages.loading", "Saving...")
-              : t("buttons.save", "SAVE STUDY GUIDE")}
+              : t("buttons.save", "Save Study Guide")}
           </Button>
         </Box>
 
