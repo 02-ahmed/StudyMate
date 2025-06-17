@@ -197,8 +197,12 @@ export default function ReviewContent() {
         ? JSON.parse(decodeURIComponent(topicsParam))
         : [];
 
+      // Ensure we're storing content in the correct structure
+      // It might be coming directly as sections or nested in a sections property
+      const contentToSave = content.sections ? content.sections : content;
+
       await setDoc(reviewDoc, {
-        content: content.sections,
+        content: contentToSave,
         topics: topics.map((t) => t.topic),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),

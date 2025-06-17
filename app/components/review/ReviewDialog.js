@@ -110,8 +110,10 @@ export default function ReviewDialog({
       const reviewsRef = collection(db, "users", user.id, "savedReviews");
       const reviewDoc = doc(reviewsRef);
 
+      // Properly format the content for storage
+      // The ReviewContent component expects content to be in a 'sections' property
       await setDoc(reviewDoc, {
-        content: content,
+        content: { sections: content }, // Wrap content in a sections object
         topics: [topic],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -138,12 +140,19 @@ export default function ReviewDialog({
   };
 
   const handleViewFullPage = () => {
-    if (!topic) {
+    if (!topic || !content) {
       return;
     }
 
-    // Store the current content in sessionStorage
-    sessionStorage.setItem("currentReviewContent", JSON.stringify(content));
+    // Properly format the content for storage
+    // The ReviewContent component expects content to be in a 'sections' property
+    const formattedContent = { sections: content };
+
+    // Store the current content in sessionStorage with the correct structure
+    sessionStorage.setItem(
+      "currentReviewContent",
+      JSON.stringify(formattedContent)
+    );
 
     // Add a flag to the topic parameter
     // Make sure we preserve the language property if it exists in the topic object

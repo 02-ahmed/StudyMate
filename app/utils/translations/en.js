@@ -270,12 +270,17 @@ const en = {
 
   // Study guide loading messages
   studyGuide: {
+    comprehensive:
+      "Comprehensive review materials to help you master these topics",
     loadingMessages: {
       analyzing: "Analyzing topic and generating comprehensive notes...",
       creating: "Creating detailed explanations and examples...",
       finding: "Finding relevant study resources and videos...",
       preparing: "Preparing practice materials...",
       finishing: "Almost there! Putting everything together...",
+    },
+    errors: {
+      generationFailed: "Failed to generate study guide.",
     },
   },
 
