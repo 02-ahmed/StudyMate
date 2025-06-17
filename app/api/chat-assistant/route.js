@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+export const maxDuration = 60;
+
 // Map of language codes to full language names
 const LANGUAGES = {
   en: "English",

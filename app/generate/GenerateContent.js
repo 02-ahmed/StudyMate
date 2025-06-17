@@ -350,6 +350,7 @@ export default function GenerateContent() {
       setLoading(true);
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("language", language);
 
       try {
         const response = await fetch("/api/generate", {

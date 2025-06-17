@@ -1,6 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 
+export const maxDuration = 60;
+
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 const MAX_QUESTIONS = 15; // Increased from 10 to 15

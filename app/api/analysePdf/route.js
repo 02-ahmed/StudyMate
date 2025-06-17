@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 import { GoogleAIFileManager } from "@google/generative-ai/server";
 
+export const maxDuration = 60;
+
 const systemPrompt = `You are a pdf summariser. You receive a pdf as an input and explain everything in as few words as possible`;
 
 // Initialize GoogleGenerativeAI with your API_KEY.

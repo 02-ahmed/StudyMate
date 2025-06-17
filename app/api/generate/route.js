@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+export const maxDuration = 60;
+
 const systemPrompt = `You are a flashcard generator API that MUST ALWAYS respond in valid JSON format.
 Your task is to create comprehensive educational flashcards about the specific topic or text provided by the user.
 If a target language is specified, generate the flashcards in that language while maintaining academic accuracy and natural language use.
@@ -140,6 +142,8 @@ export async function POST(req) {
   if (contentType.includes("multipart/form-data")) {
     const formData = await req.formData();
     const file = formData.get("file");
+    const language = formData.get("language") || "en"; // Get language parameter from FormData
+
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
@@ -171,6 +175,12 @@ export async function POST(req) {
     const buffer = Buffer.from(arrayBuffer);
     const base64Data = buffer.toString("base64");
 
+    // Add language instruction to the prompt if not English
+    const languagePrompt =
+      language !== "en"
+        ? `Generate the flashcards in ${SUPPORTED_LANGUAGES[language]}. Ensure natural language use and proper grammar.`
+        : "";
+
     // Process file directly with Gemini
     const result = await model.generateContent({
       contents: [
@@ -178,6 +188,7 @@ export async function POST(req) {
           role: "user",
           parts: [
             { text: systemPrompt },
+            { text: languagePrompt }, // Add language instruction to the prompt
             {
               inlineData: {
                 data: base64Data,
