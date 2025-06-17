@@ -124,7 +124,7 @@ export default function PricingContent() {
                     sx={{ mr: 0.75, color: "#8c79e3", fontSize: "0.8rem" }}
                   />
                   <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
-                    1MB PDF & image uploads only
+                    10MB PDF & image uploads
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", mb: 0.75 }}>

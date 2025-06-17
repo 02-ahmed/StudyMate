@@ -29,7 +29,7 @@ const en = {
   selectFile: "Select File",
   dragAndDrop: "Drag and drop or click to browse",
   supportedFileTypes:
-    "Supported file types: Only PDF, text files, and images (PNG, JPEG, GIF, WebP) are supported. Maximum file size: 1MB",
+    "Supported file types: Only PDF, text files, and images (PNG, JPEG, GIF, WebP) are supported. Maximum file size: 10MB",
   generate: "Generate Summary Notes",
 
   // Generate page loading messages

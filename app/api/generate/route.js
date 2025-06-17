@@ -53,8 +53,8 @@ const SUPPORTED_MIME_TYPES = {
   "image/webp": true,
 };
 
-// 1MB in bytes - limit for free plan
-const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+// 10MB in bytes - new increased limit
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 // Add supported languages
 const SUPPORTED_LANGUAGES = {
