@@ -39,6 +39,7 @@ import SaveIcon from "@mui/icons-material/Save";
 import ViewListIcon from "@mui/icons-material/ViewList";
 import FlipIcon from "@mui/icons-material/Flip";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import ImageIcon from "@mui/icons-material/Image";
 import { createFlashcardSet, cleanFlashcardContent } from "../../utils/schemas";
 import { useLanguage } from "../contexts/LanguageContext";
 import useTranslation from "../hooks/useTranslation";
@@ -82,6 +83,9 @@ export default function GenerateContent() {
   const [savingFlashcards, setSavingFlashcards] = useState(false);
   const { language } = useLanguage();
   const { t } = useTranslation(); // Add translation hook
+  const [imageData, setImageData] = useState({});
+  const [loadingImage, setLoadingImage] = useState({});
+  const [showImage, setShowImage] = useState({});
 
   // Define allowed file types
   const allowedTypes = [
@@ -392,6 +396,58 @@ export default function GenerateContent() {
       return;
     }
     router.push("/notes");
+  };
+
+  // Function to generate an image for a flashcard
+  const generateImage = async (index, e) => {
+    e.stopPropagation(); // Prevent card from flipping
+
+    if (imageData[index]) {
+      // Toggle image visibility if already loaded
+      setShowImage((prev) => ({
+        ...prev,
+        [index]: !prev[index],
+      }));
+      return;
+    }
+
+    setLoadingImage((prev) => ({
+      ...prev,
+      [index]: true,
+    }));
+
+    try {
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          front: flashcards[index].front,
+          back: flashcards[index].back,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.imageData) {
+        setImageData((prev) => ({
+          ...prev,
+          [index]: data.imageData,
+        }));
+        setShowImage((prev) => ({
+          ...prev,
+          [index]: true,
+        }));
+      }
+    } catch (error) {
+      console.error("Error generating image:", error);
+    } finally {
+      setLoadingImage((prev) => ({
+        ...prev,
+        [index]: false,
+      }));
+    }
   };
 
   return (
@@ -1025,7 +1081,7 @@ export default function GenerateContent() {
 
           <Grid container spacing={2}>
             {flashcards.map((flashcard, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
+              <Grid item xs={12} sm={6} md={6} key={index}>
                 <Fade in={true} timeout={300 + index * 100}>
                   <Card
                     onClick={(e) => {
@@ -1042,7 +1098,7 @@ export default function GenerateContent() {
                       setFlipped(newFlipped);
                     }}
                     sx={{
-                      height: 200,
+                      height: 350,
                       borderRadius: 3,
                       background: "white",
                       boxShadow: "0 4px 20px rgba(0, 0, 0, 0.06)",
@@ -1102,6 +1158,48 @@ export default function GenerateContent() {
                       }}
                     />
 
+                    {/* Image visualization button - moved to bottom right */}
+                    <Tooltip
+                      title={
+                        loadingImage[index]
+                          ? t(
+                              "flashcards.generatingImage",
+                              "Generating image..."
+                            )
+                          : imageData[index]
+                          ? showImage[index]
+                            ? t("flashcards.showText", "Show text")
+                            : t("flashcards.showImage", "Show image")
+                          : t("flashcards.generateImage", "Generate image")
+                      }
+                    >
+                      <IconButton
+                        onClick={(e) => generateImage(index, e)}
+                        sx={{
+                          position: "absolute",
+                          bottom: 8,
+                          right: 8,
+                          zIndex: 10,
+                          backgroundColor: showImage[index]
+                            ? "rgba(63, 81, 181, 0.2)"
+                            : "rgba(255,255,255,0.7)",
+                          borderRadius: "50%",
+                          "&:hover": {
+                            backgroundColor: "rgba(63, 81, 181, 0.2)",
+                          },
+                        }}
+                        disabled={loadingImage[index]}
+                      >
+                        {loadingImage[index] ? (
+                          <CircularProgress size={20} />
+                        ) : showImage[index] && imageData[index] ? (
+                          <TextFieldsIcon fontSize="small" />
+                        ) : (
+                          <ImageIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </Tooltip>
+
                     <CardContent sx={{ height: "100%", p: 0 }}>
                       <Box sx={{ perspective: "1000px", height: "100%" }}>
                         <Box
@@ -1124,25 +1222,58 @@ export default function GenerateContent() {
                               width: "100%",
                               height: "100%",
                               backfaceVisibility: "hidden",
-                              p: 3,
+                              p: 2,
                               display: "flex",
                               flexDirection: "column",
                             }}
                           >
-                            <Typography
-                              variant="body1"
-                              sx={{
-                                flex: 1,
-                                overflow: "auto",
-                                fontSize: "1.1rem",
-                                lineHeight: 1.5,
-                                color: "#2c3e50",
-                              }}
-                            >
-                              {typeof flashcard === "string"
-                                ? cleanFlashcardContent(flashcard)
-                                : cleanFlashcardContent(flashcard.front)}
-                            </Typography>
+                            {!flipped[index] &&
+                              showImage[index] &&
+                              imageData[index] && (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexGrow: 1,
+                                    flexDirection: "column",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    width: "100%",
+                                    height: "85%",
+                                    overflow: "hidden",
+                                    mb: 1,
+                                  }}
+                                >
+                                  <img
+                                    src={`data:image/png;base64,${imageData[index]}`}
+                                    alt="Flashcard visualization"
+                                    style={{
+                                      width: "90%",
+                                      maxHeight: "280px",
+                                      objectFit: "contain",
+                                      borderRadius: "8px",
+                                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </Box>
+                              )}
+
+                            {!showImage[index] || !imageData[index] ? (
+                              <Typography
+                                variant="body1"
+                                sx={{
+                                  flex: 1,
+                                  overflow: "auto",
+                                  fontSize: "1.1rem",
+                                  lineHeight: 1.5,
+                                  color: "#2c3e50",
+                                }}
+                              >
+                                {typeof flashcard === "string"
+                                  ? cleanFlashcardContent(flashcard)
+                                  : cleanFlashcardContent(flashcard.front)}
+                              </Typography>
+                            ) : null}
                           </Box>
 
                           {/* Back of card */}
@@ -1153,25 +1284,58 @@ export default function GenerateContent() {
                               height: "100%",
                               backfaceVisibility: "hidden",
                               transform: "rotateY(180deg)",
-                              p: 3,
+                              p: 2,
                               display: "flex",
                               flexDirection: "column",
                             }}
                           >
-                            <Typography
-                              variant="body1"
-                              sx={{
-                                flex: 1,
-                                overflow: "auto",
-                                fontSize: "1.1rem",
-                                lineHeight: 1.5,
-                                color: "#2c3e50",
-                              }}
-                            >
-                              {typeof flashcard === "string"
-                                ? cleanFlashcardContent(flashcard)
-                                : cleanFlashcardContent(flashcard.back)}
-                            </Typography>
+                            {flipped[index] &&
+                              showImage[index] &&
+                              imageData[index] && (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexGrow: 1,
+                                    flexDirection: "column",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    width: "100%",
+                                    height: "85%",
+                                    overflow: "hidden",
+                                    mb: 1,
+                                  }}
+                                >
+                                  <img
+                                    src={`data:image/png;base64,${imageData[index]}`}
+                                    alt="Flashcard visualization"
+                                    style={{
+                                      width: "90%",
+                                      maxHeight: "280px",
+                                      objectFit: "contain",
+                                      borderRadius: "8px",
+                                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </Box>
+                              )}
+
+                            {!showImage[index] || !imageData[index] ? (
+                              <Typography
+                                variant="body1"
+                                sx={{
+                                  flex: 1,
+                                  overflow: "auto",
+                                  fontSize: "1.1rem",
+                                  lineHeight: 1.5,
+                                  color: "#2c3e50",
+                                }}
+                              >
+                                {typeof flashcard === "string"
+                                  ? "No additional information available."
+                                  : cleanFlashcardContent(flashcard.back)}
+                              </Typography>
+                            ) : null}
                           </Box>
                         </Box>
                       </Box>

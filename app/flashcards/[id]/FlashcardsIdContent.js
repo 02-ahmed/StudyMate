@@ -14,6 +14,8 @@ import {
   Rating,
   CircularProgress,
   Chip,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import { collection, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -21,6 +23,7 @@ import StarIcon from "@mui/icons-material/Star";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import TranslateIcon from "@mui/icons-material/Translate";
+import ImageIcon from "@mui/icons-material/Image";
 import { db } from "../../../utils/firebase";
 import { SUPPORTED_LANGUAGES } from "../../contexts/LanguageContext";
 import { cleanFlashcardContent } from "@/utils/schemas";
@@ -35,6 +38,9 @@ export default function FlashcardsIdContent({ params }) {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [language, setLanguage] = useState("en"); // Default to English
+  const [imageData, setImageData] = useState(null);
+  const [showImage, setShowImage] = useState(false);
+  const [loadingImage, setLoadingImage] = useState(false);
   const router = useRouter();
   const { t } = useTranslation(); // Add translation hook
 
@@ -112,11 +118,23 @@ export default function FlashcardsIdContent({ params }) {
         }
         // Handle both array and object formats for backwards compatibility
         if (Array.isArray(data.flashcards)) {
-          setFlashcards(data.flashcards);
+          // Add canVisualize=true to all flashcards for testing
+          setFlashcards(
+            data.flashcards.map((card) => ({
+              ...card,
+              canVisualize: true, // Force all cards to be visualizable for testing
+            }))
+          );
         } else if (typeof data.flashcards === "object") {
           // Convert object to array if it's in the old format
           const flashcardsArray = Object.values(data.flashcards);
-          setFlashcards(flashcardsArray);
+          // Add canVisualize=true to all flashcards for testing
+          setFlashcards(
+            flashcardsArray.map((card) => ({
+              ...card,
+              canVisualize: true, // Force all cards to be visualizable for testing
+            }))
+          );
         } else {
           setFlashcards([]);
         }
@@ -167,9 +185,68 @@ export default function FlashcardsIdContent({ params }) {
       : cleanFlashcardContent(flashcards[currentIndex].front);
   };
 
+  const generateImage = async (e) => {
+    e.stopPropagation(); // Prevent card from flipping
+
+    if (imageData) {
+      // Toggle image visibility if already loaded
+      setShowImage(!showImage);
+      return;
+    }
+
+    setLoadingImage(true);
+    try {
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          front: flashcards[currentIndex].front,
+          back: flashcards[currentIndex].back,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.imageData) {
+        setImageData(data.imageData);
+        setShowImage(true);
+      }
+    } catch (error) {
+      console.error("Error generating image:", error);
+    } finally {
+      setLoadingImage(false);
+    }
+  };
+
+  // Reset image when changing cards
+  useEffect(() => {
+    setImageData(null);
+    setShowImage(false);
+  }, [currentIndex]);
+
+  // Add debugging logs to help troubleshoot
+  useEffect(() => {
+    if (flashcards[currentIndex]) {
+      console.log("Current flashcard:", flashcards[currentIndex]);
+      console.log(
+        "Has canVisualize property:",
+        "canVisualize" in flashcards[currentIndex]
+      );
+      console.log("canVisualize value:", flashcards[currentIndex].canVisualize);
+    }
+  }, [flashcards, currentIndex]);
+
   if (loading) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container
+        maxWidth="md"
+        sx={{
+          pt: { xs: 1, sm: 1.5 },
+          pb: { xs: 1, sm: 1.5 },
+        }}
+      >
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress />
         </Box>
@@ -179,7 +256,13 @@ export default function FlashcardsIdContent({ params }) {
 
   if (flashcards.length === 0) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container
+        maxWidth="md"
+        sx={{
+          pt: { xs: 1, sm: 1.5 },
+          pb: { xs: 1, sm: 1.5 },
+        }}
+      >
         <Button
           onClick={handleBack}
           startIcon={<ArrowBackIcon />}
@@ -307,6 +390,40 @@ export default function FlashcardsIdContent({ params }) {
           }}
         />
 
+        {/* Image visualization button - removed conditional check for testing */}
+        <Tooltip
+          title={
+            imageData
+              ? showImage
+                ? t("flashcards.hideImage", "Hide image")
+                : t("flashcards.showImage", "Show image")
+              : t("flashcards.generateImage", "Generate image")
+          }
+        >
+          <IconButton
+            onClick={(e) => {
+              e.stopPropagation();
+              generateImage(e);
+            }}
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 48,
+              zIndex: 10,
+              backgroundColor: showImage
+                ? "rgba(63, 81, 181, 0.2)"
+                : "rgba(255,255,255,0.7)",
+              borderRadius: "50%",
+              "&:hover": {
+                backgroundColor: "rgba(63, 81, 181, 0.2)",
+              },
+            }}
+            disabled={loadingImage}
+          >
+            {loadingImage ? <CircularProgress size={20} /> : <ImageIcon />}
+          </IconButton>
+        </Tooltip>
+
         <Box
           sx={{
             position: "relative",
@@ -325,6 +442,7 @@ export default function FlashcardsIdContent({ params }) {
               height: "100%",
               backfaceVisibility: "hidden",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
               backgroundColor: "#fff",
@@ -346,6 +464,23 @@ export default function FlashcardsIdContent({ params }) {
               },
             }}
           >
+            {/* Show image on front if enabled */}
+            {!isFlipped && showImage && imageData && (
+              <Box sx={{ mb: 2, maxWidth: "100%", textAlign: "center" }}>
+                <img
+                  src={`data:image/png;base64,${imageData}`}
+                  alt="Flashcard visualization"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "140px",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Box>
+            )}
+
             <Box
               sx={{
                 width: "100%",
@@ -379,6 +514,7 @@ export default function FlashcardsIdContent({ params }) {
               height: "100%",
               backfaceVisibility: "hidden",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
               backgroundColor: "#fff",
@@ -401,6 +537,23 @@ export default function FlashcardsIdContent({ params }) {
               },
             }}
           >
+            {/* Show image on back if enabled */}
+            {isFlipped && showImage && imageData && (
+              <Box sx={{ mb: 2, maxWidth: "100%", textAlign: "center" }}>
+                <img
+                  src={`data:image/png;base64,${imageData}`}
+                  alt="Flashcard visualization"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: "140px",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Box>
+            )}
+
             <Box
               sx={{
                 width: "100%",

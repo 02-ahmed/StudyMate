@@ -8,11 +8,19 @@ import {
   IconButton,
   Tooltip,
   Button,
+  CircularProgress,
 } from "@mui/material";
-import { CloseIcon, CheckIcon, FlipIcon } from "@mui/icons-material";
+import CloseIcon from "@mui/icons-material/Close";
+import CheckIcon from "@mui/icons-material/Check";
+import FlipCameraAndroidIcon from "@mui/icons-material/FlipCameraAndroid";
+import ImageIcon from "@mui/icons-material/Image";
+import TextFieldsIcon from "@mui/icons-material/TextFields";
 
 const Flashcard = ({ card }) => {
   const [isFlipped, setIsFlipped] = useState(false);
+  const [showImage, setShowImage] = useState(false);
+  const [imageData, setImageData] = useState(null);
+  const [loadingImage, setLoadingImage] = useState(false);
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
@@ -20,6 +28,41 @@ const Flashcard = ({ card }) => {
 
   const onAnswer = (isCorrect) => {
     // Handle answer logic
+  };
+
+  const generateImage = async (e) => {
+    e.stopPropagation(); // Prevent card from flipping
+
+    // If image is already loaded, toggle between image and text view
+    if (imageData) {
+      setShowImage(!showImage);
+      return;
+    }
+
+    setLoadingImage(true);
+    try {
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          front: card.front || card.question,
+          back: card.back || card.answer,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.imageData) {
+        setImageData(data.imageData);
+        setShowImage(true);
+      }
+    } catch (error) {
+      console.error("Error generating image:", error);
+    } finally {
+      setLoadingImage(false);
+    }
   };
 
   return (
@@ -37,7 +80,7 @@ const Flashcard = ({ card }) => {
       >
         <Card
           sx={{
-            minHeight: 300,
+            minHeight: showImage && imageData ? 400 : 300,
             width: "100%",
             position: "relative",
             cursor: "pointer",
@@ -45,7 +88,7 @@ const Flashcard = ({ card }) => {
             backdropFilter: "blur(10px)",
             boxShadow: "0 8px 32px rgba(63, 81, 181, 0.15)",
             borderRadius: 4,
-            transition: "transform 0.3s ease-in-out",
+            transition: "all 0.3s ease-in-out",
             "&:hover": {
               transform: "translateY(-4px)",
               boxShadow: "0 12px 48px rgba(63, 81, 181, 0.2)",
@@ -92,17 +135,47 @@ const Flashcard = ({ card }) => {
             >
               {isFlipped ? "Answer" : "Question"}
             </Typography>
-            <Typography
-              variant="body1"
-              sx={{
-                textAlign: "center",
-                color: "text.primary",
-                fontSize: "1.1rem",
-                lineHeight: 1.6,
-              }}
-            >
-              {isFlipped ? card.answer : card.question}
-            </Typography>
+
+            {showImage && imageData ? (
+              <Box
+                sx={{
+                  mb: 2,
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  flex: 1,
+                }}
+              >
+                <img
+                  src={`data:image/png;base64,${imageData}`}
+                  alt="Flashcard visualization"
+                  style={{
+                    width: "100%",
+                    maxHeight: "280px",
+                    objectFit: "contain",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  }}
+                />
+              </Box>
+            ) : (
+              <Typography
+                variant="body1"
+                sx={{
+                  textAlign: "center",
+                  color: "text.primary",
+                  fontSize: "1.1rem",
+                  lineHeight: 1.6,
+                }}
+              >
+                {isFlipped
+                  ? card.back || card.answer
+                  : card.front || card.question}
+              </Typography>
+            )}
+
             <Box
               sx={{
                 position: "absolute",
@@ -112,6 +185,41 @@ const Flashcard = ({ card }) => {
                 gap: 1,
               }}
             >
+              {card.canVisualize && (
+                <Tooltip
+                  title={
+                    loadingImage
+                      ? "Generating image..."
+                      : imageData
+                      ? showImage
+                        ? "Show text"
+                        : "Show image"
+                      : "Generate image"
+                  }
+                >
+                  <IconButton
+                    size="small"
+                    onClick={generateImage}
+                    sx={{
+                      bgcolor: showImage
+                        ? "rgba(63, 81, 181, 0.2)"
+                        : "rgba(63, 81, 181, 0.1)",
+                      "&:hover": {
+                        bgcolor: "rgba(63, 81, 181, 0.2)",
+                      },
+                    }}
+                    disabled={loadingImage}
+                  >
+                    {loadingImage ? (
+                      <CircularProgress size={20} />
+                    ) : showImage && imageData ? (
+                      <TextFieldsIcon />
+                    ) : (
+                      <ImageIcon />
+                    )}
+                  </IconButton>
+                </Tooltip>
+              )}
               <Tooltip title="Flip card">
                 <IconButton
                   size="small"
@@ -123,7 +231,7 @@ const Flashcard = ({ card }) => {
                     },
                   }}
                 >
-                  <FlipIcon />
+                  <FlipCameraAndroidIcon />
                 </IconButton>
               </Tooltip>
               {isFlipped && (
