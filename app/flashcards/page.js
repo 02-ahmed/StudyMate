@@ -2,8 +2,8 @@ import { Suspense } from "react";
 import { Box, Container, CircularProgress } from "@mui/material";
 import dynamic from "next/dynamic";
 
-// Import FlashcardsContent as a Client Component
-const FlashcardsContent = dynamic(() => import("./FlashcardsContent"), {
+// Import NotesContent as a Client Component (will be renamed later)
+const NotesContent = dynamic(() => import("../notes/NotesContent"), {
   ssr: true,
 });
 
@@ -18,7 +18,7 @@ export default function FlashcardsPage() {
         </Container>
       }
     >
-      <FlashcardsContent />
+      <NotesContent />
     </Suspense>
   );
 }

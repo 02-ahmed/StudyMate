@@ -20,17 +20,17 @@ const en = {
   },
 
   // Generate page
-  generateSummaryNotes: "Generate Summary Notes",
-  viewNotes: "View Notes",
+  generateSummaryNotes: "Generate Flashcards",
+  viewNotes: "View Flashcards",
   typeOrPaste: "Type or Paste",
   uploadFile: "Upload File",
-  enterTextBelow: "Enter your text below to generate summary notes",
+  enterTextBelow: "Enter your text below to generate flashcards",
   enterText: "Enter text...",
   selectFile: "Select File",
   dragAndDrop: "Drag and drop or click to browse",
   supportedFileTypes:
     "Supported file types: Only PDF, text files, and images (PNG, JPEG, GIF, WebP) are supported. Maximum file size: 10MB",
-  generate: "Generate Summary Notes",
+  generate: "Generate Flashcards",
 
   // Generate page loading messages
   generatePage: {
@@ -185,13 +185,13 @@ const en = {
     hideAnswer: "Hide Answer",
     retry: "Try Again",
     exploreMoreLanguages: "Explore More Languages",
-    createNotes: "CREATE NOTES",
-    viewNotes: "VIEW NOTES",
+    createNotes: "CREATE FLASHCARDS",
+    viewNotes: "VIEW FLASHCARDS",
     takeQuiz: "TAKE A QUIZ",
     viewFullPage: "View Full Page",
     read: "Read",
     watch: "Watch",
-    viewDeletedNotes: "View Deleted Notes",
+    viewDeletedFlashcards: "View Deleted Flashcards",
     takeAction: "Take Action",
     studyNow: "Study Now",
     practiceThisTopic: "Practice This Topic",
@@ -217,7 +217,7 @@ const en = {
     studyResources: "Study Resources",
     videoResources: "Video Resources",
     practiceMaterials: "Practice Materials",
-    myNotes: "My Notes",
+    myFlashcards: "My Flashcards",
   },
 
   // Flashcards specific
@@ -238,7 +238,7 @@ const en = {
     cards: "cards",
     noMatching: "No matching flashcard sets found",
     adjustSearch: "Try adjusting your search or filters",
-    backToNotes: "Back to Notes",
+    backToNotes: "Back to Flashcards",
     noFlashcardsFound: "No flashcards found in this collection",
     untitledSet: "Untitled Set",
     cardCount: "Card {current} of {total}",
@@ -248,13 +248,14 @@ const en = {
   messages: {
     loading: "Loading...",
     noResults: "No results found",
+    searchFlashcards: "Search flashcards...",
     confirmDelete: "Are you sure you want to delete this item?",
     saved: "Successfully saved!",
     error: "An error occurred. Please try again.",
     welcome: "Welcome to Flashcards App",
     selectFlashcardSet: "Select a flashcard set and start a conversation",
     emptyState: "Nothing here yet. Create your first item!",
-    noteSetsCreated: "Note Sets Created",
+    noteSetsCreated: "Flashcard Sets Created",
     betaFeature:
       "This feature is in beta. The content generation is experimental and may not always produce perfect results.",
     searchNotes: "Search notes...",

@@ -40,10 +40,10 @@ function LoadingSkeleton() {
           gutterBottom
           sx={{ fontWeight: "bold", color: "#3f51b5" }}
         >
-          My Note Collection
+          My Flashcard Collection
         </Typography>
         <Typography variant="body1" component="p" sx={{ mb: 4, color: "#666" }}>
-          Click on a note set to view your summaries.
+          Click on a flashcard set to view your cards.
         </Typography>
       </Box>
 
@@ -178,7 +178,7 @@ export default function FlashcardsContent() {
   };
 
   const handleBackClick = () => {
-    router.push("/notes");
+    router.push("/flashcards");
   };
 
   return (
@@ -193,7 +193,7 @@ export default function FlashcardsContent() {
               startIcon={<ArrowBackIcon />}
               sx={{ mb: 2 }}
             >
-              Back to Notes
+              {t("flashcards.backToNotes", "Back to Flashcards")}
             </Button>
 
             <Typography

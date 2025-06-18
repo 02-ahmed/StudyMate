@@ -254,7 +254,7 @@ export default function NotesContent() {
           variant="h4"
           sx={{ mb: 4, fontWeight: "bold", color: "#3f51b5" }}
         >
-          {t("titles.myNotes")}
+          {t("titles.myFlashcards", "My Flashcards")}
         </Typography>
         <Grid container spacing={3}>
           {[1, 2, 3].map((index) => (
@@ -358,7 +358,7 @@ export default function NotesContent() {
         }}
       >
         <Typography variant="h4" sx={{ fontWeight: "bold", color: "#3f51b5" }}>
-          {t("titles.myNotes")}
+          {t("titles.myFlashcards", "My Flashcards")}
         </Typography>
         <Button
           variant="text"
@@ -368,7 +368,7 @@ export default function NotesContent() {
           startIcon={<DeleteIcon />}
           sx={{ whiteSpace: "nowrap" }}
         >
-          {t("buttons.viewDeletedNotes")}
+          {t("buttons.viewDeletedFlashcards", "View Deleted Flashcards")}
         </Button>
       </Box>
 
@@ -376,7 +376,7 @@ export default function NotesContent() {
         <TextField
           fullWidth
           variant="outlined"
-          placeholder={t("messages.searchNotes")}
+          placeholder={t("messages.searchFlashcards", "Search flashcards...")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{

@@ -196,7 +196,7 @@ export default function FlashcardsIdContent({ params }) {
   };
 
   const handleBack = () => {
-    router.push("/notes");
+    router.push("/flashcards");
   };
 
   // Get the current text to be displayed (and potentially spoken)

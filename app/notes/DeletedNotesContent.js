@@ -85,7 +85,7 @@ export default function DeletedNotesContent() {
   };
 
   const handleBack = () => {
-    router.push("/notes");
+    router.push("/flashcards");
   };
 
   if (loading) {
@@ -101,16 +101,16 @@ export default function DeletedNotesContent() {
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Button onClick={handleBack} startIcon={<ArrowBackIcon />} sx={{ mb: 2 }}>
-        Back to Notes
+        Back to Flashcards
       </Button>
 
       <Typography variant="h4" sx={{ mb: 4 }}>
-        Deleted Notes
+        Deleted Flashcards
       </Typography>
 
       {deletedNotes.length === 0 ? (
         <Typography variant="body1" sx={{ textAlign: "center", mt: 4 }}>
-          No deleted notes found.
+          No deleted flashcards found.
         </Typography>
       ) : (
         <Grid container spacing={3}>

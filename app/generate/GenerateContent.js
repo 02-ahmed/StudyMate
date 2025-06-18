@@ -186,7 +186,7 @@ export default function GenerateContent() {
 
   const handleOpenDialog = () => {
     if (!isSignedIn) {
-      alert("Please sign in to save summary notes.");
+      alert("Please sign in to save flashcards.");
       return;
     }
     setDialogOpen(true);
@@ -196,7 +196,7 @@ export default function GenerateContent() {
 
   const saveFlashcards = async () => {
     if (!setName.trim()) {
-      alert("Please enter a name for your summary notes set.");
+      alert("Please enter a name for your flashcard set.");
       return;
     }
 
@@ -234,12 +234,12 @@ export default function GenerateContent() {
 
       const docRef = await addDoc(flashcardsRef, validatedFlashcardSet);
 
-      alert("Summary notes saved successfully!");
+      alert("Flashcards saved successfully!");
       handleCloseDialog();
       router.push(`/flashcards/${docRef.id}`);
     } catch (error) {
-      console.error("Error saving summary notes:", error);
-      alert("An error occurred while saving summary notes. Please try again.");
+      console.error("Error saving flashcards:", error);
+      alert("An error occurred while saving flashcards. Please try again.");
     } finally {
       setSavingFlashcards(false);
     }
@@ -302,7 +302,7 @@ export default function GenerateContent() {
     if (inputMethod === 0) {
       // Text mode
       if (!text.trim()) {
-        alert("Please enter some text to generate summary notes.");
+        alert("Please enter some text to generate flashcards.");
         return;
       }
 
@@ -320,7 +320,7 @@ export default function GenerateContent() {
         });
 
         if (!response.ok) {
-          throw new Error("Failed to generate summary notes");
+          throw new Error("Failed to generate flashcards");
         }
 
         const data = await response.json();
@@ -338,9 +338,9 @@ export default function GenerateContent() {
         setFlashcards(cleanedFlashcards);
         setFlipped(Array(cleanedFlashcards.length).fill(false));
       } catch (error) {
-        console.error("Error generating summary notes:", error);
+        console.error("Error generating flashcards:", error);
         alert(
-          "An error occurred while generating summary notes. Please try again."
+          "An error occurred while generating flashcards. Please try again."
         );
       } finally {
         setLoading(false);
@@ -392,10 +392,10 @@ export default function GenerateContent() {
 
   const handleViewSavedNotes = () => {
     if (!isSignedIn) {
-      alert("Please sign in to view saved summary notes.");
+      alert("Please sign in to view saved flashcards.");
       return;
     }
-    router.push("/notes");
+    router.push("/flashcards");
   };
 
   // Function to generate an image for a flashcard
@@ -912,11 +912,11 @@ export default function GenerateContent() {
             padding: 3,
           }}
         >
-          <SaveIcon sx={{ mr: 1 }} /> Save Summary Notes Set
+          <SaveIcon sx={{ mr: 1 }} /> Save Flashcard Set
         </DialogTitle>
         <DialogContent sx={{ px: 3, pb: 1 }}>
           <DialogContentText sx={{ mb: 2, color: "#546e7a" }}>
-            Enter a descriptive name for your summary notes set. Choose a clear,
+            Enter a descriptive name for your flashcard set. Choose a clear,
             specific name to track performance and generate reviews.
           </DialogContentText>
           <TextField
@@ -1045,7 +1045,7 @@ export default function GenerateContent() {
               }}
             >
               <AutoAwesomeIcon sx={{ mr: 1, fontSize: 18 }} />
-              Generated Summary Notes
+              Generated Flashcards
             </Typography>
 
             <Tooltip title="Flip all cards">
@@ -1397,7 +1397,7 @@ export default function GenerateContent() {
                 },
               }}
             >
-              Save Summary Notes
+              Save Flashcards
             </Button>
             <Button
               variant="outlined"

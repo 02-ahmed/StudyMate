@@ -64,7 +64,11 @@ function NavigationBarContent() {
       label: t("nav.dashboard"),
       icon: <DashboardOutlinedIcon />,
     },
-    { path: "/notes", label: t("nav.flashcards"), icon: <NotesOutlinedIcon /> },
+    {
+      path: "/flashcards",
+      label: t("nav.flashcards"),
+      icon: <NotesOutlinedIcon />,
+    },
     {
       path: "/generate",
       label: t("nav.generate", "Generate"),
