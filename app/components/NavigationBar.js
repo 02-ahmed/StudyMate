@@ -436,29 +436,19 @@ function NavigationBarContent() {
           borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}
       >
-        <Container maxWidth="xl">
-          <Toolbar disableGutters sx={{ height: 70 }}>
+        <Container maxWidth="xl" sx={{ px: { xs: 0 } }}>
+          <Toolbar
+            disableGutters
+            sx={{ height: 70, pl: { xs: 1 }, pr: { xs: 0 } }}
+          >
             {isMobile ? (
               <>
-                <IconButton
-                  edge="start"
-                  aria-label="menu"
-                  onClick={() => setDrawerOpen(true)}
-                  sx={{
-                    mr: 1,
-                    color: "#4f46e5",
-                    bgcolor: "rgba(79, 70, 229, 0.1)",
-                    "&:hover": { bgcolor: "rgba(79, 70, 229, 0.2)" },
-                  }}
-                >
-                  <MenuIcon />
-                </IconButton>
                 <Box
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    flexGrow: 1,
-                    justifyContent: "center",
+                    justifyContent: "space-between",
+                    width: "100%",
                   }}
                 >
                   <Box
@@ -475,6 +465,56 @@ function NavigationBarContent() {
                       objectFit="contain"
                       priority
                     />
+                  </Box>
+
+                  <Box sx={{ display: "flex", alignItems: "center", pr: 0 }}>
+                    {/* Language selector in compact form */}
+                    <Select
+                      value={language}
+                      onChange={handleLanguageChange}
+                      size="small"
+                      variant="standard"
+                      displayEmpty
+                      renderValue={(value) => value.toUpperCase()}
+                      sx={{
+                        minWidth: 60,
+                        "& .MuiSelect-select": {
+                          p: 1,
+                          color: "#4f46e5",
+                          fontWeight: 500,
+                          fontSize: "0.75rem",
+                        },
+                        "&:before, &:after": {
+                          display: "none",
+                        },
+                        "& .MuiSelect-icon": {
+                          color: "#4f46e5",
+                        },
+                      }}
+                    >
+                      {Object.entries(SUPPORTED_LANGUAGES).map(
+                        ([code, name]) => (
+                          <MenuItem key={code} value={code}>
+                            {name}
+                          </MenuItem>
+                        )
+                      )}
+                    </Select>
+
+                    <IconButton
+                      edge="end"
+                      aria-label="menu"
+                      onClick={() => setDrawerOpen(true)}
+                      sx={{
+                        ml: 1,
+                        mr: -3, // Even more negative margin to push it to the edge
+                        color: "#4f46e5",
+                        bgcolor: "rgba(79, 70, 229, 0.1)",
+                        "&:hover": { bgcolor: "rgba(79, 70, 229, 0.2)" },
+                      }}
+                    >
+                      <MenuIcon />
+                    </IconButton>
                   </Box>
                 </Box>
               </>
@@ -582,11 +622,17 @@ function NavigationBarContent() {
               </>
             )}
 
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              {/* Language selector - Hide on mobile since it's in the drawer */}
+            <Box
+              sx={{
+                display: { xs: "none", sm: "flex" }, // Only show on non-mobile screens
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              {/* Language selector - Hide on mobile since it's now in the top bar */}
               <Box
                 sx={{
-                  display: { xs: "none", sm: "flex" }, // Hide on mobile screens
+                  display: "flex",
                   alignItems: "center",
                   bgcolor: "rgba(79, 70, 229, 0.1)",
                   borderRadius: 1,
@@ -632,29 +678,30 @@ function NavigationBarContent() {
                   ))}
                 </Select>
               </Box>
+            </Box>
 
-              <Box
-                sx={{
-                  ml: 1,
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    transform: "translateY(-1px)",
+            {/* User button - always visible on all screen sizes */}
+            <Box
+              sx={{
+                ml: 1,
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  transform: "translateY(-1px)",
+                },
+              }}
+            >
+              <UserButton
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    avatarBox: {
+                      width: 38,
+                      height: 38,
+                      boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+                    },
                   },
                 }}
-              >
-                <UserButton
-                  afterSignOutUrl="/"
-                  appearance={{
-                    elements: {
-                      avatarBox: {
-                        width: 38,
-                        height: 38,
-                        boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
-                      },
-                    },
-                  }}
-                />
-              </Box>
+              />
             </Box>
           </Toolbar>
         </Container>

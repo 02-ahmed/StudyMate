@@ -151,19 +151,27 @@ export default function LandingNavBar() {
           ) : (
             // Mobile Navigation
             <>
-              {/* Language Selector for Mobile */}
-              <LandingLanguageSelector inline={true} />
-
-              {/* Mobile Menu Icon */}
-              <IconButton
-                edge="end"
-                color="inherit"
-                aria-label="menu"
-                onClick={handleMobileMenuOpen}
-                sx={{ color: "#4f46e5" }}
+              {/* Mobile Menu Icon - Positioned on the right */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  width: "100%",
+                }}
               >
-                <MenuIcon />
-              </IconButton>
+                <IconButton
+                  edge="end"
+                  color="inherit"
+                  aria-label="menu"
+                  onClick={handleMobileMenuOpen}
+                  sx={{
+                    color: "#4f46e5",
+                    mr: -1, // Negative margin to align to the edge
+                  }}
+                >
+                  <MenuIcon />
+                </IconButton>
+              </Box>
 
               {/* Mobile Menu */}
               <Menu

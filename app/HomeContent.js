@@ -25,6 +25,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useLanguage } from "./contexts/LanguageContext";
 import useTranslation from "./hooks/useTranslation";
 import LandingNavBar from "./components/LandingNavBar";
+import LandingFooter from "./components/LandingFooter";
 
 // Animation variants
 const fadeIn = {
@@ -898,6 +899,7 @@ export default function HomeContent() {
           </motion.div>
         </motion.div>
       </Box>
+      <LandingFooter />
     </Container>
   );
 }

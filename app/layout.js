@@ -32,6 +32,8 @@ export const metadata = {
     shortcut: { url: "/images/favicon.png" },
     apple: { url: "/images/favicon.png", sizes: "180x180", type: "image/png" },
   },
+  viewport:
+    "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no",
 };
 
 export default function RootLayout({ children }) {
@@ -46,6 +48,7 @@ export default function RootLayout({ children }) {
                 minHeight: "100vh",
                 bgcolor: "#f1f5f9",
                 pb: 4,
+                overflowX: "hidden",
               }}
             >
               <NavigationBar />
