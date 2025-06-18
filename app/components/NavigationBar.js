@@ -46,7 +46,7 @@ function NavigationBarContent() {
   const { isSignedIn, isLoaded } = useUser();
   const pathname = usePathname();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
   const { language, changeLanguage } = useLanguage();
@@ -436,11 +436,8 @@ function NavigationBarContent() {
           borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}
       >
-        <Container maxWidth="xl" sx={{ px: { xs: 0 } }}>
-          <Toolbar
-            disableGutters
-            sx={{ height: 70, pl: { xs: 1 }, pr: { xs: 0 } }}
-          >
+        <Container maxWidth="xl" sx={{ px: { xs: 1 } }}>
+          <Toolbar disableGutters sx={{ height: 70 }}>
             {isMobile ? (
               <>
                 <Box
@@ -468,46 +465,14 @@ function NavigationBarContent() {
                   </Box>
 
                   <Box sx={{ display: "flex", alignItems: "center", pr: 0 }}>
-                    {/* Language selector in compact form */}
-                    <Select
-                      value={language}
-                      onChange={handleLanguageChange}
-                      size="small"
-                      variant="standard"
-                      displayEmpty
-                      renderValue={(value) => value.toUpperCase()}
-                      sx={{
-                        minWidth: 60,
-                        "& .MuiSelect-select": {
-                          p: 1,
-                          color: "#4f46e5",
-                          fontWeight: 500,
-                          fontSize: "0.75rem",
-                        },
-                        "&:before, &:after": {
-                          display: "none",
-                        },
-                        "& .MuiSelect-icon": {
-                          color: "#4f46e5",
-                        },
-                      }}
-                    >
-                      {Object.entries(SUPPORTED_LANGUAGES).map(
-                        ([code, name]) => (
-                          <MenuItem key={code} value={code}>
-                            {name}
-                          </MenuItem>
-                        )
-                      )}
-                    </Select>
-
+                    {/* Removing redundant language selector since it's already in the sidebar */}
                     <IconButton
                       edge="end"
                       aria-label="menu"
                       onClick={() => setDrawerOpen(true)}
                       sx={{
                         ml: 1,
-                        mr: -3, // Even more negative margin to push it to the edge
+                        mr: -1,
                         color: "#4f46e5",
                         bgcolor: "rgba(79, 70, 229, 0.1)",
                         "&:hover": { bgcolor: "rgba(79, 70, 229, 0.2)" },
@@ -624,12 +589,12 @@ function NavigationBarContent() {
 
             <Box
               sx={{
-                display: { xs: "none", sm: "flex" }, // Only show on non-mobile screens
+                display: { xs: "none", lg: "flex" }, // Only show on large screens that don't have hamburger menu
                 alignItems: "center",
                 gap: 1,
               }}
             >
-              {/* Language selector - Hide on mobile since it's now in the top bar */}
+              {/* Language selector - Only visible on screens large enough to not have hamburger menu */}
               <Box
                 sx={{
                   display: "flex",
@@ -643,7 +608,7 @@ function NavigationBarContent() {
                   sx={{
                     color: "#4f46e5",
                     fontSize: 20,
-                    mr: { sm: 0.5, lg: 1 },
+                    mr: { sm: 0.5, lg: 0.5 },
                   }}
                 />
                 <Select
@@ -652,11 +617,9 @@ function NavigationBarContent() {
                   size="small"
                   variant="standard"
                   displayEmpty
-                  renderValue={(value) =>
-                    `${value}: ${SUPPORTED_LANGUAGES[value] || "Unknown"}`
-                  }
+                  renderValue={(value) => value.toUpperCase()} // Just show language code
                   sx={{
-                    minWidth: { sm: 100, lg: 120 },
+                    minWidth: { sm: 60, lg: 60 },
                     "& .MuiSelect-select": {
                       py: 1,
                       color: "#4f46e5",
@@ -678,30 +641,30 @@ function NavigationBarContent() {
                   ))}
                 </Select>
               </Box>
-            </Box>
 
-            {/* User button - always visible on all screen sizes */}
-            <Box
-              sx={{
-                ml: 1,
-                transition: "all 0.2s ease",
-                "&:hover": {
-                  transform: "translateY(-1px)",
-                },
-              }}
-            >
-              <UserButton
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    avatarBox: {
-                      width: 38,
-                      height: 38,
-                      boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
-                    },
+              {/* Profile button - Only visible on screens large enough to not have hamburger menu */}
+              <Box
+                sx={{
+                  ml: 1,
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    transform: "translateY(-1px)",
                   },
                 }}
-              />
+              >
+                <UserButton
+                  afterSignOutUrl="/"
+                  appearance={{
+                    elements: {
+                      avatarBox: {
+                        width: 38,
+                        height: 38,
+                        boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+                      },
+                    },
+                  }}
+                />
+              </Box>
             </Box>
           </Toolbar>
         </Container>
