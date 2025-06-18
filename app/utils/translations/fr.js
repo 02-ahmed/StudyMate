@@ -30,7 +30,7 @@ const fr = {
   selectFile: "Sélectionner un Fichier",
   dragAndDrop: "Glissez-déposez ou cliquez pour parcourir",
   supportedFileTypes:
-    "Types de fichiers pris en charge : Uniquement PDF, fichiers texte et images (PNG, JPEG, GIF, WebP). Taille maximale de fichier : 10MB",
+    "Types de fichiers pris en charge : Uniquement PDF, fichiers texte et images (PNG, JPEG, GIF, WebP). Taille maximale de fichier : 2MB. Les fichiers plus volumineux peuvent provoquer des erreurs de traitement, envisagez de les diviser en morceaux plus petits si nécessaire.",
   generate: "Générer des Cartes Mémoire",
 
   // Generate page loading messages

@@ -28,7 +28,7 @@ const de = {
   selectFile: "Datei auswählen",
   dragAndDrop: "Ziehen und ablegen oder klicken zum Durchsuchen",
   supportedFileTypes:
-    "Unterstützte Dateitypen: Nur PDF, Textdateien und Bilder (PNG, JPEG, GIF, WebP). Maximale Dateigröße: 10MB",
+    "Unterstützte Dateitypen: Nur PDF, Textdateien und Bilder (PNG, JPEG, GIF, WebP). Maximale Dateigröße: 2MB. Größere Dateien können Verarbeitungsfehler verursachen, erwägen Sie bei Bedarf eine Aufteilung in kleinere Teile.",
   generate: "Karteikarten generieren",
 
   // Generate page loading messages

@@ -28,7 +28,7 @@ const es = {
   selectFile: "Seleccionar Archivo",
   dragAndDrop: "Arrastre y suelte o haga clic para navegar",
   supportedFileTypes:
-    "Tipos de archivo compatibles: Solo PDF, archivos de texto e imágenes (PNG, JPEG, GIF, WebP). Tamaño máximo de archivo: 10MB",
+    "Tipos de archivo compatibles: Solo PDF, archivos de texto e imágenes (PNG, JPEG, GIF, WebP). Tamaño máximo de archivo: 2MB. Los archivos más grandes pueden causar errores de procesamiento, considere dividirlos en partes más pequeñas si es necesario.",
   generate: "Generar Tarjetas de Estudio",
 
   // Generate page loading messages

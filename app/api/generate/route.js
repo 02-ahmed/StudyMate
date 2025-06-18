@@ -58,8 +58,8 @@ const SUPPORTED_MIME_TYPES = {
   "image/webp": true,
 };
 
-// 10MB in bytes - new increased limit
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+// 2MB in bytes - reduced from 10MB to prevent model errors with large files
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 // Add supported languages
 const SUPPORTED_LANGUAGES = {
@@ -202,9 +202,9 @@ export async function POST(req) {
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         {
-          error: `File size too large. Free plan maximum size is ${
+          error: `File size too large. Maximum size is ${
             MAX_FILE_SIZE / (1024 * 1024)
-          }MB. Please upgrade for larger file uploads.`,
+          }MB. Larger files may cause processing errors. Consider splitting your content into smaller chunks for better results.`,
         },
         { status: 400 }
       );

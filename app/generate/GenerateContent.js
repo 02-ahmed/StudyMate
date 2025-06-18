@@ -107,7 +107,7 @@ export default function GenerateContent() {
   };
 
   // Constants for file upload
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes - reduced from 10MB to prevent processing errors
 
   // Loading messages
   const loadingMessages = useMemo(
@@ -274,7 +274,7 @@ export default function GenerateContent() {
       // Check file size limit (1MB)
       if (selectedFile.size > MAX_FILE_SIZE) {
         setFileError(
-          `File too large. Maximum size is 10MB. Your file is ${formatFileSize(
+          `File too large. Maximum size is 2MB. Your file is ${formatFileSize(
             selectedFile.size
           )}.`
         );
