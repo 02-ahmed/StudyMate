@@ -13,7 +13,8 @@ IMPORTANT: You MUST ONLY respond with JSON in the following format, nothing else
   "flashcards": [
     {
       "front": "question or concept",
-      "back": "answer or explanation"
+      "back": "answer or explanation",
+      "canVisualize": true/false
     }
   ]
 }
@@ -39,7 +40,11 @@ Rules:
    - Use proper grammar and natural expressions
    - Maintain academic accuracy
    - Consider cultural context when relevant
-   - Use appropriate academic/formal language level`;
+   - Use appropriate academic/formal language level
+10. For each flashcard, set the "canVisualize" field to true if:
+    - The concept can be clearly represented visually
+    - The card describes physical objects, scenes, or visual concepts
+    - Set to false for abstract concepts, complex theories, or non-visual ideas`;
 
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
@@ -53,8 +58,8 @@ const SUPPORTED_MIME_TYPES = {
   "image/webp": true,
 };
 
-// 1MB in bytes - limit for free plan
-const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+// 10MB in bytes - new increased limit
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 // Add supported languages
 const SUPPORTED_LANGUAGES = {
@@ -84,6 +89,7 @@ function convertTextToFlashcards(text) {
         flashcards.push({
           front: currentFront.replace(/^front:\s*/i, "").trim(),
           back: currentBack.replace(/^back:\s*/i, "").trim(),
+          canVisualize: isVisualizable(currentFront, currentBack),
         });
         currentBack = "";
       }
@@ -94,6 +100,7 @@ function convertTextToFlashcards(text) {
       flashcards.push({
         front: currentFront.replace(/^front:\s*/i, "").trim(),
         back: currentBack.replace(/^back:\s*/i, "").trim(),
+        canVisualize: isVisualizable(currentFront, currentBack),
       });
       currentFront = "";
       currentBack = "";
@@ -108,6 +115,7 @@ function convertTextToFlashcards(text) {
         flashcards.push({
           front: sentences[i].replace(/^front:\s*/i, "").trim(),
           back: sentences[i + 1].replace(/^back:\s*/i, "").trim(),
+          canVisualize: isVisualizable(sentences[i], sentences[i + 1]),
         });
       }
     }
@@ -121,9 +129,51 @@ function convertTextToFlashcards(text) {
             {
               front: "Content Processing Note",
               back: "The content has been processed into study notes. Review the material for key concepts.",
+              canVisualize: false,
             },
           ],
   };
+}
+
+// Helper function to determine if a flashcard can be visualized
+function isVisualizable(front, back) {
+  const visualTerms = [
+    "looks like",
+    "appears",
+    "image",
+    "picture",
+    "photo",
+    "illustration",
+    "diagram",
+    "shape",
+    "color",
+    "physical",
+    "object",
+    "visual",
+  ];
+  const abstractTerms = [
+    "theory",
+    "concept",
+    "philosophy",
+    "abstract",
+    "idea",
+    "meaning",
+    "principle",
+  ];
+
+  const combinedText = (front + " " + back).toLowerCase();
+
+  // Check for visual terms
+  const hasVisualTerms = visualTerms.some((term) =>
+    combinedText.includes(term)
+  );
+  // Check for abstract terms
+  const hasAbstractTerms = abstractTerms.some((term) =>
+    combinedText.includes(term)
+  );
+
+  // Simple heuristic: if it has visual terms and no abstract terms, it's likely visualizable
+  return hasVisualTerms && !hasAbstractTerms;
 }
 
 export async function POST(req) {
@@ -211,6 +261,7 @@ export async function POST(req) {
       const cleanedFlashcards = flashcards.flashcards.map((card) => ({
         front: card.front.replace(/^front:\s*/i, "").trim(),
         back: card.back.replace(/^back:\s*/i, "").trim(),
+        canVisualize: card.canVisualize === true,
       }));
 
       return NextResponse.json(cleanedFlashcards);
@@ -228,6 +279,7 @@ export async function POST(req) {
           const cleanedFlashcards = fixedJson.flashcards.map((card) => ({
             front: card.front.replace(/^front:\s*/i, "").trim(),
             back: card.back.replace(/^back:\s*/i, "").trim(),
+            canVisualize: card.canVisualize === true,
           }));
 
           return NextResponse.json(cleanedFlashcards);
@@ -281,6 +333,7 @@ export async function POST(req) {
         const cleanedFlashcards = flashcards.flashcards.map((card) => ({
           front: card.front.replace(/^front:\s*/i, "").trim(),
           back: card.back.replace(/^back:\s*/i, "").trim(),
+          canVisualize: card.canVisualize === true,
         }));
 
         return NextResponse.json(cleanedFlashcards);

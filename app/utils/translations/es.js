@@ -28,7 +28,7 @@ const es = {
   selectFile: "Seleccionar Archivo",
   dragAndDrop: "Arrastre y suelte o haga clic para navegar",
   supportedFileTypes:
-    "Tipos de archivo compatibles: Solo PDF, archivos de texto e imágenes (PNG, JPEG, GIF, WebP). Tamaño máximo de archivo: 1MB",
+    "Tipos de archivo compatibles: Solo PDF, archivos de texto e imágenes (PNG, JPEG, GIF, WebP). Tamaño máximo de archivo: 10MB",
   generate: "Generar Resumen de Notas",
 
   // Generate page loading messages

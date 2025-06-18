@@ -14,6 +14,8 @@ import {
   Rating,
   CircularProgress,
   Chip,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import { collection, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
@@ -21,6 +23,8 @@ import StarIcon from "@mui/icons-material/Star";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import TranslateIcon from "@mui/icons-material/Translate";
+import ImageIcon from "@mui/icons-material/Image";
+import TextFieldsIcon from "@mui/icons-material/TextFields";
 import { db } from "../../../utils/firebase";
 import { SUPPORTED_LANGUAGES } from "../../contexts/LanguageContext";
 import { cleanFlashcardContent } from "@/utils/schemas";
@@ -35,6 +39,10 @@ export default function FlashcardsIdContent({ params }) {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [language, setLanguage] = useState("en"); // Default to English
+  const [imageData, setImageData] = useState(null);
+  const [showImage, setShowImage] = useState(false);
+  const [loadingImage, setLoadingImage] = useState(false);
+  const [imagesCache, setImagesCache] = useState({}); // Add cache for images
   const router = useRouter();
   const { t } = useTranslation(); // Add translation hook
 
@@ -112,11 +120,23 @@ export default function FlashcardsIdContent({ params }) {
         }
         // Handle both array and object formats for backwards compatibility
         if (Array.isArray(data.flashcards)) {
-          setFlashcards(data.flashcards);
+          // Add canVisualize=true to all flashcards for testing
+          setFlashcards(
+            data.flashcards.map((card) => ({
+              ...card,
+              canVisualize: true, // Force all cards to be visualizable for testing
+            }))
+          );
         } else if (typeof data.flashcards === "object") {
           // Convert object to array if it's in the old format
           const flashcardsArray = Object.values(data.flashcards);
-          setFlashcards(flashcardsArray);
+          // Add canVisualize=true to all flashcards for testing
+          setFlashcards(
+            flashcardsArray.map((card) => ({
+              ...card,
+              canVisualize: true, // Force all cards to be visualizable for testing
+            }))
+          );
         } else {
           setFlashcards([]);
         }
@@ -141,6 +161,16 @@ export default function FlashcardsIdContent({ params }) {
     if (currentIndex < flashcards.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setIsFlipped(false);
+
+      // Check if the next card has a cached image
+      const nextIndex = currentIndex + 1;
+      if (imagesCache[nextIndex]) {
+        setImageData(imagesCache[nextIndex]);
+        setShowImage(true);
+      } else {
+        setImageData(null);
+        setShowImage(false);
+      }
     }
   };
 
@@ -148,6 +178,16 @@ export default function FlashcardsIdContent({ params }) {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
       setIsFlipped(false);
+
+      // Check if the previous card has a cached image
+      const prevIndex = currentIndex - 1;
+      if (imagesCache[prevIndex]) {
+        setImageData(imagesCache[prevIndex]);
+        setShowImage(true);
+      } else {
+        setImageData(null);
+        setShowImage(false);
+      }
     }
   };
 
@@ -167,9 +207,75 @@ export default function FlashcardsIdContent({ params }) {
       : cleanFlashcardContent(flashcards[currentIndex].front);
   };
 
+  const generateImage = async (e) => {
+    e.stopPropagation(); // Prevent card from flipping
+
+    if (imageData) {
+      // Toggle image visibility if already loaded
+      setShowImage(!showImage);
+      return;
+    }
+
+    // Check if image is already in cache
+    if (imagesCache[currentIndex]) {
+      setImageData(imagesCache[currentIndex]);
+      setShowImage(true);
+      return;
+    }
+
+    setLoadingImage(true);
+    try {
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          front: flashcards[currentIndex].front,
+          back: flashcards[currentIndex].back,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.imageData) {
+        // Store in cache
+        setImagesCache((prev) => ({
+          ...prev,
+          [currentIndex]: data.imageData,
+        }));
+
+        setImageData(data.imageData);
+        setShowImage(true);
+      }
+    } catch (error) {
+      console.error("Error generating image:", error);
+    } finally {
+      setLoadingImage(false);
+    }
+  };
+
+  // Add debugging logs to help troubleshoot
+  useEffect(() => {
+    if (flashcards[currentIndex]) {
+      console.log("Current flashcard:", flashcards[currentIndex]);
+      console.log(
+        "Has canVisualize property:",
+        "canVisualize" in flashcards[currentIndex]
+      );
+      console.log("canVisualize value:", flashcards[currentIndex].canVisualize);
+    }
+  }, [flashcards, currentIndex]);
+
   if (loading) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container
+        maxWidth="md"
+        sx={{
+          pt: { xs: 1, sm: 1.5 },
+          pb: { xs: 1, sm: 1.5 },
+        }}
+      >
         <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
           <CircularProgress />
         </Box>
@@ -179,7 +285,13 @@ export default function FlashcardsIdContent({ params }) {
 
   if (flashcards.length === 0) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
+      <Container
+        maxWidth="md"
+        sx={{
+          pt: { xs: 1, sm: 1.5 },
+          pb: { xs: 1, sm: 1.5 },
+        }}
+      >
         <Button
           onClick={handleBack}
           startIcon={<ArrowBackIcon />}
@@ -221,16 +333,64 @@ export default function FlashcardsIdContent({ params }) {
             justifyContent: "space-between",
             alignItems: "center",
             mb: { xs: 0.5, sm: 0.75 },
+            position: "relative", // For absolute positioning of the title/count
           }}
         >
-          <Button
+          {/* Back button - changed to just an icon */}
+          <IconButton
             onClick={handleBack}
-            startIcon={<ArrowBackIcon sx={{ fontSize: "1rem" }} />}
             size="small"
-            sx={{ py: 0.5, px: 1, fontSize: "0.85rem" }}
+            sx={{
+              color: "primary.main",
+              "&:hover": {
+                backgroundColor: "rgba(63, 81, 181, 0.08)",
+              },
+            }}
+            aria-label={t("flashcards.backToNotes", "Back to Notes")}
           >
-            {t("flashcards.backToNotes", "Back to Notes")}
-          </Button>
+            <ArrowBackIcon />
+          </IconButton>
+
+          {/* Title and card count - centered absolutely */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              position: "absolute",
+              left: 0,
+              right: 0,
+              margin: "0 auto",
+              width: "fit-content",
+              pointerEvents: "none", // So clicks pass through to underlying elements
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                textAlign: "center",
+                lineHeight: 1.2,
+                fontSize: { xs: "1.1rem", sm: "1.2rem" },
+                mb: 0.3,
+              }}
+            >
+              {name || t("flashcards.untitledSet", "Untitled Set")}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                fontSize: "0.8rem",
+                lineHeight: 1,
+                textAlign: "center",
+              }}
+            >
+              {t("flashcards.cardCount", {
+                current: currentIndex + 1,
+                total: flashcards.length,
+              })}
+            </Typography>
+          </Box>
 
           {/* Language indicator */}
           <Chip
@@ -245,47 +405,26 @@ export default function FlashcardsIdContent({ params }) {
             }}
           />
         </Box>
-        <Typography
-          variant="h6"
-          sx={{
-            mb: 0.5,
-            textAlign: "center",
-            lineHeight: 1.2,
-            fontSize: { xs: "1.1rem", sm: "1.2rem", md: "1.35rem" },
-          }}
-        >
-          {name || t("flashcards.untitledSet", "Untitled Set")}
-        </Typography>
-        <Box sx={{ display: "flex", justifyContent: "center", mb: 0.5 }}>
-          <Typography
-            variant="body2"
-            sx={{ color: "text.secondary", fontSize: "0.8rem" }}
-          >
-            {t("flashcards.cardCount", {
-              current: currentIndex + 1,
-              total: flashcards.length,
-            })}
-          </Typography>
-        </Box>
       </Box>
 
-      {/* Card Section - Middle */}
+      {/* Card Section - Middle, with more space now that header is consolidated */}
       <Card
         onClick={handleFlip}
         sx={{
-          height: { xs: "25vh", sm: "28vh", md: "32vh" },
-          minHeight: "160px",
-          maxHeight: "280px",
+          height: { xs: "45vh", sm: "60vh", md: "65vh" },
+          minHeight: "380px",
+          maxHeight: "650px",
           width: "100%",
           cursor: "pointer",
           perspective: "1000px",
           backgroundColor: "transparent",
           my: 0.5,
-          boxShadow: "0 1px 5px rgba(0,0,0,0.06)",
-          flexGrow: 0,
-          flexShrink: 1,
+          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+          flexGrow: 1,
+          flexShrink: 0,
           display: "flex",
           position: "relative", // For positioning the TTS button
+          mt: 1, // Add more margin at top since we consolidated the header
         }}
       >
         {/* Text-to-speech button using our reusable component */}
@@ -307,6 +446,48 @@ export default function FlashcardsIdContent({ params }) {
           }}
         />
 
+        {/* Image visualization button - moved to bottom right */}
+        <Tooltip
+          title={
+            loadingImage
+              ? t("flashcards.generatingImage", "Generating image...")
+              : imageData
+              ? showImage
+                ? t("flashcards.showText", "Show text")
+                : t("flashcards.showImage", "Show image")
+              : t("flashcards.generateImage", "Generate image")
+          }
+        >
+          <IconButton
+            onClick={(e) => {
+              e.stopPropagation();
+              generateImage(e);
+            }}
+            sx={{
+              position: "absolute",
+              bottom: 12,
+              right: 12,
+              zIndex: 10,
+              backgroundColor: showImage
+                ? "rgba(63, 81, 181, 0.2)"
+                : "rgba(255,255,255,0.7)",
+              borderRadius: "50%",
+              "&:hover": {
+                backgroundColor: "rgba(63, 81, 181, 0.2)",
+              },
+            }}
+            disabled={loadingImage}
+          >
+            {loadingImage ? (
+              <CircularProgress size={20} />
+            ) : showImage && imageData ? (
+              <TextFieldsIcon />
+            ) : (
+              <ImageIcon />
+            )}
+          </IconButton>
+        </Tooltip>
+
         <Box
           sx={{
             position: "relative",
@@ -325,11 +506,12 @@ export default function FlashcardsIdContent({ params }) {
               height: "100%",
               backfaceVisibility: "hidden",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
               backgroundColor: "#fff",
               overflowY: "auto",
-              padding: "14px !important",
+              padding: "20px !important",
               "&::-webkit-scrollbar": {
                 width: "4px",
               },
@@ -346,29 +528,58 @@ export default function FlashcardsIdContent({ params }) {
               },
             }}
           >
-            <Box
-              sx={{
-                width: "100%",
-                padding: "0 14px",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Typography
-                variant="body2"
+            {/* Show image on front if enabled with wider image */}
+            {!isFlipped && showImage && imageData ? (
+              <Box
                 sx={{
+                  display: "flex",
+                  flexGrow: 1,
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
                   width: "100%",
-                  wordBreak: "break-word",
-                  whiteSpace: "normal",
-                  fontSize: "1rem",
-                  lineHeight: 1.4,
-                  textAlign: "center",
+                  height: "90%",
+                  overflow: "hidden",
                 }}
               >
-                {cleanFlashcardContent(flashcards[currentIndex]?.front) || ""}
-              </Typography>
-            </Box>
+                <img
+                  src={`data:image/png;base64,${imageData}`}
+                  alt="Flashcard visualization"
+                  style={{
+                    width: "95%",
+                    maxHeight: "350px",
+                    objectFit: "contain",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    width: "100%",
+                    wordBreak: "break-word",
+                    whiteSpace: "normal",
+                    fontSize: "1.2rem",
+                    lineHeight: 1.5,
+                    textAlign: "center",
+                  }}
+                >
+                  {cleanFlashcardContent(flashcards[currentIndex]?.front) || ""}
+                </Typography>
+              </Box>
+            )}
           </CardContent>
 
           {/* Back of card */}
@@ -379,12 +590,13 @@ export default function FlashcardsIdContent({ params }) {
               height: "100%",
               backfaceVisibility: "hidden",
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
               backgroundColor: "#fff",
               transform: "rotateY(180deg)",
               overflowY: "auto",
-              padding: "14px !important",
+              padding: "20px !important",
               "&::-webkit-scrollbar": {
                 width: "4px",
               },
@@ -401,29 +613,58 @@ export default function FlashcardsIdContent({ params }) {
               },
             }}
           >
-            <Box
-              sx={{
-                width: "100%",
-                padding: "0 14px",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Typography
-                variant="body2"
+            {/* Show image on back if enabled with wider image */}
+            {isFlipped && showImage && imageData ? (
+              <Box
                 sx={{
+                  display: "flex",
+                  flexGrow: 1,
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
                   width: "100%",
-                  wordBreak: "break-word",
-                  whiteSpace: "normal",
-                  fontSize: "1rem",
-                  lineHeight: 1.4,
-                  textAlign: "center",
+                  height: "90%",
+                  overflow: "hidden",
                 }}
               >
-                {cleanFlashcardContent(flashcards[currentIndex]?.back) || ""}
-              </Typography>
-            </Box>
+                <img
+                  src={`data:image/png;base64,${imageData}`}
+                  alt="Flashcard visualization"
+                  style={{
+                    width: "95%",
+                    maxHeight: "350px",
+                    objectFit: "contain",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    width: "100%",
+                    wordBreak: "break-word",
+                    whiteSpace: "normal",
+                    fontSize: "1.2rem",
+                    lineHeight: 1.5,
+                    textAlign: "center",
+                  }}
+                >
+                  {cleanFlashcardContent(flashcards[currentIndex]?.back) || ""}
+                </Typography>
+              </Box>
+            )}
           </CardContent>
         </Box>
       </Card>
@@ -439,31 +680,36 @@ export default function FlashcardsIdContent({ params }) {
           flexShrink: 0,
           position: "sticky",
           bottom: 0,
-          backgroundColor: "background.paper",
           zIndex: 2,
           pt: 0.5,
         }}
       >
-        <Button
-          variant="contained"
+        <IconButton
           onClick={handlePrevious}
           disabled={currentIndex === 0}
-          startIcon={<ArrowBackIcon sx={{ fontSize: "1rem" }} />}
-          size="small"
-          sx={{ px: 1.5, py: 0.5, minWidth: "85px", fontSize: "0.85rem" }}
+          sx={{
+            color: "primary.main",
+            "&.Mui-disabled": {
+              color: "rgba(0, 0, 0, 0.26)",
+            },
+          }}
+          size="medium"
         >
-          {t("buttons.previous", "Previous")}
-        </Button>
-        <Button
-          variant="contained"
+          <ArrowBackIcon />
+        </IconButton>
+        <IconButton
           onClick={handleNext}
           disabled={currentIndex === flashcards.length - 1}
-          endIcon={<ArrowForwardIcon sx={{ fontSize: "1rem" }} />}
-          size="small"
-          sx={{ px: 1.5, py: 0.5, minWidth: "85px", fontSize: "0.85rem" }}
+          sx={{
+            color: "primary.main",
+            "&.Mui-disabled": {
+              color: "rgba(0, 0, 0, 0.26)",
+            },
+          }}
+          size="medium"
         >
-          {t("buttons.next", "Next")}
-        </Button>
+          <ArrowForwardIcon />
+        </IconButton>
       </Box>
     </Container>
   );
