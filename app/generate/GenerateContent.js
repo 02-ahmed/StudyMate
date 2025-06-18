@@ -1263,10 +1263,17 @@ export default function GenerateContent() {
                                 variant="body1"
                                 sx={{
                                   flex: 1,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
                                   overflow: "auto",
                                   fontSize: "1.1rem",
                                   lineHeight: 1.5,
                                   color: "#2c3e50",
+                                  height: "100%",
+                                  width: "100%",
+                                  padding: "0 10px",
+                                  textAlign: "center",
                                 }}
                               >
                                 {typeof flashcard === "string"
@@ -1325,10 +1332,17 @@ export default function GenerateContent() {
                                 variant="body1"
                                 sx={{
                                   flex: 1,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
                                   overflow: "auto",
                                   fontSize: "1.1rem",
                                   lineHeight: 1.5,
                                   color: "#2c3e50",
+                                  height: "100%",
+                                  width: "100%",
+                                  padding: "0 10px",
+                                  textAlign: "center",
                                 }}
                               >
                                 {typeof flashcard === "string"

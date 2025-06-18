@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export const maxDuration = 30; // Set a shorter timeout for image generation
+export const maxDuration = 60; // Increase timeout to 60 seconds to match other endpoints
 
 // Initialize the Generative AI client
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
