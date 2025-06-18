@@ -18,18 +18,18 @@ const de = {
   },
 
   // Generate page
-  generateSummaryNotes: "Zusammenfassende Notizen generieren",
-  viewNotes: "Notizen anzeigen",
+  generateSummaryNotes: "Karteikarten generieren",
+  viewNotes: "Karteikarten anzeigen",
   typeOrPaste: "Tippen oder einfügen",
   uploadFile: "Datei hochladen",
   enterTextBelow:
-    "Geben Sie Ihren Text unten ein, um Zusammenfassungsnotizen zu generieren",
+    "Geben Sie Ihren Text unten ein, um Karteikarten zu generieren",
   enterText: "Text eingeben...",
   selectFile: "Datei auswählen",
   dragAndDrop: "Ziehen und ablegen oder klicken zum Durchsuchen",
   supportedFileTypes:
     "Unterstützte Dateitypen: Nur PDF, Textdateien und Bilder (PNG, JPEG, GIF, WebP). Maximale Dateigröße: 10MB",
-  generate: "Zusammenfassungsnotizen generieren",
+  generate: "Karteikarten generieren",
 
   // Generate page loading messages
   generatePage: {
@@ -129,8 +129,8 @@ const de = {
       title: "Willkommen bei StudyMate AI",
       subtitle:
         "Erstellen Sie personalisierte Karteikarten, machen Sie Quizze und verfolgen Sie Ihren Fortschritt mit KI-gestützten Lernwerkzeugen.",
-      createNotes: "Notizen erstellen",
-      viewNotes: "Notizen ansehen",
+      createNotes: "Karteikarten erstellen",
+      viewNotes: "Karteikarten ansehen",
       takeQuiz: "Quiz starten",
     },
     stats: {
@@ -192,13 +192,13 @@ const de = {
     hideAnswer: "Antwort verbergen",
     retry: "Erneut versuchen",
     exploreMoreLanguages: "Mehr Sprachen erkunden",
-    createNotes: "NOTIZEN ERSTELLEN",
-    viewNotes: "NOTIZEN ANSEHEN",
+    createNotes: "KARTEIKARTEN ERSTELLEN",
+    viewNotes: "KARTEIKARTEN ANSEHEN",
     takeQuiz: "QUIZ STARTEN",
     viewFullPage: "Vollständige Seite anzeigen",
     read: "Lesen",
     watch: "Ansehen",
-    viewDeletedNotes: "Gelöschte Notizen anzeigen",
+    viewDeletedNotes: "Gelöschte Karteikarten anzeigen",
     takeAction: "Maßnahmen ergreifen",
     studyNow: "Jetzt lernen",
     practiceThisTopic: "Dieses Thema üben",
@@ -224,7 +224,7 @@ const de = {
     studyResources: "Lernressourcen",
     videoResources: "Videoressourcen",
     practiceMaterials: "Übungsmaterialien",
-    myNotes: "Meine Notizen",
+    myFlashcards: "Meine Karteikarten",
   },
 
   // Flashcards specific
@@ -249,7 +249,7 @@ const de = {
     cards: "Karten",
     noMatching: "Keine passenden Kartensets gefunden",
     adjustSearch: "Versuchen Sie, Ihre Suche oder Filter anzupassen",
-    backToNotes: "Zurück zu Notizen",
+    backToNotes: "Zurück zu Karteikarten",
     noFlashcardsFound: "Keine Karteikarten in dieser Sammlung gefunden",
     untitledSet: "Unbenanntes Set",
     cardCount: "Karte {current} von {total}",
@@ -266,7 +266,7 @@ const de = {
     selectFlashcardSet:
       "Wählen Sie ein Kartenset aus und starten Sie eine Konversation",
     emptyState: "Noch nichts hier. Erstellen Sie Ihr erstes Element!",
-    noteSetsCreated: "Erstellte Notizsets",
+    noteSetsCreated: "Erstellte Karteikarten-Sets",
     betaFeature:
       "Diese Funktion ist in der Beta-Phase. Die Inhaltsgenerierung ist experimentell und liefert möglicherweise nicht immer perfekte Ergebnisse.",
     searchNotes: "Notizen durchsuchen...",

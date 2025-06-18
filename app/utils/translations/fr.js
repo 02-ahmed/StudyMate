@@ -20,18 +20,18 @@ const fr = {
   },
 
   // Generate page
-  generateSummaryNotes: "Générer des Notes de Synthèse",
-  viewNotes: "Voir les Notes",
+  generateSummaryNotes: "Générer des Cartes Mémoire",
+  viewNotes: "Voir les Cartes",
   typeOrPaste: "Taper ou Coller",
   uploadFile: "Télécharger un Fichier",
   enterTextBelow:
-    "Entrez votre texte ci-dessous pour générer des notes de synthèse",
+    "Entrez votre texte ci-dessous pour générer des cartes mémoire",
   enterText: "Entrez du texte...",
   selectFile: "Sélectionner un Fichier",
   dragAndDrop: "Glissez-déposez ou cliquez pour parcourir",
   supportedFileTypes:
     "Types de fichiers pris en charge : Uniquement PDF, fichiers texte et images (PNG, JPEG, GIF, WebP). Taille maximale de fichier : 10MB",
-  generate: "Générer des Notes de Synthèse",
+  generate: "Générer des Cartes Mémoire",
 
   // Generate page loading messages
   generatePage: {
@@ -195,13 +195,13 @@ const fr = {
     hideAnswer: "Masquer la Réponse",
     retry: "Réessayer",
     exploreMoreLanguages: "Explorer Plus de Langues",
-    createNotes: "CRÉER DES NOTES",
-    viewNotes: "VOIR LES NOTES",
+    createNotes: "CRÉER DES CARTES",
+    viewNotes: "VOIR LES CARTES",
     takeQuiz: "FAIRE UN QUIZ",
     viewFullPage: "Voir la Page Complète",
     read: "Lire",
     watch: "Regarder",
-    viewDeletedNotes: "Voir les Notes Supprimées",
+    viewDeletedNotes: "Voir les Cartes Supprimées",
     takeAction: "Agir",
     studyNow: "Étudier Maintenant",
     practiceThisTopic: "Pratiquer Ce Sujet",
@@ -227,7 +227,7 @@ const fr = {
     studyResources: "Ressources d'Étude",
     videoResources: "Ressources Vidéo",
     practiceMaterials: "Matériels de Pratique",
-    myNotes: "Mes Notes",
+    myFlashcards: "Mes Cartes",
   },
 
   // Flashcards specific
@@ -251,7 +251,7 @@ const fr = {
     cards: "cartes",
     noMatching: "Aucun ensemble de cartes mémoire correspondant trouvé",
     adjustSearch: "Essayez d'ajuster votre recherche ou vos filtres",
-    backToNotes: "Retour aux Notes",
+    backToNotes: "Retour aux Cartes",
     noFlashcardsFound: "Aucune carte mémoire trouvée dans cette collection",
     untitledSet: "Ensemble sans titre",
     cardCount: "Carte {current} de {total}",
@@ -268,7 +268,7 @@ const fr = {
     selectFlashcardSet:
       "Sélectionnez un ensemble de cartes et commencez une conversation",
     emptyState: "Rien ici pour l'instant. Créez votre premier élément !",
-    noteSetsCreated: "Ensembles de Notes Créés",
+    noteSetsCreated: "Ensembles de Cartes Créés",
     betaFeature:
       "Cette fonctionnalité est en version bêta. La génération de contenu est expérimentale et pourrait ne pas toujours produire des résultats parfaits.",
     searchNotes: "Rechercher des notes...",

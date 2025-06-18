@@ -46,7 +46,7 @@ function NavigationBarContent() {
   const { isSignedIn, isLoaded } = useUser();
   const pathname = usePathname();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const router = useRouter();
   const { language, changeLanguage } = useLanguage();
@@ -64,7 +64,11 @@ function NavigationBarContent() {
       label: t("nav.dashboard"),
       icon: <DashboardOutlinedIcon />,
     },
-    { path: "/notes", label: t("nav.flashcards"), icon: <NotesOutlinedIcon /> },
+    {
+      path: "/flashcards",
+      label: t("nav.flashcards"),
+      icon: <NotesOutlinedIcon />,
+    },
     {
       path: "/generate",
       label: t("nav.generate", "Generate"),
@@ -436,29 +440,16 @@ function NavigationBarContent() {
           borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}
       >
-        <Container maxWidth="xl">
+        <Container maxWidth="xl" sx={{ px: { xs: 1 } }}>
           <Toolbar disableGutters sx={{ height: 70 }}>
             {isMobile ? (
               <>
-                <IconButton
-                  edge="start"
-                  aria-label="menu"
-                  onClick={() => setDrawerOpen(true)}
-                  sx={{
-                    mr: 1,
-                    color: "#4f46e5",
-                    bgcolor: "rgba(79, 70, 229, 0.1)",
-                    "&:hover": { bgcolor: "rgba(79, 70, 229, 0.2)" },
-                  }}
-                >
-                  <MenuIcon />
-                </IconButton>
                 <Box
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    flexGrow: 1,
-                    justifyContent: "center",
+                    justifyContent: "space-between",
+                    width: "100%",
                   }}
                 >
                   <Box
@@ -475,6 +466,24 @@ function NavigationBarContent() {
                       objectFit="contain"
                       priority
                     />
+                  </Box>
+
+                  <Box sx={{ display: "flex", alignItems: "center", pr: 0 }}>
+                    {/* Removing redundant language selector since it's already in the sidebar */}
+                    <IconButton
+                      edge="end"
+                      aria-label="menu"
+                      onClick={() => setDrawerOpen(true)}
+                      sx={{
+                        ml: 1,
+                        mr: -1,
+                        color: "#4f46e5",
+                        bgcolor: "rgba(79, 70, 229, 0.1)",
+                        "&:hover": { bgcolor: "rgba(79, 70, 229, 0.2)" },
+                      }}
+                    >
+                      <MenuIcon />
+                    </IconButton>
                   </Box>
                 </Box>
               </>
@@ -582,11 +591,17 @@ function NavigationBarContent() {
               </>
             )}
 
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              {/* Language selector - Hide on mobile since it's in the drawer */}
+            <Box
+              sx={{
+                display: { xs: "none", lg: "flex" }, // Only show on large screens that don't have hamburger menu
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              {/* Language selector - Only visible on screens large enough to not have hamburger menu */}
               <Box
                 sx={{
-                  display: { xs: "none", sm: "flex" }, // Hide on mobile screens
+                  display: "flex",
                   alignItems: "center",
                   bgcolor: "rgba(79, 70, 229, 0.1)",
                   borderRadius: 1,
@@ -597,7 +612,7 @@ function NavigationBarContent() {
                   sx={{
                     color: "#4f46e5",
                     fontSize: 20,
-                    mr: { sm: 0.5, lg: 1 },
+                    mr: { sm: 0.5, lg: 0.5 },
                   }}
                 />
                 <Select
@@ -606,11 +621,9 @@ function NavigationBarContent() {
                   size="small"
                   variant="standard"
                   displayEmpty
-                  renderValue={(value) =>
-                    `${value}: ${SUPPORTED_LANGUAGES[value] || "Unknown"}`
-                  }
+                  renderValue={(value) => value.toUpperCase()} // Just show language code
                   sx={{
-                    minWidth: { sm: 100, lg: 120 },
+                    minWidth: { sm: 60, lg: 60 },
                     "& .MuiSelect-select": {
                       py: 1,
                       color: "#4f46e5",
@@ -633,6 +646,7 @@ function NavigationBarContent() {
                 </Select>
               </Box>
 
+              {/* Profile button - Only visible on screens large enough to not have hamburger menu */}
               <Box
                 sx={{
                   ml: 1,

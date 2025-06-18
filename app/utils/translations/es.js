@@ -18,18 +18,18 @@ const es = {
   },
 
   // Generate page
-  generateSummaryNotes: "Generar Resumen de Notas",
-  viewNotes: "Ver Notas",
+  generateSummaryNotes: "Generar Tarjetas de Estudio",
+  viewNotes: "Ver Tarjetas",
   typeOrPaste: "Escribir o Pegar",
   uploadFile: "Subir Archivo",
   enterTextBelow:
-    "Ingrese su texto a continuación para generar notas de resumen",
+    "Ingrese su texto a continuación para generar tarjetas de estudio",
   enterText: "Ingrese texto...",
   selectFile: "Seleccionar Archivo",
   dragAndDrop: "Arrastre y suelte o haga clic para navegar",
   supportedFileTypes:
     "Tipos de archivo compatibles: Solo PDF, archivos de texto e imágenes (PNG, JPEG, GIF, WebP). Tamaño máximo de archivo: 10MB",
-  generate: "Generar Resumen de Notas",
+  generate: "Generar Tarjetas de Estudio",
 
   // Generate page loading messages
   generatePage: {
@@ -185,13 +185,13 @@ const es = {
     hideAnswer: "Ocultar Respuesta",
     retry: "Intentar de Nuevo",
     exploreMoreLanguages: "Explorar Más Idiomas",
-    createNotes: "CREAR NOTAS",
-    viewNotes: "VER NOTAS",
+    createNotes: "CREAR TARJETAS",
+    viewNotes: "VER TARJETAS",
     takeQuiz: "HACER CUESTIONARIO",
     viewFullPage: "Ver Página Completa",
     read: "Leer",
     watch: "Ver",
-    viewDeletedNotes: "Ver Notas Eliminadas",
+    viewDeletedNotes: "Ver Tarjetas Eliminadas",
     takeAction: "Tomar Acción",
     studyNow: "Estudiar Ahora",
     practiceThisTopic: "Practicar Este Tema",
@@ -217,7 +217,7 @@ const es = {
     studyResources: "Recursos de Estudio",
     videoResources: "Recursos de Video",
     practiceMaterials: "Materiales de Práctica",
-    myNotes: "Mis Notas",
+    myFlashcards: "Mis Tarjetas",
   },
 
   // Flashcards specific
@@ -242,7 +242,7 @@ const es = {
     cards: "tarjetas",
     noMatching: "No se encontraron conjuntos de tarjetas coincidentes",
     adjustSearch: "Intenta ajustar tu búsqueda o filtros",
-    backToNotes: "Volver a Notas",
+    backToNotes: "Volver a Tarjetas",
     noFlashcardsFound: "No se encontraron tarjetas en esta colección",
     untitledSet: "Conjunto sin título",
     cardCount: "Tarjeta {current} de {total}",
@@ -259,7 +259,7 @@ const es = {
     selectFlashcardSet:
       "Selecciona un conjunto de tarjetas e inicia una conversación",
     emptyState: "Aún no hay nada aquí. ¡Crea tu primer elemento!",
-    noteSetsCreated: "Conjuntos de Notas Creados",
+    noteSetsCreated: "Conjuntos de Tarjetas Creados",
     betaFeature:
       "Esta función está en beta. La generación de contenido es experimental y puede no siempre producir resultados perfectos.",
     searchNotes: "Buscar notas...",

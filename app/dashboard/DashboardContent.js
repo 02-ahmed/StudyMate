@@ -208,9 +208,7 @@ export default function DashboardContent() {
                     fullWidth
                     variant="contained"
                     startIcon={<LibraryBooksIcon />}
-                    onClick={() =>
-                      handleNavigation("/flashcards", "createNotes")
-                    }
+                    onClick={() => handleNavigation("/generate", "createNotes")}
                     disabled={loadingStates.createNotes}
                     sx={{
                       py: 1,
@@ -239,7 +237,7 @@ export default function DashboardContent() {
                       {loadingStates.createNotes ? (
                         <CircularProgress size={20} color="inherit" />
                       ) : (
-                        t("buttons.createNotes")
+                        t("buttons.createNotes", "CREATE FLASHCARDS")
                       )}
                     </Box>
                   </Button>
@@ -282,7 +280,7 @@ export default function DashboardContent() {
                       {loadingStates.viewNotes ? (
                         <CircularProgress size={20} color="inherit" />
                       ) : (
-                        t("buttons.viewNotes")
+                        t("buttons.viewNotes", "VIEW FLASHCARDS")
                       )}
                     </Box>
                   </Button>

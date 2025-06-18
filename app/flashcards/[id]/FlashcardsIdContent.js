@@ -196,7 +196,7 @@ export default function FlashcardsIdContent({ params }) {
   };
 
   const handleBack = () => {
-    router.push("/notes");
+    router.push("/flashcards");
   };
 
   // Get the current text to be displayed (and potentially spoken)
@@ -319,10 +319,12 @@ export default function FlashcardsIdContent({ params }) {
         flexDirection: "column",
         height: "auto",
         minHeight: "auto",
-        maxHeight: "100vh",
-        overflow: "auto",
+        maxHeight: { xs: "calc(100vh - 20px)", sm: "100vh" }, // Better mobile height handling
+        overflow: "hidden", // Prevent overall scrolling
         justifyContent: "space-between",
         gap: 1,
+        width: "100%",
+        px: { xs: 1, sm: 2 }, // Smaller padding on mobile
       }}
     >
       {/* Top Section - Header */}
@@ -370,7 +372,7 @@ export default function FlashcardsIdContent({ params }) {
               sx={{
                 textAlign: "center",
                 lineHeight: 1.2,
-                fontSize: { xs: "1.1rem", sm: "1.2rem" },
+                fontSize: { xs: "1rem", sm: "1.2rem" }, // Smaller font on mobile
                 mb: 0.3,
               }}
             >
@@ -411,8 +413,8 @@ export default function FlashcardsIdContent({ params }) {
       <Card
         onClick={handleFlip}
         sx={{
-          height: { xs: "45vh", sm: "60vh", md: "65vh" },
-          minHeight: "380px",
+          height: { xs: "40vh", sm: "50vh", md: "60vh" }, // Better height proportions on mobile
+          minHeight: { xs: "280px", sm: "380px" }, // Lower minimum height on mobile
           maxHeight: "650px",
           width: "100%",
           cursor: "pointer",
@@ -547,7 +549,7 @@ export default function FlashcardsIdContent({ params }) {
                   alt="Flashcard visualization"
                   style={{
                     width: "95%",
-                    maxHeight: "350px",
+                    maxHeight: "85%",
                     objectFit: "contain",
                     borderRadius: "8px",
                     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
@@ -571,9 +573,10 @@ export default function FlashcardsIdContent({ params }) {
                     width: "100%",
                     wordBreak: "break-word",
                     whiteSpace: "normal",
-                    fontSize: "1.2rem",
+                    fontSize: { xs: "1rem", sm: "1.2rem" }, // Responsive font size
                     lineHeight: 1.5,
                     textAlign: "center",
+                    px: { xs: 1, sm: 2 }, // Proper padding on mobile
                   }}
                 >
                   {cleanFlashcardContent(flashcards[currentIndex]?.front) || ""}
@@ -632,7 +635,7 @@ export default function FlashcardsIdContent({ params }) {
                   alt="Flashcard visualization"
                   style={{
                     width: "95%",
-                    maxHeight: "350px",
+                    maxHeight: "85%",
                     objectFit: "contain",
                     borderRadius: "8px",
                     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
@@ -656,9 +659,10 @@ export default function FlashcardsIdContent({ params }) {
                     width: "100%",
                     wordBreak: "break-word",
                     whiteSpace: "normal",
-                    fontSize: "1.2rem",
+                    fontSize: { xs: "1rem", sm: "1.2rem" }, // Responsive font size
                     lineHeight: 1.5,
                     textAlign: "center",
+                    px: { xs: 1, sm: 2 }, // Proper padding on mobile
                   }}
                 >
                   {cleanFlashcardContent(flashcards[currentIndex]?.back) || ""}

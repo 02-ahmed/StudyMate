@@ -1,7 +1,5 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import DeletedNotesContent from "../DeletedNotesContent";
-
-export default function DeletedNotesPage() {
-  return <DeletedNotesContent />;
+export default function NotesRedirect() {
+  redirect("/flashcards/deleted");
 }
