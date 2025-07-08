@@ -176,7 +176,7 @@ export default function PomodoroModal({ open, onClose }) {
 
       <Divider />
 
-      <DialogContent sx={{ p: 0, height: "100%", overflow: "hidden" }}>
+      <DialogContent sx={{ p: 0, overflow: "hidden" }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
@@ -202,9 +202,9 @@ export default function PomodoroModal({ open, onClose }) {
 
         {/* Timer Tab */}
         <TabPanel value={activeTab} index={0}>
-          <Box sx={{ px: 3, pb: 3, height: "100%", overflow: "auto" }}>
+          <Box sx={{ px: 2, pb: 2 }}>
             {/* Current Mode Indicator */}
-            <Box sx={{ textAlign: "center", mb: 3 }}>
+            <Box sx={{ textAlign: "center", mb: 2 }}>
               <Chip
                 label={t(`pomodoro.${mode.toLowerCase()}`, currentMode.label)}
                 sx={{
@@ -227,7 +227,7 @@ export default function PomodoroModal({ open, onClose }) {
             </Box>
 
             {/* Timer Display */}
-            <Box sx={{ textAlign: "center", mb: 4 }}>
+            <Box sx={{ textAlign: "center", mb: 2 }}>
               <motion.div
                 animate={{ scale: isRunning ? [1, 1.02, 1] : 1 }}
                 transition={{ duration: 2, repeat: isRunning ? Infinity : 0 }}
@@ -237,10 +237,10 @@ export default function PomodoroModal({ open, onClose }) {
                   sx={{
                     fontFamily: "monospace",
                     fontWeight: "bold",
-                    fontSize: { xs: "3rem", md: "4rem" },
+                    fontSize: { xs: "2.5rem", md: "3rem" },
                     color: getProgressColor(),
                     textShadow: "2px 2px 4px rgba(0,0,0,0.1)",
-                    mb: 2,
+                    mb: 1,
                   }}
                 >
                   {formattedTime}
@@ -248,7 +248,7 @@ export default function PomodoroModal({ open, onClose }) {
               </motion.div>
 
               {/* Progress Bar */}
-              <Box sx={{ width: "100%", mb: 3 }}>
+              <Box sx={{ width: "100%", mb: 2 }}>
                 <LinearProgress
                   variant="determinate"
                   value={progress}
@@ -273,9 +273,9 @@ export default function PomodoroModal({ open, onClose }) {
               {/* Main Controls */}
               <Stack
                 direction="row"
-                spacing={2}
+                spacing={1.5}
                 justifyContent="center"
-                sx={{ mb: 3 }}
+                sx={{ mb: 2 }}
               >
                 <Button
                   variant="contained"
@@ -285,8 +285,8 @@ export default function PomodoroModal({ open, onClose }) {
                   }
                   startIcon={isRunning ? <PauseIcon /> : <PlayIcon />}
                   sx={{
-                    minWidth: 120,
-                    py: 1.5,
+                    minWidth: 100,
+                    py: 1,
                     backgroundColor: getProgressColor(),
                     "&:hover": {
                       backgroundColor: getProgressColor(),
@@ -306,7 +306,7 @@ export default function PomodoroModal({ open, onClose }) {
                   size="large"
                   onClick={resetTimer}
                   startIcon={<StopIcon />}
-                  sx={{ minWidth: 120, py: 1.5 }}
+                  sx={{ minWidth: 100, py: 1 }}
                 >
                   {t("pomodoro.reset", "Reset")}
                 </Button>
@@ -316,14 +316,14 @@ export default function PomodoroModal({ open, onClose }) {
                   size="large"
                   onClick={skipSession}
                   startIcon={<SkipIcon />}
-                  sx={{ minWidth: 120, py: 1.5 }}
+                  sx={{ minWidth: 100, py: 1 }}
                 >
                   {t("pomodoro.skip", "Skip")}
                 </Button>
               </Stack>
 
               {/* Mode Switchers */}
-              <Grid container spacing={2} sx={{ maxWidth: 600, mx: "auto" }}>
+              <Grid container spacing={1.5} sx={{ maxWidth: 500, mx: "auto" }}>
                 {Object.entries(TIMER_MODES).map(([key, modeConfig]) => (
                   <Grid item xs={4} key={key}>
                     <Card
@@ -344,7 +344,7 @@ export default function PomodoroModal({ open, onClose }) {
                       }}
                       onClick={() => handleModeSwitch(key)}
                     >
-                      <CardContent sx={{ p: 2, textAlign: "center" }}>
+                      <CardContent sx={{ p: 1.5, textAlign: "center" }}>
                         {getSessionIcon(key.toLowerCase().replace("_", "_"))}
                         <Typography
                           variant="body2"
@@ -361,48 +361,12 @@ export default function PomodoroModal({ open, onClose }) {
                 ))}
               </Grid>
             </Box>
-
-            {/* Session Statistics */}
-            <Paper
-              sx={{
-                p: 2,
-                backgroundColor: "background.default",
-                borderRadius: 2,
-              }}
-            >
-              <Typography variant="h6" gutterBottom>
-                {t("pomodoro.todayStats", "Today's Statistics")}
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Box sx={{ textAlign: "center" }}>
-                    <Typography variant="h4" color="primary" fontWeight="bold">
-                      {completedSessions}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {t("pomodoro.sessionsCompleted", "Sessions Completed")}
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6}>
-                  <Box sx={{ textAlign: "center" }}>
-                    <Typography variant="h4" color="primary" fontWeight="bold">
-                      {Math.floor((completedSessions * 25) / 60)}h{" "}
-                      {(completedSessions * 25) % 60}m
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {t("pomodoro.focusTime", "Focus Time")}
-                    </Typography>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Paper>
           </Box>
         </TabPanel>
 
         {/* History Tab */}
         <TabPanel value={activeTab} index={1}>
-          <Box sx={{ px: 3, pb: 3, height: "400px", overflow: "auto" }}>
+          <Box sx={{ px: 3, pb: 3, maxHeight: "400px", overflow: "auto" }}>
             <Typography variant="h6" gutterBottom>
               {t("pomodoro.recentSessions", "Recent Sessions")}
             </Typography>
@@ -455,7 +419,7 @@ export default function PomodoroModal({ open, onClose }) {
 
         {/* Settings Tab */}
         <TabPanel value={activeTab} index={2}>
-          <Box sx={{ px: 3, pb: 3, height: "400px", overflow: "auto" }}>
+          <Box sx={{ px: 3, pb: 3, maxHeight: "400px", overflow: "auto" }}>
             <Typography variant="h6" gutterBottom>
               {t("pomodoro.timerSettings", "Timer Settings")}
             </Typography>
