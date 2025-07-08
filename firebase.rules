@@ -47,6 +47,18 @@ service cloud.firestore {
                        validateChatSession(request.resource.data);
         allow delete: if request.auth != null && request.auth.uid == userId;
       }
+      
+      // Pomodoro Sessions
+      match /pomodoroSessions/{sessionId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create: if request.auth != null && 
+                       request.auth.uid == userId && 
+                       validatePomodoroSession(request.resource.data);
+        allow update: if request.auth != null && 
+                       request.auth.uid == userId && 
+                       validatePomodoroSession(request.resource.data);
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
     // Validation functions for schemas
@@ -131,6 +143,19 @@ service cloud.firestore {
                  part.text is string
                )
              );
+    }
+    
+    function validatePomodoroSession(data) {
+      return data.keys().hasAll(['userId', 'type', 'duration', 'completed', 'startTime', 'endTime', 'createdAt']) &&
+             data.userId is string &&
+             data.type is string &&
+             (data.type == 'work' || data.type == 'short_break' || data.type == 'long_break') &&
+             data.duration is number &&
+             data.duration > 0 &&
+             data.completed is bool &&
+             data.startTime is timestamp &&
+             data.endTime is timestamp &&
+             data.createdAt is timestamp;
     }
   }
 } 

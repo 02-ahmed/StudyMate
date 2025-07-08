@@ -30,6 +30,8 @@ import Image from "next/image";
 import TranslateIcon from "@mui/icons-material/Translate";
 import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 import useTranslation from "../hooks/useTranslation";
+import PomodoroWidget from "./pomodoro/PomodoroWidget";
+import PomodoroModal from "./pomodoro/PomodoroModal";
 
 // Icons
 import MenuIcon from "@mui/icons-material/Menu";
@@ -48,6 +50,7 @@ function NavigationBarContent() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("lg"));
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [pomodoroModalOpen, setPomodoroModalOpen] = useState(false);
   const router = useRouter();
   const { language, changeLanguage } = useLanguage();
   const { t } = useTranslation();
@@ -678,6 +681,18 @@ function NavigationBarContent() {
       <Box sx={{ height: 70 }} />
 
       {renderMobileDrawer()}
+
+      {/* Pomodoro Timer Components */}
+      {isSignedIn && (
+        <>
+          <PomodoroWidget onOpenModal={() => setPomodoroModalOpen(true)} />
+          <PomodoroModal
+            open={pomodoroModalOpen}
+            onClose={() => setPomodoroModalOpen(false)}
+          />
+        </>
+      )}
+
       <style jsx global>{`
         @keyframes pulse {
           0% {

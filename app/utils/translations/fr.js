@@ -126,6 +126,40 @@ const fr = {
       "L'historique de conversation a été effacé. Nous pouvons continuer à discuter de l'ensemble de cartes {setName}. Que souhaitez-vous savoir ?",
   },
 
+  // Pomodoro Timer
+  pomodoro: {
+    title: "Minuteur Pomodoro",
+    timer: "Minuteur",
+    history: "Historique",
+    settings: "Paramètres",
+    work: "Session de Travail",
+    short_break: "Pause Courte",
+    long_break: "Pause Longue",
+    start: "Démarrer",
+    pause: "Pause",
+    resume: "Reprendre",
+    reset: "Réinitialiser",
+    skip: "Passer",
+    running: "En cours",
+    complete: "terminé",
+    cycle: "Cycle",
+    completedSessions: "Sessions terminées",
+    sessionsCompleted: "Sessions Terminées",
+    focusTime: "Temps de Concentration",
+    recentSessions: "Sessions Récentes",
+    noSessions:
+      "Aucune session terminée pour le moment. Commencez votre premier Pomodoro !",
+    timerSettings: "Paramètres du Minuteur",
+    workDuration: "Durée du Travail",
+    shortBreakDuration: "Durée de la Pause Courte",
+    longBreakDuration: "Durée de la Pause Longue",
+    preferences: "Préférences",
+    autoStartBreaks: "Démarrage automatique des pauses",
+    autoStartPomodoros: "Démarrage automatique des pomodoros",
+    enableNotifications: "Activer les notifications",
+    todayStats: "Statistiques d'Aujourd'hui",
+  },
+
   // Dashboard specific
   dashboard: {
     welcome: {
