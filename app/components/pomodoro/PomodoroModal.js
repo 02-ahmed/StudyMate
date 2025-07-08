@@ -41,7 +41,7 @@ import {
   FreeBreakfast as LongBreakIcon,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
-import usePomodoroTimer from "../../hooks/usePomodoroTimer";
+import { usePomodoro } from "../../contexts/PomodoroContext";
 import useTranslation from "../../hooks/useTranslation";
 
 function TabPanel({ children, value, index, ...other }) {
@@ -80,16 +80,27 @@ export default function PomodoroModal({ open, onClose }) {
     progress,
     completedSessions,
     workSessionsInCycle,
+    sessionHistory,
+    loadingHistory,
     startTimer,
     pauseTimer,
     resumeTimer,
     resetTimer,
     switchMode,
     skipSession,
+    loadSessionHistory,
+    formatTime,
     TIMER_MODES,
-  } = usePomodoroTimer();
+  } = usePomodoro();
 
   const isRunning = isActive && !isPaused;
+
+  // Load history when modal opens
+  useEffect(() => {
+    if (open && sessionHistory.length === 0) {
+      loadSessionHistory();
+    }
+  }, [open, sessionHistory.length, loadSessionHistory]);
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -104,28 +115,6 @@ export default function PomodoroModal({ open, onClose }) {
       ...prev,
       [setting]: value,
     }));
-  };
-
-  // Mock session history for demonstration
-  const recentSessions = [
-    { type: "work", duration: 1500, completed: true, date: new Date() },
-    {
-      type: "short_break",
-      duration: 300,
-      completed: true,
-      date: new Date(Date.now() - 30 * 60 * 1000),
-    },
-    {
-      type: "work",
-      duration: 1500,
-      completed: true,
-      date: new Date(Date.now() - 60 * 60 * 1000),
-    },
-  ];
-
-  const formatDuration = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    return `${mins}m`;
   };
 
   const getSessionIcon = (type) => {
@@ -163,7 +152,9 @@ export default function PomodoroModal({ open, onClose }) {
       PaperProps={{
         sx: {
           borderRadius: 3,
-          minHeight: 600,
+          maxHeight: "90vh",
+          height: "auto",
+          m: 2,
         },
       }}
     >
@@ -185,7 +176,7 @@ export default function PomodoroModal({ open, onClose }) {
 
       <Divider />
 
-      <DialogContent sx={{ p: 0 }}>
+      <DialogContent sx={{ p: 0, height: "100%", overflow: "hidden" }}>
         <Tabs
           value={activeTab}
           onChange={handleTabChange}
@@ -211,7 +202,7 @@ export default function PomodoroModal({ open, onClose }) {
 
         {/* Timer Tab */}
         <TabPanel value={activeTab} index={0}>
-          <Box sx={{ px: 3, pb: 3 }}>
+          <Box sx={{ px: 3, pb: 3, height: "100%", overflow: "auto" }}>
             {/* Current Mode Indicator */}
             <Box sx={{ textAlign: "center", mb: 3 }}>
               <Chip
@@ -246,7 +237,7 @@ export default function PomodoroModal({ open, onClose }) {
                   sx={{
                     fontFamily: "monospace",
                     fontWeight: "bold",
-                    fontSize: { xs: "4rem", md: "6rem" },
+                    fontSize: { xs: "3rem", md: "4rem" },
                     color: getProgressColor(),
                     textShadow: "2px 2px 4px rgba(0,0,0,0.1)",
                     mb: 2,
@@ -411,49 +402,60 @@ export default function PomodoroModal({ open, onClose }) {
 
         {/* History Tab */}
         <TabPanel value={activeTab} index={1}>
-          <Box sx={{ px: 3, pb: 3 }}>
+          <Box sx={{ px: 3, pb: 3, height: "400px", overflow: "auto" }}>
             <Typography variant="h6" gutterBottom>
               {t("pomodoro.recentSessions", "Recent Sessions")}
             </Typography>
 
-            <List>
-              {recentSessions.map((session, index) => (
-                <ListItem key={index} divider>
-                  <Box sx={{ mr: 2 }}>{getSessionIcon(session.type)}</Box>
-                  <ListItemText
-                    primary={t(
-                      `pomodoro.${session.type}`,
-                      session.type.replace("_", " ")
-                    )}
-                    secondary={session.date.toLocaleTimeString()}
-                  />
-                  <ListItemSecondaryAction>
-                    <Chip
-                      label={formatDuration(session.duration)}
-                      size="small"
-                      color={session.completed ? "success" : "default"}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-              ))}
-            </List>
-
-            {recentSessions.length === 0 && (
-              <Box sx={{ textAlign: "center", py: 4 }}>
-                <Typography color="text.secondary">
-                  {t(
-                    "pomodoro.noSessions",
-                    "No sessions completed yet. Start your first Pomodoro!"
-                  )}
-                </Typography>
+            {loadingHistory ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                <CircularProgress />
               </Box>
+            ) : (
+              <>
+                <List>
+                  {sessionHistory.map((session, index) => (
+                    <ListItem key={session.id || index} divider>
+                      <Box sx={{ mr: 2 }}>{getSessionIcon(session.type)}</Box>
+                      <ListItemText
+                        primary={t(
+                          `pomodoro.${session.type}`,
+                          session.type.replace("_", " ")
+                        )}
+                        secondary={
+                          session.createdAt?.toLocaleTimeString() ||
+                          "Unknown time"
+                        }
+                      />
+                      <ListItemSecondaryAction>
+                        <Chip
+                          label={formatTime(session.duration)}
+                          size="small"
+                          color={session.completed ? "success" : "default"}
+                        />
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+
+                {sessionHistory.length === 0 && (
+                  <Box sx={{ textAlign: "center", py: 4 }}>
+                    <Typography color="text.secondary">
+                      {t(
+                        "pomodoro.noSessions",
+                        "No sessions completed yet. Start your first Pomodoro!"
+                      )}
+                    </Typography>
+                  </Box>
+                )}
+              </>
             )}
           </Box>
         </TabPanel>
 
         {/* Settings Tab */}
         <TabPanel value={activeTab} index={2}>
-          <Box sx={{ px: 3, pb: 3 }}>
+          <Box sx={{ px: 3, pb: 3, height: "400px", overflow: "auto" }}>
             <Typography variant="h6" gutterBottom>
               {t("pomodoro.timerSettings", "Timer Settings")}
             </Typography>

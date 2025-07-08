@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { Analytics } from "@vercel/analytics/react";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { PomodoroProvider } from "./contexts/PomodoroContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -43,18 +44,20 @@ export default function RootLayout({ children }) {
         <ClerkProvider>
           <StoreUserInfo />
           <LanguageProvider>
-            <Box
-              sx={{
-                minHeight: "100vh",
-                bgcolor: "#f1f5f9",
-                pb: 4,
-                overflowX: "hidden",
-              }}
-            >
-              <NavigationBar />
-              {children}
-            </Box>
-            <Analytics />
+            <PomodoroProvider>
+              <Box
+                sx={{
+                  minHeight: "100vh",
+                  bgcolor: "#f1f5f9",
+                  pb: 4,
+                  overflowX: "hidden",
+                }}
+              >
+                <NavigationBar />
+                {children}
+              </Box>
+              <Analytics />
+            </PomodoroProvider>
           </LanguageProvider>
         </ClerkProvider>
       </body>

@@ -21,7 +21,7 @@ import {
   Fullscreen as ExpandIcon,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
-import usePomodoroTimer from "../../hooks/usePomodoroTimer";
+import { usePomodoro } from "../../contexts/PomodoroContext";
 import useTranslation from "../../hooks/useTranslation";
 
 export default function PomodoroWidget({ onOpenModal }) {
@@ -40,7 +40,7 @@ export default function PomodoroWidget({ onOpenModal }) {
     pauseTimer,
     resumeTimer,
     resetTimer,
-  } = usePomodoroTimer();
+  } = usePomodoro();
 
   const isRunning = isActive && !isPaused;
   const showBadge = isRunning || completedSessions > 0;

@@ -2,7 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useUser } from "@clerk/nextjs";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  query,
+  orderBy,
+  limit,
+  getDocs,
+} from "firebase/firestore";
 import { db } from "../../utils/firebase";
 
 const TIMER_MODES = {
@@ -28,6 +36,7 @@ const TIMER_MODES = {
 
 export default function usePomodoroTimer() {
   const { user } = useUser();
+
   const [timeLeft, setTimeLeft] = useState(TIMER_MODES.WORK.duration);
   const [isActive, setIsActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -35,6 +44,8 @@ export default function usePomodoroTimer() {
   const [completedSessions, setCompletedSessions] = useState(0);
   const [workSessionsInCycle, setWorkSessionsInCycle] = useState(0);
   const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [sessionHistory, setSessionHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const intervalRef = useRef(null);
   const notificationPermissionRef = useRef(false);
 
@@ -51,6 +62,56 @@ export default function usePomodoroTimer() {
       notificationPermissionRef.current = true;
     }
   }, []);
+
+  // Load session history from Firebase
+  const loadSessionHistory = useCallback(async () => {
+    if (!user) return;
+
+    setLoadingHistory(true);
+    try {
+      const pomodoroSessionsRef = collection(
+        db,
+        "users",
+        user.id,
+        "pomodoroSessions"
+      );
+
+      const q = query(
+        pomodoroSessionsRef,
+        orderBy("createdAt", "desc"),
+        limit(20)
+      );
+
+      const querySnapshot = await getDocs(q);
+      const sessions = [];
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        sessions.push({
+          id: doc.id,
+          type: data.type,
+          duration: data.duration,
+          completed: data.completed,
+          startTime: data.startTime?.toDate(),
+          endTime: data.endTime?.toDate(),
+          createdAt: data.createdAt?.toDate(),
+        });
+      });
+
+      setSessionHistory(sessions);
+    } catch (error) {
+      console.error("Error loading session history:", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [user]);
+
+  // Load history when user changes
+  useEffect(() => {
+    if (user) {
+      loadSessionHistory();
+    }
+  }, [user, loadSessionHistory]);
 
   // Timer countdown logic
   useEffect(() => {
@@ -106,11 +167,14 @@ export default function usePomodoroTimer() {
           userId: user.id,
           createdAt: serverTimestamp(),
         });
+
+        // Reload history after saving
+        loadSessionHistory();
       } catch (error) {
         console.error("Error saving Pomodoro session:", error);
       }
     },
-    [user]
+    [user, loadSessionHistory]
   );
 
   const handleSessionComplete = useCallback(() => {
@@ -267,6 +331,8 @@ export default function usePomodoroTimer() {
     // Session tracking
     completedSessions,
     workSessionsInCycle,
+    sessionHistory,
+    loadingHistory,
 
     // Timer controls
     startTimer,
@@ -275,6 +341,7 @@ export default function usePomodoroTimer() {
     resetTimer,
     switchMode,
     skipSession,
+    loadSessionHistory,
 
     // Utility
     formatTime,
