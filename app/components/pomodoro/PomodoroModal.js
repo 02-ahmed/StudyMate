@@ -187,16 +187,37 @@ export default function PomodoroModal({ open, onClose }) {
             label={t("pomodoro.timer", "Timer")}
             icon={<TimerIcon />}
             iconPosition="start"
+            sx={{
+              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              minHeight: { xs: 56, sm: 72 },
+              "& .MuiTab-iconWrapper": {
+                fontSize: { xs: "1rem", sm: "1.25rem" },
+              },
+            }}
           />
           <Tab
             label={t("pomodoro.history", "History")}
             icon={<HistoryIcon />}
             iconPosition="start"
+            sx={{
+              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              minHeight: { xs: 56, sm: 72 },
+              "& .MuiTab-iconWrapper": {
+                fontSize: { xs: "1rem", sm: "1.25rem" },
+              },
+            }}
           />
           <Tab
             label={t("pomodoro.settings", "Settings")}
             icon={<SettingsIcon />}
             iconPosition="start"
+            sx={{
+              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+              minHeight: { xs: 56, sm: 72 },
+              "& .MuiTab-iconWrapper": {
+                fontSize: { xs: "1rem", sm: "1.25rem" },
+              },
+            }}
           />
         </Tabs>
 
@@ -273,20 +294,21 @@ export default function PomodoroModal({ open, onClose }) {
               {/* Main Controls */}
               <Stack
                 direction="row"
-                spacing={1.5}
+                spacing={{ xs: 1, sm: 1.5 }}
                 justifyContent="center"
                 sx={{ mb: 2 }}
               >
                 <Button
                   variant="contained"
-                  size="large"
                   onClick={
                     isRunning ? pauseTimer : isPaused ? resumeTimer : startTimer
                   }
                   startIcon={isRunning ? <PauseIcon /> : <PlayIcon />}
                   sx={{
-                    minWidth: 100,
-                    py: 1,
+                    minWidth: { xs: 80, sm: 100 },
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 2 },
+                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
                     backgroundColor: getProgressColor(),
                     "&:hover": {
                       backgroundColor: getProgressColor(),
@@ -303,27 +325,39 @@ export default function PomodoroModal({ open, onClose }) {
 
                 <Button
                   variant="outlined"
-                  size="large"
                   onClick={resetTimer}
                   startIcon={<StopIcon />}
-                  sx={{ minWidth: 100, py: 1 }}
+                  sx={{
+                    minWidth: { xs: 80, sm: 100 },
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 2 },
+                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                  }}
                 >
                   {t("pomodoro.reset", "Reset")}
                 </Button>
 
                 <Button
                   variant="outlined"
-                  size="large"
                   onClick={skipSession}
                   startIcon={<SkipIcon />}
-                  sx={{ minWidth: 100, py: 1 }}
+                  sx={{
+                    minWidth: { xs: 80, sm: 100 },
+                    py: { xs: 0.75, sm: 1 },
+                    px: { xs: 1, sm: 2 },
+                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                  }}
                 >
                   {t("pomodoro.skip", "Skip")}
                 </Button>
               </Stack>
 
               {/* Mode Switchers */}
-              <Grid container spacing={1.5} sx={{ maxWidth: 500, mx: "auto" }}>
+              <Grid
+                container
+                spacing={1}
+                sx={{ maxWidth: { xs: "100%", sm: 500 }, mx: "auto" }}
+              >
                 {Object.entries(TIMER_MODES).map(([key, modeConfig]) => (
                   <Grid item xs={4} key={key}>
                     <Card
@@ -337,6 +371,7 @@ export default function PomodoroModal({ open, onClose }) {
                             ? `${modeConfig.color}10`
                             : "background.paper",
                         transition: "all 0.2s",
+                        minHeight: { xs: 85, sm: 100 },
                         "&:hover": {
                           transform: "translateY(-2px)",
                           boxShadow: 2,
@@ -344,15 +379,41 @@ export default function PomodoroModal({ open, onClose }) {
                       }}
                       onClick={() => handleModeSwitch(key)}
                     >
-                      <CardContent sx={{ p: 1.5, textAlign: "center" }}>
-                        {getSessionIcon(key.toLowerCase().replace("_", "_"))}
+                      <CardContent
+                        sx={{
+                          p: { xs: 0.75, sm: 1.5 },
+                          textAlign: "center",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          height: "100%",
+                          "&:last-child": { pb: { xs: 0.75, sm: 1.5 } },
+                        }}
+                      >
+                        <Box sx={{ mb: { xs: 0.25, sm: 0.5 } }}>
+                          {getSessionIcon(key.toLowerCase().replace("_", "_"))}
+                        </Box>
                         <Typography
                           variant="body2"
-                          sx={{ mt: 1, fontWeight: mode === key ? 600 : 400 }}
+                          sx={{
+                            fontWeight: mode === key ? 600 : 400,
+                            fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                            lineHeight: 1.1,
+                            mb: { xs: 0.25, sm: 0.5 },
+                          }}
                         >
-                          {t(`pomodoro.${key.toLowerCase()}`, modeConfig.label)}
+                          {key === "WORK"
+                            ? "Work"
+                            : key === "SHORT_BREAK"
+                            ? "Short"
+                            : "Long"}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ fontSize: { xs: "0.6rem", sm: "0.75rem" } }}
+                        >
                           {Math.floor(modeConfig.duration / 60)}m
                         </Typography>
                       </CardContent>
