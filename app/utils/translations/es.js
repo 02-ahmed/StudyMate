@@ -121,6 +121,43 @@ const es = {
       "El historial de conversación ha sido borrado. Podemos continuar discutiendo el conjunto de tarjetas {setName}. ¿Qué te gustaría saber?",
   },
 
+  // Pomodoro Timer
+  pomodoro: {
+    title: "Temporizador Pomodoro",
+    timer: "Temporizador",
+    history: "Historial",
+    settings: "Configuración",
+    work: "Sesión de Trabajo",
+    short_break: "Descanso Corto",
+    long_break: "Descanso Largo",
+    start: "Iniciar",
+    pause: "Pausar",
+    resume: "Reanudar",
+    reset: "Reiniciar",
+    skip: "Saltar",
+    running: "En marcha",
+    complete: "completo",
+    cycle: "Ciclo",
+    completedSessions: "Sesiones completadas",
+    sessionsCompleted: "Sesiones Completadas",
+    focusTime: "Tiempo de Concentración",
+    recentSessions: "Sesiones Recientes",
+    noSessions:
+      "¡Aún no has completado ninguna sesión. Comienza tu primer Pomodoro!",
+    timerSettings: "Configuración del Temporizador",
+    workDuration: "Duración del Trabajo",
+    shortBreakDuration: "Duración del Descanso Corto",
+    longBreakDuration: "Duración del Descanso Largo",
+    preferences: "Preferencias",
+    autoStartBreaks: "Iniciar descansos automáticamente",
+    autoStartPomodoros: "Iniciar pomodoros automáticamente",
+    enableNotifications: "Habilitar notificaciones",
+    todayStats: "Estadísticas de Hoy",
+    soundTest: "Prueba de Sonido",
+    workCompleteSound: "Sonido de Trabajo Completado",
+    breakCompleteSound: "Sonido de Descanso Completado",
+  },
+
   // Dashboard specific
   dashboard: {
     welcome: {

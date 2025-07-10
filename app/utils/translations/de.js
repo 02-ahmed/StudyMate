@@ -123,6 +123,43 @@ const de = {
       "Der Unterhaltungsverlauf wurde gelöscht. Wir können die Diskussion über das Kartenset {setName} fortsetzen. Was möchten Sie wissen?",
   },
 
+  // Pomodoro Timer
+  pomodoro: {
+    title: "Pomodoro Timer",
+    timer: "Timer",
+    history: "Verlauf",
+    settings: "Einstellungen",
+    work: "Arbeitssitzung",
+    short_break: "Kurze Pause",
+    long_break: "Lange Pause",
+    start: "Starten",
+    pause: "Pausieren",
+    resume: "Fortsetzen",
+    reset: "Zurücksetzen",
+    skip: "Überspringen",
+    running: "Läuft",
+    complete: "vollständig",
+    cycle: "Zyklus",
+    completedSessions: "Abgeschlossene Sitzungen",
+    sessionsCompleted: "Sitzungen Abgeschlossen",
+    focusTime: "Konzentrations Zeit",
+    recentSessions: "Kürzliche Sitzungen",
+    noSessions:
+      "Noch keine Sitzungen abgeschlossen. Starten Sie Ihren ersten Pomodoro!",
+    timerSettings: "Timer-Einstellungen",
+    workDuration: "Arbeitsdauer",
+    shortBreakDuration: "Kurze Pausendauer",
+    longBreakDuration: "Lange Pausendauer",
+    preferences: "Einstellungen",
+    autoStartBreaks: "Pausen automatisch starten",
+    autoStartPomodoros: "Pomodoros automatisch starten",
+    enableNotifications: "Benachrichtigungen aktivieren",
+    todayStats: "Heutige Statistiken",
+    soundTest: "Sound-Test",
+    workCompleteSound: "Arbeitsabschluss-Sound",
+    breakCompleteSound: "Pausenabschluss-Sound",
+  },
+
   // Dashboard specific
   dashboard: {
     welcome: {

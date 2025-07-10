@@ -121,6 +121,42 @@ const en = {
       "The conversation history has been cleared. We can continue discussing the {setName} flashcard set. What would you like to know?",
   },
 
+  // Pomodoro Timer
+  pomodoro: {
+    title: "Pomodoro Timer",
+    timer: "Timer",
+    history: "History",
+    settings: "Settings",
+    work: "Work Session",
+    short_break: "Short Break",
+    long_break: "Long Break",
+    start: "Start",
+    pause: "Pause",
+    resume: "Resume",
+    reset: "Reset",
+    skip: "Skip",
+    running: "Running",
+    complete: "complete",
+    cycle: "Cycle",
+    completedSessions: "Sessions completed",
+    sessionsCompleted: "Sessions Completed",
+    focusTime: "Focus Time",
+    recentSessions: "Recent Sessions",
+    noSessions: "No sessions completed yet. Start your first Pomodoro!",
+    timerSettings: "Timer Settings",
+    workDuration: "Work Duration",
+    shortBreakDuration: "Short Break Duration",
+    longBreakDuration: "Long Break Duration",
+    preferences: "Preferences",
+    autoStartBreaks: "Auto-start breaks",
+    autoStartPomodoros: "Auto-start pomodoros",
+    enableNotifications: "Enable notifications",
+    todayStats: "Today's Statistics",
+    soundTest: "Sound Test",
+    workCompleteSound: "Work Complete Sound",
+    breakCompleteSound: "Break Complete Sound",
+  },
+
   // Dashboard specific
   dashboard: {
     welcome: {
