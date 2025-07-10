@@ -153,6 +153,9 @@ const es = {
     autoStartPomodoros: "Iniciar pomodoros automáticamente",
     enableNotifications: "Habilitar notificaciones",
     todayStats: "Estadísticas de Hoy",
+    soundTest: "Prueba de Sonido",
+    workCompleteSound: "Sonido de Trabajo Completado",
+    breakCompleteSound: "Sonido de Descanso Completado",
   },
 
   // Dashboard specific

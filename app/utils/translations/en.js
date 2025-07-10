@@ -152,6 +152,9 @@ const en = {
     autoStartPomodoros: "Auto-start pomodoros",
     enableNotifications: "Enable notifications",
     todayStats: "Today's Statistics",
+    soundTest: "Sound Test",
+    workCompleteSound: "Work Complete Sound",
+    breakCompleteSound: "Break Complete Sound",
   },
 
   // Dashboard specific

@@ -39,10 +39,16 @@ import {
   Timer as TimerIcon,
   Coffee as CoffeeIcon,
   FreeBreakfast as LongBreakIcon,
+  VolumeUp as VolumeUpIcon,
+  StopCircle as StopCircleIcon,
 } from "@mui/icons-material";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePomodoro } from "../../contexts/PomodoroContext";
 import useTranslation from "../../hooks/useTranslation";
+import {
+  playNotificationSound,
+  stopNotificationSound,
+} from "../../utils/audio";
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -61,6 +67,7 @@ function TabPanel({ children, value, index, ...other }) {
 export default function PomodoroModal({ open, onClose }) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(0);
+  const [isPlayingTest, setIsPlayingTest] = useState(null);
   const [settings, setSettings] = useState({
     workDuration: 25,
     shortBreakDuration: 5,
@@ -100,7 +107,12 @@ export default function PomodoroModal({ open, onClose }) {
     if (open && sessionHistory.length === 0) {
       loadSessionHistory();
     }
-  }, [open, sessionHistory.length, loadSessionHistory]);
+    // Stop any test sound when modal is closed
+    if (!open && isPlayingTest) {
+      stopNotificationSound();
+      setIsPlayingTest(null);
+    }
+  }, [open, sessionHistory.length, loadSessionHistory, isPlayingTest]);
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -115,6 +127,23 @@ export default function PomodoroModal({ open, onClose }) {
       ...prev,
       [setting]: value,
     }));
+  };
+
+  const handleSoundTest = (type) => {
+    if (isPlayingTest === type) {
+      stopNotificationSound();
+      setIsPlayingTest(null);
+    } else {
+      playNotificationSound(type);
+      setIsPlayingTest(type);
+      // Sound will play for ~5s, then reset button state
+      setTimeout(() => {
+        // Only reset if it's the same sound that was playing
+        if (isPlayingTest === type) {
+          setIsPlayingTest(null);
+        }
+      }, 5000);
+    }
   };
 
   const getSessionIcon = (type) => {
@@ -598,6 +627,51 @@ export default function PomodoroModal({ open, onClose }) {
                 )}
               />
             </Stack>
+
+            <Divider sx={{ my: 3 }} />
+
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                {t("pomodoro.soundTest", "Sound Test")}
+              </Typography>
+              <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={2}
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    startIcon={
+                      isPlayingTest === "work" ? (
+                        <StopCircleIcon />
+                      ) : (
+                        <VolumeUpIcon />
+                      )
+                    }
+                    onClick={() => handleSoundTest("work")}
+                  >
+                    {t("pomodoro.workCompleteSound", "Work Complete Sound")}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    startIcon={
+                      isPlayingTest === "break" ? (
+                        <StopCircleIcon />
+                      ) : (
+                        <VolumeUpIcon />
+                      )
+                    }
+                    onClick={() => handleSoundTest("break")}
+                  >
+                    {t("pomodoro.breakCompleteSound", "Break Complete Sound")}
+                  </Button>
+                </Stack>
+              </Paper>
+            </Box>
           </Box>
         </TabPanel>
       </DialogContent>
