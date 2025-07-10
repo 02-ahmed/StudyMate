@@ -12,6 +12,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "../../utils/firebase";
+import { playNotificationSound } from "../utils/audio";
 
 const TIMER_MODES = {
   WORK: {
@@ -209,12 +210,14 @@ export default function usePomodoroTimer() {
           "Great work! 🎉",
           "You've completed 4 work sessions. Time for a long break!"
         );
+        playNotificationSound("work");
       } else {
         setMode("SHORT_BREAK");
         showNotification(
           "Work session complete! ✅",
           "Time for a short break to recharge."
         );
+        playNotificationSound("work");
       }
     } else {
       setMode("WORK");
@@ -222,6 +225,7 @@ export default function usePomodoroTimer() {
         "Break's over! 💪",
         "Ready to start your next work session?"
       );
+      playNotificationSound("break");
     }
 
     // Reset timer for next session
