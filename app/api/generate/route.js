@@ -178,7 +178,7 @@ function isVisualizable(front, back) {
 
 export async function POST(req) {
   let model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
+    model: "gemini-1.5-flash-8b",
     generationConfig: {
       temperature: 0.7,
       topK: 40,
