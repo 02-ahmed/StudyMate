@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import QuestionDisplay from "../components/questions/QuestionDisplay"; // Import the new component
 
 export default function UploadContent() {
@@ -14,31 +14,6 @@ export default function UploadContent() {
   const [examType, setExamType] = useState(""); // New state for exam type
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [exams, setExams] = useState([]);
-  const [fetchingExams, setFetchingExams] = useState(true);
-  const [fetchError, setFetchError] = useState("");
-
-  const fetchExams = async () => {
-    setFetchingExams(true);
-    setFetchError("");
-    try {
-      const response = await fetch("/api/getExams");
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      setExams(data.exams);
-    } catch (error) {
-      console.error("Error fetching exams:", error);
-      setFetchError("Failed to load exams. Please try again.");
-    } finally {
-      setFetchingExams(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchExams();
-  }, []); // Run once on component mount
 
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
@@ -120,7 +95,6 @@ export default function UploadContent() {
         setExamSchool(""); // Clear new field
         setExamSubject(""); // Clear new field
         setExamType(""); // Clear new field
-        fetchExams(); // Re-fetch exams after successful upload
       } else {
         setMessage(data.error || "Upload failed. Please try again.");
       }
@@ -388,116 +362,6 @@ export default function UploadContent() {
         >
           {message}
         </p>
-      )}
-
-      <h2
-        style={{
-          marginTop: "40px",
-          marginBottom: "20px",
-          borderBottom: "2px solid #0070f3",
-          paddingBottom: "10px",
-        }}
-      >
-        Uploaded Exams
-      </h2>
-      {fetchingExams && <p>Loading exams...</p>}
-      {fetchError && <p style={{ color: "red" }}>{fetchError}</p>}
-      {!fetchingExams && exams.length === 0 && !fetchError && (
-        <p>No exams uploaded yet.</p>
-      )}
-
-      {!fetchingExams && exams.length > 0 && (
-        <div style={{ display: "grid", gap: "20px" }}>
-          {exams.map((exam) => (
-            <div
-              key={exam.id}
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: "8px",
-                padding: "20px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                backgroundColor: "#fff",
-              }}
-            >
-              <h3 style={{ color: "#0070f3", marginBottom: "10px" }}>
-                {exam.name} ({exam.year})
-              </h3>
-              <p>
-                <strong>Course:</strong> {exam.course || "N/A"}
-              </p>
-              <p>
-                <strong>Country:</strong> {exam.country || "N/A"}
-              </p>
-              <p>
-                <strong>Total Questions:</strong> {exam.total_questions}
-              </p>
-              <p>
-                <strong>Date Added:</strong>{" "}
-                {new Date(exam.date_added._seconds * 1000).toLocaleString()}
-              </p>
-
-              {exam.sections && exam.sections.length > 0 && (
-                <div style={{ marginTop: "20px" }}>
-                  <h4
-                    style={{
-                      borderBottom: "1px solid #eee",
-                      paddingBottom: "5px",
-                      marginBottom: "15px",
-                      color: "#333",
-                    }}
-                  >
-                    Sections:
-                  </h4>
-                  {exam.sections.map((section) => (
-                    <div
-                      key={section.id}
-                      style={{
-                        borderLeft: "3px solid #0070f3",
-                        paddingLeft: "15px",
-                        marginBottom: "15px",
-                        backgroundColor: "#f9f9f9",
-                        borderRadius: "4px",
-                        padding: "15px",
-                      }}
-                    >
-                      <p>
-                        <strong>Section Name:</strong> {section.section_name} (
-                        {section.section_number})
-                      </p>
-                      <p>
-                        <strong>Question Type:</strong>{" "}
-                        {section.question_type_in_section}
-                      </p>
-                      <p>
-                        <strong>Instructions:</strong> {section.instructions}
-                      </p>
-                      <p>
-                        <strong>Questions in Section:</strong>{" "}
-                        {section.num_questions_in_section}
-                      </p>
-
-                      {section.questions && section.questions.length > 0 && (
-                        <div style={{ marginTop: "15px" }}>
-                          <h5 style={{ marginBottom: "10px", color: "#555" }}>
-                            Questions:
-                          </h5>
-                          <ol style={{ paddingLeft: "20px" }}>
-                            {section.questions.map((question) => (
-                              <QuestionDisplay
-                                key={question.id}
-                                question={question}
-                              />
-                            ))}
-                          </ol>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
       )}
     </div>
   );

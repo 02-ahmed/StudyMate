@@ -4,11 +4,30 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { GoogleGenerativeAI } from "@google/generative-ai"; // Will need this for Gemini
 // import { v4 as uuidv4 } from 'uuid'; // Useful for generating unique IDs (install if needed)
+import { getAuth } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 
 // Set max duration for this potentially long-running API route
 export const maxDuration = 300; // 5 minutes (adjust as needed, max is 300s for Vercel Hobby)
 
 export async function POST(req) {
+  // Clerk authentication and role check
+  const { userId } = getAuth(req);
+  console.log("Backend - userId:", userId);
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Get user data including metadata
+  const user = await clerkClient.users.getUser(userId);
+  const role = user.publicMetadata.role;
+  console.log("Backend - role:", role);
+  const allowedRoles = ["admin", "uploader"];
+  if (!allowedRoles.includes(role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   try {
     // Step 1: Handle the incoming file upload (multipart/form-data)
     const formData = await req.formData();
