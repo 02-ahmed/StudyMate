@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import QuestionDisplay from "../components/questions/QuestionDisplay"; // Import the new component
 
 export default function UploadContent() {
@@ -15,6 +15,90 @@ export default function UploadContent() {
   const [examType, setExamType] = useState(""); // New state for exam type
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
+  // Simplified state for exam management
+  const [showExamManager, setShowExamManager] = useState(false);
+  const [exams, setExams] = useState([]);
+  const [selectedExams, setSelectedExams] = useState(new Set());
+  const [deletingExams, setDeletingExams] = useState(false);
+
+  // Fetch all exams on component mount
+  useEffect(() => {
+    fetchExams();
+  }, []);
+
+  const fetchExams = async () => {
+    try {
+      const response = await fetch("/api/getExams");
+      if (response.ok) {
+        const data = await response.json();
+        setExams(data.exams || []);
+      }
+    } catch (error) {
+      console.error("Error fetching exams:", error);
+    }
+  };
+
+  const handleExamSelection = (examId) => {
+    const newSelected = new Set(selectedExams);
+    if (newSelected.has(examId)) {
+      newSelected.delete(examId);
+    } else {
+      newSelected.add(examId);
+    }
+    setSelectedExams(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedExams.size === exams.length) {
+      setSelectedExams(new Set());
+    } else {
+      setSelectedExams(new Set(exams.map((e) => e.id)));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedExams.size === 0) {
+      setMessage("Please select exams to delete.");
+      return;
+    }
+
+    if (
+      !confirm(
+        `Are you sure you want to delete ${selectedExams.size} exam(s)? This will remove ALL questions from these exams.`
+      )
+    ) {
+      return;
+    }
+
+    setDeletingExams(true);
+    try {
+      const response = await fetch("/api/deleteExams", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          examIds: Array.from(selectedExams),
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setMessage(`Successfully deleted ${selectedExams.size} exam(s).`);
+        setSelectedExams(new Set());
+        // Refresh the exams list
+        fetchExams();
+      } else {
+        setMessage(data.error || "Failed to delete exams.");
+      }
+    } catch (error) {
+      console.error("Error deleting exams:", error);
+      setMessage("An error occurred while deleting exams.");
+    } finally {
+      setDeletingExams(false);
+    }
+  };
 
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
@@ -103,6 +187,8 @@ export default function UploadContent() {
         setExamSchool("");
         setExamSubject("");
         setExamType("");
+        // Refresh exams list after successful upload
+        fetchExams();
       } else {
         setMessage(data.error || "Upload failed. Please try again.");
       }
@@ -118,12 +204,188 @@ export default function UploadContent() {
     <div
       style={{
         padding: "20px",
-        maxWidth: "800px",
+        maxWidth: "1200px",
         margin: "auto",
         fontFamily: "Arial, sans-serif",
       }}
     >
       <h1>Upload Past Question Paper</h1>
+
+      {/* Exam Manager Toggle */}
+      <div style={{ marginBottom: "20px" }}>
+        <button
+          onClick={() => setShowExamManager(!showExamManager)}
+          style={{
+            padding: "10px 20px",
+            backgroundColor: showExamManager ? "#dc3545" : "#28a745",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontSize: "14px",
+            fontWeight: "bold",
+            marginBottom: "20px",
+          }}
+        >
+          {showExamManager ? "Hide Exam Manager" : "Show Exam Manager"}
+        </button>
+      </div>
+
+      {/* Exam Manager Section */}
+      {showExamManager && (
+        <div
+          style={{
+            border: "1px solid #ddd",
+            borderRadius: "8px",
+            padding: "20px",
+            marginBottom: "30px",
+            backgroundColor: "#f8f9fa",
+          }}
+        >
+          <h2 style={{ marginBottom: "20px", color: "#333" }}>Exam Manager</h2>
+
+          {exams.length > 0 ? (
+            <div>
+              {/* Action Buttons */}
+              <div
+                style={{ marginBottom: "15px", display: "flex", gap: "10px" }}
+              >
+                <button
+                  onClick={handleSelectAll}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor: "#007bff",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                  }}
+                >
+                  {selectedExams.size === exams.length
+                    ? "Deselect All"
+                    : "Select All"}
+                </button>
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={selectedExams.size === 0 || deletingExams}
+                  style={{
+                    padding: "8px 16px",
+                    backgroundColor:
+                      selectedExams.size === 0 ? "#6c757d" : "#dc3545",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor:
+                      selectedExams.size === 0 ? "not-allowed" : "pointer",
+                    fontSize: "12px",
+                    opacity: selectedExams.size === 0 ? 0.6 : 1,
+                  }}
+                >
+                  {deletingExams
+                    ? "Deleting..."
+                    : `Delete Selected (${selectedExams.size})`}
+                </button>
+              </div>
+
+              {/* Exams List */}
+              <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+                {exams.map((exam) => (
+                  <div
+                    key={exam.id}
+                    style={{
+                      border: "1px solid #ddd",
+                      borderRadius: "4px",
+                      padding: "15px",
+                      marginBottom: "10px",
+                      backgroundColor: "white",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "10px",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedExams.has(exam.id)}
+                      onChange={() => handleExamSelection(exam.id)}
+                      style={{ marginTop: "3px" }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: "bold", marginBottom: "5px" }}>
+                        {exam.name} ({exam.year})
+                      </p>
+                      <p
+                        style={{
+                          marginBottom: "5px",
+                          fontSize: "14px",
+                          color: "#666",
+                        }}
+                      >
+                        <strong>Subject:</strong> {exam.course}
+                      </p>
+                      <p
+                        style={{
+                          marginBottom: "5px",
+                          fontSize: "14px",
+                          color: "#666",
+                        }}
+                      >
+                        <strong>Country:</strong> {exam.country}
+                      </p>
+                      <p
+                        style={{
+                          marginBottom: "5px",
+                          fontSize: "14px",
+                          color: "#666",
+                        }}
+                      >
+                        <strong>Total Questions:</strong>{" "}
+                        {exam.total_questions || 0}
+                      </p>
+                      <p
+                        style={{
+                          marginBottom: "5px",
+                          fontSize: "14px",
+                          color: "#666",
+                        }}
+                      >
+                        <strong>Date Added:</strong>{" "}
+                        {new Date(
+                          exam.date_added._seconds * 1000
+                        ).toLocaleDateString()}
+                      </p>
+                      {exam.school && (
+                        <p
+                          style={{
+                            marginBottom: "5px",
+                            fontSize: "14px",
+                            color: "#666",
+                          }}
+                        >
+                          <strong>School:</strong> {exam.school}
+                        </p>
+                      )}
+                      {exam.type && (
+                        <p
+                          style={{
+                            marginBottom: "5px",
+                            fontSize: "14px",
+                            color: "#666",
+                          }}
+                        >
+                          <strong>Type:</strong> {exam.type}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p>No exams found. Upload some exams first!</p>
+          )}
+        </div>
+      )}
 
       {/* Extraction Mode Selection */}
       <div style={{ marginBottom: "20px" }}>
@@ -388,7 +650,7 @@ export default function UploadContent() {
             <p>
               <strong>Note:</strong> AI extraction is an experimental feature
               and might not be perfect. You may need to manually adjust the
-              extracted data if the AI's predictions are incorrect.
+              extracted data if the AI&apos;s predictions are incorrect.
             </p>
           </div>
         )}
@@ -417,12 +679,18 @@ export default function UploadContent() {
             marginTop: "20px",
             padding: "10px",
             borderRadius: "4px",
-            backgroundColor: message.includes("successful")
-              ? "#d4edda"
-              : "#f8d7da",
-            color: message.includes("successful") ? "#155724" : "#721c24",
+            backgroundColor:
+              message.includes("successful") || message.includes("Successfully")
+                ? "#d4edda"
+                : "#f8d7da",
+            color:
+              message.includes("successful") || message.includes("Successfully")
+                ? "#155724"
+                : "#721c24",
             border: `1px solid ${
-              message.includes("successful") ? "#c3e6cb" : "#f5c6cb"
+              message.includes("successful") || message.includes("Successfully")
+                ? "#c3e6cb"
+                : "#f5c6cb"
             }`,
           }}
         >
