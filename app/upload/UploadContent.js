@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function UploadContent() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -8,6 +8,31 @@ export default function UploadContent() {
   const [examYear, setExamYear] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [exams, setExams] = useState([]);
+  const [fetchingExams, setFetchingExams] = useState(true);
+  const [fetchError, setFetchError] = useState("");
+
+  const fetchExams = async () => {
+    setFetchingExams(true);
+    setFetchError("");
+    try {
+      const response = await fetch("/api/getExams");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setExams(data.exams);
+    } catch (error) {
+      console.error("Error fetching exams:", error);
+      setFetchError("Failed to load exams. Please try again.");
+    } finally {
+      setFetchingExams(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExams();
+  }, []); // Run once on component mount
 
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
@@ -50,6 +75,7 @@ export default function UploadContent() {
         setSelectedFile(null);
         setExamName("");
         setExamYear("");
+        fetchExams(); // Re-fetch exams after successful upload
       } else {
         setMessage(data.error || "Upload failed. Please try again.");
       }
@@ -62,16 +88,36 @@ export default function UploadContent() {
   };
 
   return (
-    <div style={{ padding: "20px", maxWidth: "600px", margin: "auto" }}>
+    <div
+      style={{
+        padding: "20px",
+        maxWidth: "800px",
+        margin: "auto",
+        fontFamily: "Arial, sans-serif",
+      }}
+    >
       <h1>Upload Past Question Paper</h1>
       <form
         onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: "15px" }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "15px",
+          marginBottom: "30px",
+          border: "1px solid #eee",
+          padding: "20px",
+          borderRadius: "8px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+        }}
       >
         <div>
           <label
             htmlFor="examName"
-            style={{ display: "block", marginBottom: "5px" }}
+            style={{
+              display: "block",
+              marginBottom: "5px",
+              fontWeight: "bold",
+            }}
           >
             Exam Name:
           </label>
@@ -83,9 +129,10 @@ export default function UploadContent() {
             placeholder="e.g., Ghana Law Entrance Exams"
             style={{
               width: "100%",
-              padding: "8px",
+              padding: "10px",
               border: "1px solid #ccc",
               borderRadius: "4px",
+              boxSizing: "border-box",
             }}
             required
           />
@@ -93,7 +140,11 @@ export default function UploadContent() {
         <div>
           <label
             htmlFor="examYear"
-            style={{ display: "block", marginBottom: "5px" }}
+            style={{
+              display: "block",
+              marginBottom: "5px",
+              fontWeight: "bold",
+            }}
           >
             Exam Year:
           </label>
@@ -105,9 +156,10 @@ export default function UploadContent() {
             placeholder="e.g., 2016/2017"
             style={{
               width: "100%",
-              padding: "8px",
+              padding: "10px",
               border: "1px solid #ccc",
               borderRadius: "4px",
+              boxSizing: "border-box",
             }}
             required
           />
@@ -115,7 +167,11 @@ export default function UploadContent() {
         <div>
           <label
             htmlFor="examScript"
-            style={{ display: "block", marginBottom: "5px" }}
+            style={{
+              display: "block",
+              marginBottom: "5px",
+              fontWeight: "bold",
+            }}
           >
             Exam Script (PDF or Image):
           </label>
@@ -126,9 +182,10 @@ export default function UploadContent() {
             onChange={handleFileChange}
             style={{
               width: "100%",
-              padding: "8px",
+              padding: "10px",
               border: "1px solid #ccc",
               borderRadius: "4px",
+              boxSizing: "border-box",
             }}
             required
           />
@@ -137,13 +194,15 @@ export default function UploadContent() {
           type="submit"
           disabled={loading}
           style={{
-            padding: "10px 15px",
+            padding: "12px 20px",
             backgroundColor: "#0070f3",
             color: "white",
             border: "none",
             borderRadius: "4px",
             cursor: loading ? "not-allowed" : "pointer",
             opacity: loading ? 0.7 : 1,
+            fontSize: "16px",
+            fontWeight: "bold",
           }}
         >
           {loading ? "Uploading..." : "Upload Exam"}
@@ -153,11 +212,166 @@ export default function UploadContent() {
         <p
           style={{
             marginTop: "20px",
-            color: message.includes("successful") ? "green" : "red",
+            padding: "10px",
+            borderRadius: "4px",
+            backgroundColor: message.includes("successful")
+              ? "#d4edda"
+              : "#f8d7da",
+            color: message.includes("successful") ? "#155724" : "#721c24",
+            border: `1px solid ${
+              message.includes("successful") ? "#c3e6cb" : "#f5c6cb"
+            }`,
           }}
         >
           {message}
         </p>
+      )}
+
+      <h2
+        style={{
+          marginTop: "40px",
+          marginBottom: "20px",
+          borderBottom: "2px solid #0070f3",
+          paddingBottom: "10px",
+        }}
+      >
+        Uploaded Exams
+      </h2>
+      {fetchingExams && <p>Loading exams...</p>}
+      {fetchError && <p style={{ color: "red" }}>{fetchError}</p>}
+      {!fetchingExams && exams.length === 0 && !fetchError && (
+        <p>No exams uploaded yet.</p>
+      )}
+
+      {!fetchingExams && exams.length > 0 && (
+        <div style={{ display: "grid", gap: "20px" }}>
+          {exams.map((exam) => (
+            <div
+              key={exam.id}
+              style={{
+                border: "1px solid #ddd",
+                borderRadius: "8px",
+                padding: "20px",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                backgroundColor: "#fff",
+              }}
+            >
+              <h3 style={{ color: "#0070f3", marginBottom: "10px" }}>
+                {exam.name} ({exam.year})
+              </h3>
+              <p>
+                <strong>Course:</strong> {exam.course || "N/A"}
+              </p>
+              <p>
+                <strong>Country:</strong> {exam.country || "N/A"}
+              </p>
+              <p>
+                <strong>Total Questions:</strong> {exam.total_questions}
+              </p>
+              <p>
+                <strong>Date Added:</strong>{" "}
+                {new Date(exam.date_added._seconds * 1000).toLocaleString()}
+              </p>
+
+              {exam.sections && exam.sections.length > 0 && (
+                <div style={{ marginTop: "20px" }}>
+                  <h4
+                    style={{
+                      borderBottom: "1px solid #eee",
+                      paddingBottom: "5px",
+                      marginBottom: "15px",
+                      color: "#333",
+                    }}
+                  >
+                    Sections:
+                  </h4>
+                  {exam.sections.map((section) => (
+                    <div
+                      key={section.id}
+                      style={{
+                        borderLeft: "3px solid #0070f3",
+                        paddingLeft: "15px",
+                        marginBottom: "15px",
+                        backgroundColor: "#f9f9f9",
+                        borderRadius: "4px",
+                        padding: "15px",
+                      }}
+                    >
+                      <p>
+                        <strong>Section Name:</strong> {section.section_name} (
+                        {section.section_number})
+                      </p>
+                      <p>
+                        <strong>Question Type:</strong>{" "}
+                        {section.question_type_in_section}
+                      </p>
+                      <p>
+                        <strong>Instructions:</strong> {section.instructions}
+                      </p>
+                      <p>
+                        <strong>Questions in Section:</strong>{" "}
+                        {section.num_questions_in_section}
+                      </p>
+
+                      {section.questions && section.questions.length > 0 && (
+                        <div style={{ marginTop: "15px" }}>
+                          <h5 style={{ marginBottom: "10px", color: "#555" }}>
+                            Questions:
+                          </h5>
+                          <ol style={{ paddingLeft: "20px" }}>
+                            {section.questions.map((question) => (
+                              <li
+                                key={question.id}
+                                style={{ marginBottom: "10px" }}
+                              >
+                                <p>
+                                  <strong>
+                                    Q{question.question_number_in_exam}:
+                                  </strong>{" "}
+                                  {question.question_text}
+                                </p>
+                                {question.options &&
+                                  question.options.length > 0 && (
+                                    <ul
+                                      style={{
+                                        listStyleType: "lower-alpha",
+                                        paddingLeft: "20px",
+                                      }}
+                                    >
+                                      {question.options.map((option, idx) => (
+                                        <li key={idx}> {option}</li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                {question.correct_answer && (
+                                  <p
+                                    style={{
+                                      fontWeight: "bold",
+                                      color: "green",
+                                    }}
+                                  >
+                                    Correct Answer: {question.correct_answer}
+                                  </p>
+                                )}
+                                {question.explanation && (
+                                  <p
+                                    style={{ fontSize: "0.9em", color: "#666" }}
+                                  >
+                                    Explanation: {question.explanation}
+                                  </p>
+                                )}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
