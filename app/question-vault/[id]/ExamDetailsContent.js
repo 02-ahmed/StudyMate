@@ -8,6 +8,10 @@ export default function ExamDetailsContent({ examId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [shownAnswers, setShownAnswers] = useState({}); // Track shown answers by question ID
+  const [aiAnswers, setAiAnswers] = useState({}); // Store AI answers by question ID
+  const [aiLoading, setAiLoading] = useState({}); // Store loading state by question ID
+  const [aiError, setAiError] = useState({}); // Store error state by question ID
+  const [showAiAnswer, setShowAiAnswer] = useState({}); // Track visibility of AI answer per question
 
   useEffect(() => {
     const fetchExamDetails = async () => {
@@ -47,6 +51,46 @@ export default function ExamDetailsContent({ examId }) {
       .split("_")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
+  };
+
+  const fetchAiAnswer = async (question, section, exam, questionId) => {
+    setAiLoading((prev) => ({ ...prev, [questionId]: true }));
+    setAiError((prev) => ({ ...prev, [questionId]: null }));
+    try {
+      const response = await fetch("/api/ai-answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionText: question.question_text,
+          sectionName: section.section_name,
+          examName: exam.name,
+          examYear: exam.year,
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to get AI answer");
+      const data = await response.json();
+      setAiAnswers((prev) => ({ ...prev, [questionId]: data.answer }));
+      setShowAiAnswer((prev) => ({ ...prev, [questionId]: true })); // Show AI answer after fetching
+    } catch (err) {
+      setAiError((prev) => ({
+        ...prev,
+        [questionId]: "Failed to get AI answer. Please try again.",
+      }));
+    } finally {
+      setAiLoading((prev) => ({ ...prev, [questionId]: false }));
+    }
+  };
+
+  const handleHideAiAnswer = (questionId) => {
+    setShowAiAnswer((prev) => ({ ...prev, [questionId]: false }));
+  };
+
+  const handleFindAiAnswer = (question, section, exam, questionId) => {
+    if (aiAnswers[questionId]) {
+      setShowAiAnswer((prev) => ({ ...prev, [questionId]: true }));
+    } else {
+      fetchAiAnswer(question, section, exam, questionId);
+    }
   };
 
   if (loading) {
@@ -207,99 +251,212 @@ export default function ExamDetailsContent({ examId }) {
             )}
 
             {section.questions && section.questions.length > 0 ? (
-              section.questions.map((question) => (
-                <div
-                  key={question.id}
-                  style={{
-                    borderTop: "1px dashed #e2e8f0",
-                    paddingTop: "20px",
-                    marginTop: "20px",
-                  }}
-                >
-                  <p
+              section.questions.map((question) => {
+                const hasAnswer =
+                  !!question.correct_answer || !!question.explanation;
+                return (
+                  <div
+                    key={question.id}
                     style={{
-                      color: "#2d3748",
-                      fontWeight: "600",
-                      marginBottom: "10px",
+                      borderTop: "1px dashed #e2e8f0",
+                      paddingTop: "20px",
+                      marginTop: "20px",
                     }}
                   >
-                    Question {question.question_number_in_exam}:{" "}
-                    {question.question_text}
-                  </p>
-                  {question.options && question.options.length > 0 && (
-                    <ul
+                    <p
                       style={{
-                        listStyleType: "none",
-                        paddingLeft: "0",
+                        color: "#2d3748",
+                        fontWeight: "600",
                         marginBottom: "10px",
                       }}
                     >
-                      {question.options.map((option, idx) => (
-                        <li
-                          key={idx}
-                          style={{ marginBottom: "5px", color: "#4a5568" }}
-                        >
-                          {String.fromCharCode(65 + idx)}. {option}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <button
-                    onClick={() => toggleShowAnswer(question.id)}
-                    style={{
-                      margin: "10px 0 0 0",
-                      padding: "7px 18px",
-                      borderRadius: "6px",
-                      border: "none",
-                      background: shownAnswers[question.id]
-                        ? "#2b6cb0"
-                        : "#4a5568",
-                      color: "#fff",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      fontSize: "1em",
-                      transition: "background 0.2s",
-                    }}
-                  >
-                    {shownAnswers[question.id] ? "Hide Answer" : "Show Answer"}
-                  </button>
-                  {shownAnswers[question.id] && (
-                    <div
-                      style={{
-                        marginTop: "12px",
-                        padding: "12px",
-                        background: "#f1f5f9",
-                        borderRadius: "6px",
-                      }}
-                    >
-                      {question.correct_answer && (
-                        <p
+                      Question {question.question_number_in_exam}:{" "}
+                      {question.question_text}
+                    </p>
+                    {question.options && question.options.length > 0 && (
+                      <ul
+                        style={{
+                          listStyleType: "none",
+                          paddingLeft: "0",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        {question.options.map((option, idx) => (
+                          <li
+                            key={idx}
+                            style={{ marginBottom: "5px", color: "#4a5568" }}
+                          >
+                            {String.fromCharCode(65 + idx)}. {option}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {hasAnswer ? (
+                      <>
+                        <button
+                          onClick={() => toggleShowAnswer(question.id)}
                           style={{
-                            color: "#38a169",
-                            fontWeight: "600",
-                            marginBottom: "5px",
+                            margin: "10px 0 0 0",
+                            padding: "7px 18px",
+                            borderRadius: "6px",
+                            border: "none",
+                            background: shownAnswers[question.id]
+                              ? "#2b6cb0"
+                              : "#4a5568",
+                            color: "#fff",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontSize: "1em",
+                            transition: "background 0.2s",
                           }}
                         >
-                          Correct Answer: {question.correct_answer}
-                        </p>
-                      )}
-                      {question.explanation && (
-                        <p style={{ color: "#4a5568", fontSize: "0.95em" }}>
-                          <span style={{ fontWeight: "600" }}>
-                            Explanation:
-                          </span>{" "}
-                          {question.explanation}
-                        </p>
-                      )}
-                      {!question.correct_answer && !question.explanation && (
-                        <p style={{ color: "#718096" }}>
+                          {shownAnswers[question.id]
+                            ? "Hide Answer"
+                            : "Show Answer"}
+                        </button>
+                        {shownAnswers[question.id] && (
+                          <div
+                            style={{
+                              marginTop: "12px",
+                              padding: "12px",
+                              background: "#f1f5f9",
+                              borderRadius: "6px",
+                            }}
+                          >
+                            {question.correct_answer && (
+                              <p
+                                style={{
+                                  color: "#38a169",
+                                  fontWeight: "600",
+                                  marginBottom: "5px",
+                                }}
+                              >
+                                Correct Answer: {question.correct_answer}
+                              </p>
+                            )}
+                            {question.explanation && (
+                              <p
+                                style={{ color: "#4a5568", fontSize: "0.95em" }}
+                              >
+                                <span style={{ fontWeight: "600" }}>
+                                  Explanation:
+                                </span>{" "}
+                                {question.explanation}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "12px",
+                          background: "#f1f5f9",
+                          borderRadius: "6px",
+                        }}
+                      >
+                        <p style={{ color: "#718096", marginBottom: "8px" }}>
                           No answer or explanation available.
                         </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))
+                        <div>
+                          {aiAnswers[question.id] &&
+                          showAiAnswer[question.id] ? (
+                            <div
+                              style={{
+                                marginTop: "8px",
+                                background: "#fffbe6",
+                                border: "1px solid #ffe58f",
+                                borderRadius: "6px",
+                                padding: "10px",
+                              }}
+                            >
+                              <p
+                                style={{
+                                  color: "#b7791f",
+                                  fontWeight: 600,
+                                  marginBottom: "6px",
+                                }}
+                              >
+                                AI-Generated Answer:
+                              </p>
+                              <div
+                                style={{
+                                  color: "#4a5568",
+                                  marginBottom: "8px",
+                                }}
+                              >
+                                {aiAnswers[question.id]}
+                              </div>
+                              <div
+                                style={{ color: "#b7791f", fontSize: "0.93em" }}
+                              >
+                                <b>Note:</b> This answer was generated by AI and
+                                may not be fully accurate. Please double-check
+                                before relying on it.
+                              </div>
+                              <button
+                                onClick={() => handleHideAiAnswer(question.id)}
+                                style={{
+                                  marginTop: "10px",
+                                  background: "#4a5568",
+                                  color: "#fff",
+                                  border: "none",
+                                  borderRadius: "5px",
+                                  padding: "5px 14px",
+                                  fontWeight: 600,
+                                  fontSize: "0.97em",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Hide AI Answer
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() =>
+                                  handleFindAiAnswer(
+                                    question,
+                                    section,
+                                    exam,
+                                    question.id
+                                  )
+                                }
+                                disabled={aiLoading[question.id]}
+                                style={{
+                                  background: "#f6ad55",
+                                  color: "#fff",
+                                  border: "none",
+                                  borderRadius: "5px",
+                                  padding: "6px 16px",
+                                  fontWeight: 600,
+                                  fontSize: "0.97em",
+                                  cursor: aiLoading[question.id]
+                                    ? "not-allowed"
+                                    : "pointer",
+                                  marginTop: "4px",
+                                }}
+                              >
+                                {aiLoading[question.id]
+                                  ? "Finding answer..."
+                                  : "Find Answer with AI"}
+                              </button>
+                              {aiError[question.id] && (
+                                <div
+                                  style={{ color: "#e53e3e", marginTop: "6px" }}
+                                >
+                                  {aiError[question.id]}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             ) : (
               <p style={{ color: "#718096" }}>
                 No questions available for this section.
