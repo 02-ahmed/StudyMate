@@ -5,6 +5,7 @@ import QuestionDisplay from "../components/questions/QuestionDisplay"; // Import
 
 export default function UploadContent() {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [extractionMode, setExtractionMode] = useState("manual"); // "manual" or "ai"
   const [examName, setExamName] = useState("");
   const [examYear, setExamYear] = useState("");
   const [examCountry, setExamCountry] = useState(""); // New state for exam country
@@ -17,6 +18,10 @@ export default function UploadContent() {
 
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
+  };
+
+  const handleExtractionModeChange = (event) => {
+    setExtractionMode(event.target.value);
   };
 
   const handleExamNameChange = (event) => {
@@ -52,30 +57,33 @@ export default function UploadContent() {
     setLoading(true);
     setMessage("");
 
-    if (
-      !selectedFile ||
-      !examName ||
-      !examYear ||
-      !examCountry ||
-      !examSubject
-    ) {
-      // Added examSubject to validation
-      setMessage(
-        "Please fill in all required fields (Exam Script, Name, Year, Country, and Subject)."
-      );
+    // Validation based on extraction mode
+    if (!selectedFile) {
+      setMessage("Please select an exam script file.");
       setLoading(false);
       return;
     }
 
+    if (extractionMode === "manual") {
+      if (!examName || !examYear || !examCountry || !examSubject) {
+        setMessage(
+          "Please fill in all required fields (Exam Name, Year, Country, and Subject)."
+        );
+        setLoading(false);
+        return;
+      }
+    }
+
     const formData = new FormData();
     formData.append("examScript", selectedFile);
+    formData.append("extractionMode", extractionMode);
     formData.append("examName", examName);
     formData.append("examYear", examYear);
     formData.append("examCountry", examCountry);
     formData.append("isGlobalExam", isGlobalExam);
     formData.append("examSchool", examSchool);
-    formData.append("examSubject", examSubject); // Append new field
-    formData.append("examType", examType); // Append new field
+    formData.append("examSubject", examSubject);
+    formData.append("examType", examType);
 
     try {
       const response = await fetch("/api/ingest-exam", {
@@ -90,11 +98,11 @@ export default function UploadContent() {
         setSelectedFile(null);
         setExamName("");
         setExamYear("");
-        setExamCountry(""); // Clear new field
-        setIsGlobalExam(false); // Clear new field
-        setExamSchool(""); // Clear new field
-        setExamSubject(""); // Clear new field
-        setExamType(""); // Clear new field
+        setExamCountry("");
+        setIsGlobalExam(false);
+        setExamSchool("");
+        setExamSubject("");
+        setExamType("");
       } else {
         setMessage(data.error || "Upload failed. Please try again.");
       }
@@ -116,6 +124,38 @@ export default function UploadContent() {
       }}
     >
       <h1>Upload Past Question Paper</h1>
+
+      {/* Extraction Mode Selection */}
+      <div style={{ marginBottom: "20px" }}>
+        <label
+          style={{ display: "block", marginBottom: "10px", fontWeight: "bold" }}
+        >
+          Extraction Mode:
+        </label>
+        <div style={{ display: "flex", gap: "20px" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <input
+              type="radio"
+              name="extractionMode"
+              value="manual"
+              checked={extractionMode === "manual"}
+              onChange={handleExtractionModeChange}
+            />
+            Manual Mode (I provide metadata)
+          </label>
+          <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <input
+              type="radio"
+              name="extractionMode"
+              value="ai"
+              checked={extractionMode === "ai"}
+              onChange={handleExtractionModeChange}
+            />
+            AI Extraction Mode (AI extracts everything from document)
+          </label>
+        </div>
+      </div>
+
       <form
         onSubmit={handleSubmit}
         style={{
@@ -129,178 +169,7 @@ export default function UploadContent() {
           boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
         }}
       >
-        <div>
-          <label
-            htmlFor="examName"
-            style={{
-              display: "block",
-              marginBottom: "5px",
-              fontWeight: "bold",
-            }}
-          >
-            Exam Name:
-          </label>
-          <input
-            type="text"
-            id="examName"
-            value={examName}
-            onChange={handleExamNameChange}
-            placeholder="e.g., Ghana Law Entrance Exams"
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              boxSizing: "border-box",
-            }}
-            required
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="examYear"
-            style={{
-              display: "block",
-              marginBottom: "5px",
-              fontWeight: "bold",
-            }}
-          >
-            Exam Year:
-          </label>
-          <input
-            type="text"
-            id="examYear"
-            value={examYear}
-            onChange={handleExamYearChange}
-            placeholder="e.g., 2016/2017"
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              boxSizing: "border-box",
-            }}
-            required
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="examCountry"
-            style={{
-              display: "block",
-              marginBottom: "5px",
-              fontWeight: "bold",
-            }}
-          >
-            Exam Country:
-          </label>
-          <input
-            type="text"
-            id="examCountry"
-            value={examCountry}
-            onChange={handleExamCountryChange}
-            placeholder="e.g., Ghana"
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              boxSizing: "border-box",
-            }}
-            required
-          />
-        </div>
-        <div>
-          <input
-            type="checkbox"
-            id="isGlobalExam"
-            checked={isGlobalExam}
-            onChange={handleIsGlobalExamChange}
-            style={{ marginRight: "10px" }}
-          />
-          <label htmlFor="isGlobalExam" style={{ fontWeight: "bold" }}>
-            Is this a global exam?
-          </label>
-        </div>
-        <div>
-          <label
-            htmlFor="examSchool"
-            style={{
-              display: "block",
-              marginBottom: "5px",
-              fontWeight: "bold",
-            }}
-          >
-            Exam School (Optional):
-          </label>
-          <input
-            type="text"
-            id="examSchool"
-            value={examSchool}
-            onChange={handleExamSchoolChange}
-            placeholder="e.g., University of Ghana"
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              boxSizing: "border-box",
-            }}
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="examSubject"
-            style={{
-              display: "block",
-              marginBottom: "5px",
-              fontWeight: "bold",
-            }}
-          >
-            Exam Subject/Course:
-          </label>
-          <input
-            type="text"
-            id="examSubject"
-            value={examSubject}
-            onChange={handleExamSubjectChange}
-            placeholder="e.g., Law, Mathematics, Physics"
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              boxSizing: "border-box",
-            }}
-            required
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="examType"
-            style={{
-              display: "block",
-              marginBottom: "5px",
-              fontWeight: "bold",
-            }}
-          >
-            Exam Type (Optional):
-          </label>
-          <input
-            type="text"
-            id="examType"
-            value={examType}
-            onChange={handleExamTypeChange}
-            placeholder="e.g., Midterm, Final Exam, Quiz"
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              boxSizing: "border-box",
-            }}
-          />
-        </div>
+        {/* File Upload */}
         <div>
           <label
             htmlFor="examScript"
@@ -310,13 +179,13 @@ export default function UploadContent() {
               fontWeight: "bold",
             }}
           >
-            Exam Script (PDF or Image):
+            Exam Script (PDF/Image):
           </label>
           <input
             type="file"
             id="examScript"
-            accept=".pdf,image/*"
             onChange={handleFileChange}
+            accept=".pdf,.jpg,.jpeg,.png"
             style={{
               width: "100%",
               padding: "10px",
@@ -327,6 +196,203 @@ export default function UploadContent() {
             required
           />
         </div>
+
+        {/* Manual Mode Fields - Only show if manual mode is selected */}
+        {extractionMode === "manual" && (
+          <>
+            <div>
+              <label
+                htmlFor="examName"
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "bold",
+                }}
+              >
+                Exam Name:
+              </label>
+              <input
+                type="text"
+                id="examName"
+                value={examName}
+                onChange={handleExamNameChange}
+                placeholder="e.g., Ghana Law Entrance Exams"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  boxSizing: "border-box",
+                }}
+                required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="examYear"
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "bold",
+                }}
+              >
+                Exam Year:
+              </label>
+              <input
+                type="text"
+                id="examYear"
+                value={examYear}
+                onChange={handleExamYearChange}
+                placeholder="e.g., 2016/2017"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  boxSizing: "border-box",
+                }}
+                required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="examCountry"
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "bold",
+                }}
+              >
+                Exam Country:
+              </label>
+              <input
+                type="text"
+                id="examCountry"
+                value={examCountry}
+                onChange={handleExamCountryChange}
+                placeholder="e.g., Ghana"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  boxSizing: "border-box",
+                }}
+                required
+              />
+            </div>
+            <div>
+              <input
+                type="checkbox"
+                id="isGlobalExam"
+                checked={isGlobalExam}
+                onChange={handleIsGlobalExamChange}
+                style={{ marginRight: "10px" }}
+              />
+              <label htmlFor="isGlobalExam" style={{ fontWeight: "bold" }}>
+                Is this a global exam?
+              </label>
+            </div>
+            <div>
+              <label
+                htmlFor="examSchool"
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "bold",
+                }}
+              >
+                Exam School (Optional):
+              </label>
+              <input
+                type="text"
+                id="examSchool"
+                value={examSchool}
+                onChange={handleExamSchoolChange}
+                placeholder="e.g., University of Ghana"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="examSubject"
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "bold",
+                }}
+              >
+                Exam Subject/Course:
+              </label>
+              <input
+                type="text"
+                id="examSubject"
+                value={examSubject}
+                onChange={handleExamSubjectChange}
+                placeholder="e.g., Law, Mathematics, Physics"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  boxSizing: "border-box",
+                }}
+                required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="examType"
+                style={{
+                  display: "block",
+                  marginBottom: "5px",
+                  fontWeight: "bold",
+                }}
+              >
+                Exam Type (Optional):
+              </label>
+              <input
+                type="text"
+                id="examType"
+                value={examType}
+                onChange={handleExamTypeChange}
+                placeholder="e.g., Midterm, Final Exam, Quiz"
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  border: "1px solid #ccc",
+                  borderRadius: "4px",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+          </>
+        )}
+
+        {/* AI Extraction Mode Fields (if AI mode is selected) */}
+        {extractionMode === "ai" && (
+          <div>
+            <p>
+              In AI Extraction Mode, the system will attempt to extract all
+              relevant information from the uploaded document. This might
+              include exam names, years, countries, schools, subjects, and
+              types. You may need to provide a more specific exam name and year
+              if the AI cannot determine them accurately.
+            </p>
+            <p>
+              <strong>Note:</strong> AI extraction is an experimental feature
+              and might not be perfect. You may need to manually adjust the
+              extracted data if the AI's predictions are incorrect.
+            </p>
+          </div>
+        )}
+
         <button
           type="submit"
           disabled={loading}

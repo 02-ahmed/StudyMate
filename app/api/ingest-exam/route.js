@@ -32,6 +32,7 @@ export async function POST(req) {
     // Step 1: Handle the incoming file upload (multipart/form-data)
     const formData = await req.formData();
     const file = formData.get("examScript"); // Assuming frontend sends file with name 'examScript'
+    const extractionMode = formData.get("extractionMode"); // "manual" or "ai"
     const examName = formData.get("examName"); // e.g., "Ghana Law Entrance Exams 2016/2017"
     const examYear = formData.get("examYear"); // e.g., "2016/2017"
     const examCountry = formData.get("examCountry"); // New: Country of the exam
@@ -46,12 +47,18 @@ export async function POST(req) {
         { status: 400 }
       );
     }
-    if (!examName || !examYear || !examCountry || !examSubject) {
-      // Added examSubject to validation
-      return NextResponse.json(
-        { error: "Missing exam name, year, country, or subject." },
-        { status: 400 }
-      );
+
+    // Validation based on extraction mode
+    if (extractionMode === "manual") {
+      if (!examName || !examYear || !examCountry || !examSubject) {
+        return NextResponse.json(
+          {
+            error:
+              "Missing exam name, year, country, or subject for manual mode.",
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Convert file to buffer for sending to Gemini or storing
@@ -61,17 +68,16 @@ export async function POST(req) {
     const mimeType = file.type; // e.g., "application/pdf" or "image/jpeg"
 
     // --- Step 2: Call the Gemini API for structured extraction ---
-    // (This part will require more detailed prompting and error handling)
-    // You'll initialize GoogleGenerativeAI here and call generateContent
-    // using the base64Data of the file and a detailed prompt.
-
-    // Example (conceptual) of Gemini call:
     const genAI = new GoogleGenerativeAI(process.env.API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Or gemini-2.0-flash
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `You are an AI assistant specialized in extracting exam questions from documents.
+    let prompt;
+    if (extractionMode === "manual") {
+      // Manual mode: Use provided metadata, only extract questions and answers
+      prompt = `You are an AI assistant specialized in extracting exam questions from documents.
         Analyze the provided document (PDF or image) which is an exam script.
-        The user has provided the following metadata: 
+        
+        The user has provided the following metadata (USE THESE EXACTLY, DO NOT EXTRACT FROM DOCUMENT):
         - Exam Name: ${examName}
         - Exam Year: ${examYear}
         - Exam Country: ${examCountry}
@@ -80,29 +86,108 @@ export async function POST(req) {
         - Exam Subject: ${examSubject}
         - Exam Type: ${examType || "N/A"}
 
-        Extract the following structured information for each exam paper:
-        1. Overall Exam Name (e.g., "Ghana Law Entrance Exam")
-        2. Exam Year (e.g., "2016/2017")
-        3. Exam Country (e.g., "Ghana" - confirm this based on document context if possible, otherwise use provided)
-        4. Is Global Exam (true/false - confirm this based on document context if possible, otherwise use provided)
-        5. Exam School (e.g., "University of Ghana" - extract if mentioned, otherwise use provided or null)
-        6. Exam Subject (e.g., "Law" - confirm this based on document context if possible, otherwise use provided)
-        7. Exam Type (e.g., "Midterm" - extract if mentioned, otherwise use provided or null)
+        CRITICAL INSTRUCTIONS:
+        1. IGNORE any cover pages, title pages, or Studocu branding - focus only on the actual exam content
+        2. Look for the REAL exam title within the actual exam questions/instructions
+        3. Preserve the EXACT original question numbers as they appear in the document
+        4. Extract questions in the exact order they appear in the document
+        5. For answers, be more aggressive - if you have knowledge about the subject, provide the answer
+        6. For multiple choice questions, if you know the correct answer, provide it
+        7. If the document shows an answer key or marked answers, use those
+        8. IMPORTANT: Convert all question numbers to NUMERICAL format (e.g., "Question Six" should be questionNumber: 6, "Question Twenty" should be questionNumber: 20)
+        9. Maintain the EXACT order questions appear in the document - do not reorder them
+
+        Extract ONLY the following structured information:
+        1. A list of Sections, each with:
+           - Section Name (e.g., "Section A: Multiple Choice")
+           - Section Number (e.g., "A" or "1")
+           - Question Type in Section (e.g., "multiple_choice", "essay")
+           - Instructions for the section
+           - A list of Questions within this section, each with:
+             - Question Number (MUST be numerical - convert text numbers to digits: "Six" = 6, "Twenty" = 20, etc.)
+             - Question Text
+             - Options (if multiple choice, as an array)
+             - Correct Answer (if you have knowledge about the subject, provide it)
+             - Explanation (if available)
+
+        For answers, follow these rules:
+        - If the document explicitly shows the correct answer (marked, circled, in answer key), use it
+        - If you have knowledge about the subject matter, provide the correct answer
+        - For law questions, use your knowledge of legal principles
+        - For multiple choice, provide the letter (A, B, C, D) of the correct option
+        - If you are unsure, still provide your best educated guess based on the subject matter
+
+        Format your response as a single JSON object with this structure:
+        {
+          "examName": "${examName}",
+          "examYear": "${examYear}",
+          "examCountry": "${examCountry}",
+          "isGlobalExam": ${isGlobalExam},
+          "examSchool": "${examSchool || ""}",
+          "examSubject": "${examSubject}",
+          "examType": "${examType || ""}",
+          "sections": [
+            {
+              "sectionName": "...",
+              "sectionNumber": "...",
+              "questionTypeInSection": "...",
+              "instructions": "...",
+              "questions": [
+                {
+                  "questionNumber": 1,
+                  "questionText": "...",
+                  "options": [...],
+                  "correctAnswer": "...",
+                  "explanation": "..."
+                }
+              ]
+            }
+          ]
+        }`;
+    } else {
+      // AI extraction mode: Extract everything from document
+      prompt = `You are an AI assistant specialized in extracting exam questions from documents.
+        Analyze the provided document (PDF or image) which is an exam script.
+        
+        CRITICAL INSTRUCTIONS:
+        1. IGNORE any cover pages, title pages, or Studocu branding - focus only on the actual exam content
+        2. Look for the REAL exam title within the actual exam questions/instructions, not on cover pages
+        3. Preserve the EXACT original question numbers as they appear in the document
+        4. Extract questions in the exact order they appear in the document
+        5. For answers, be more aggressive - if you have knowledge about the subject, provide the answer
+        6. For multiple choice questions, if you know the correct answer, provide it
+        7. If the document shows an answer key or marked answers, use those
+        8. IMPORTANT: Convert all question numbers to NUMERICAL format (e.g., "Question Six" should be questionNumber: 6, "Question Twenty" should be questionNumber: 20)
+        9. Maintain the EXACT order questions appear in the document - do not reorder them
+        
+        Extract ALL the following structured information from the document:
+        1. Overall Exam Name (extract from actual exam content, NOT cover pages)
+        2. Exam Year (extract from document)
+        3. Exam Country (extract from document context)
+        4. Is Global Exam (true/false - determine from document context)
+        5. Exam School (extract if mentioned in document)
+        6. Exam Subject (extract from document context)
+        7. Exam Type (extract if mentioned in document)
         8. A list of Sections, each with:
            - Section Name (e.g., "Section A: Multiple Choice")
            - Section Number (e.g., "A" or "1")
            - Question Type in Section (e.g., "multiple_choice", "essay")
            - Instructions for the section
            - A list of Questions within this section, each with:
-             - Question Number (original number from the paper)
+             - Question Number (MUST be numerical - convert text numbers to digits: "Six" = 6, "Twenty" = 20, etc.)
              - Question Text
              - Options (if multiple choice, as an array)
-             - Correct Answer (if available, identify based on context or explicit marking)
+             - Correct Answer (if you have knowledge about the subject, provide it)
              - Explanation (if available)
 
-        Format your response as a single JSON object. Ensure the top-level keys match the requested fields, especially for examName, examYear, examCountry, isGlobalExam, examSchool, examSubject, and examType.
+        For answers, follow these rules:
+        - If the document explicitly shows the correct answer (marked, circled, in answer key), use it
+        - If you have knowledge about the subject matter, provide the correct answer
+        - For law questions, use your knowledge of legal principles
+        - For multiple choice, provide the letter (A, B, C, D) of the correct option
+        - If you are unsure, still provide your best educated guess based on the subject matter
 
-        Example JSON structure:
+        Format your response as a single JSON object with this structure:
         {
           "examName": "...",
           "examYear": "...",
@@ -124,14 +209,12 @@ export async function POST(req) {
                   "options": [...],
                   "correctAnswer": "...",
                   "explanation": "..."
-                },
-                // ... more questions
+                }
               ]
-            },
-            // ... more sections
+            }
           ]
-        }
-        `;
+        }`;
+    }
 
     const result = await model.generateContent({
       contents: [
