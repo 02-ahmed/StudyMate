@@ -15,6 +15,11 @@ export async function POST(req) {
     const file = formData.get("examScript"); // Assuming frontend sends file with name 'examScript'
     const examName = formData.get("examName"); // e.g., "Ghana Law Entrance Exams 2016/2017"
     const examYear = formData.get("examYear"); // e.g., "2016/2017"
+    const examCountry = formData.get("examCountry"); // New: Country of the exam
+    const isGlobalExam = formData.get("isGlobalExam") === "true"; // New: Is it a global exam?
+    const examSchool = formData.get("examSchool"); // New: School associated with the exam (optional)
+    const examSubject = formData.get("examSubject"); // New: Subject/Course of the exam
+    const examType = formData.get("examType"); // New: Type of exam (e.g., Midterm, Final)
 
     if (!file) {
       return NextResponse.json(
@@ -22,9 +27,10 @@ export async function POST(req) {
         { status: 400 }
       );
     }
-    if (!examName || !examYear) {
+    if (!examName || !examYear || !examCountry || !examSubject) {
+      // Added examSubject to validation
       return NextResponse.json(
-        { error: "Missing exam name or year." },
+        { error: "Missing exam name, year, country, or subject." },
         { status: 400 }
       );
     }
@@ -46,10 +52,24 @@ export async function POST(req) {
 
     const prompt = `You are an AI assistant specialized in extracting exam questions from documents.
         Analyze the provided document (PDF or image) which is an exam script.
+        The user has provided the following metadata: 
+        - Exam Name: ${examName}
+        - Exam Year: ${examYear}
+        - Exam Country: ${examCountry}
+        - Is Global Exam: ${isGlobalExam}
+        - Exam School: ${examSchool || "N/A"}
+        - Exam Subject: ${examSubject}
+        - Exam Type: ${examType || "N/A"}
+
         Extract the following structured information for each exam paper:
         1. Overall Exam Name (e.g., "Ghana Law Entrance Exam")
         2. Exam Year (e.g., "2016/2017")
-        3. A list of Sections, each with:
+        3. Exam Country (e.g., "Ghana" - confirm this based on document context if possible, otherwise use provided)
+        4. Is Global Exam (true/false - confirm this based on document context if possible, otherwise use provided)
+        5. Exam School (e.g., "University of Ghana" - extract if mentioned, otherwise use provided or null)
+        6. Exam Subject (e.g., "Law" - confirm this based on document context if possible, otherwise use provided)
+        7. Exam Type (e.g., "Midterm" - extract if mentioned, otherwise use provided or null)
+        8. A list of Sections, each with:
            - Section Name (e.g., "Section A: Multiple Choice")
            - Section Number (e.g., "A" or "1")
            - Question Type in Section (e.g., "multiple_choice", "essay")
@@ -61,11 +81,17 @@ export async function POST(req) {
              - Correct Answer (if available, identify based on context or explicit marking)
              - Explanation (if available)
 
-        Format your response as a single JSON object.
+        Format your response as a single JSON object. Ensure the top-level keys match the requested fields, especially for examName, examYear, examCountry, isGlobalExam, examSchool, examSubject, and examType.
+
         Example JSON structure:
         {
           "examName": "...",
           "examYear": "...",
+          "examCountry": "...",
+          "isGlobalExam": true,
+          "examSchool": "...",
+          "examSubject": "...",
+          "examType": "...",
           "sections": [
             {
               "sectionName": "...",
@@ -117,8 +143,11 @@ export async function POST(req) {
     const examRef = await adminDb.collection("exams").add({
       name: extractedData.examName,
       year: extractedData.examYear,
-      course: "Law", // You might need to derive this or get it from input
-      country: "Ghana", // You might need to derive this or get it from input
+      course: extractedData.examSubject || examSubject, // Use extracted or provided, fixes hardcoded "Law"
+      country: extractedData.examCountry || examCountry, // Use extracted or provided
+      is_global: extractedData.isGlobalExam || isGlobalExam, // Use extracted or provided
+      school: extractedData.examSchool || examSchool || null, // Use extracted, provided, or null
+      type: extractedData.examType || examType || null, // New: Exam type
       description: `Extracted questions for ${extractedData.examName} (${extractedData.examYear})`,
       date_added: new Date(),
       total_questions: extractedData.sections.reduce(

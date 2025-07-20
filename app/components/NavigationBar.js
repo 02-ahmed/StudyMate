@@ -43,6 +43,7 @@ import BookmarkBorderOutlinedIcon from "@mui/icons-material/BookmarkBorderOutlin
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
+import LibraryBooksOutlinedIcon from "@mui/icons-material/LibraryBooksOutlined"; // New icon for Question Vault
 
 function NavigationBarContent() {
   const { isSignedIn, isLoaded } = useUser();
@@ -87,6 +88,11 @@ function NavigationBarContent() {
       path: "/study-mate/chat",
       label: t("nav.studyChat"),
       icon: <ChatOutlinedIcon />,
+    },
+    {
+      path: "/question-vault",
+      label: t("nav.questionVault", "Question Vault"),
+      icon: <LibraryBooksOutlinedIcon />,
     },
   ];
 

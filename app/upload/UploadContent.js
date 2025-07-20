@@ -7,6 +7,11 @@ export default function UploadContent() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [examName, setExamName] = useState("");
   const [examYear, setExamYear] = useState("");
+  const [examCountry, setExamCountry] = useState(""); // New state for exam country
+  const [isGlobalExam, setIsGlobalExam] = useState(false); // New state for global exam
+  const [examSchool, setExamSchool] = useState(""); // New state for exam school
+  const [examSubject, setExamSubject] = useState(""); // New state for exam subject/course
+  const [examType, setExamType] = useState(""); // New state for exam type
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [exams, setExams] = useState([]);
@@ -47,13 +52,42 @@ export default function UploadContent() {
     setExamYear(event.target.value);
   };
 
+  const handleExamCountryChange = (event) => {
+    setExamCountry(event.target.value);
+  };
+
+  const handleIsGlobalExamChange = (event) => {
+    setIsGlobalExam(event.target.checked);
+  };
+
+  const handleExamSchoolChange = (event) => {
+    setExamSchool(event.target.value);
+  };
+
+  const handleExamSubjectChange = (event) => {
+    setExamSubject(event.target.value);
+  };
+
+  const handleExamTypeChange = (event) => {
+    setExamType(event.target.value);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
     setMessage("");
 
-    if (!selectedFile || !examName || !examYear) {
-      setMessage("Please fill in all fields.");
+    if (
+      !selectedFile ||
+      !examName ||
+      !examYear ||
+      !examCountry ||
+      !examSubject
+    ) {
+      // Added examSubject to validation
+      setMessage(
+        "Please fill in all required fields (Exam Script, Name, Year, Country, and Subject)."
+      );
       setLoading(false);
       return;
     }
@@ -62,6 +96,11 @@ export default function UploadContent() {
     formData.append("examScript", selectedFile);
     formData.append("examName", examName);
     formData.append("examYear", examYear);
+    formData.append("examCountry", examCountry);
+    formData.append("isGlobalExam", isGlobalExam);
+    formData.append("examSchool", examSchool);
+    formData.append("examSubject", examSubject); // Append new field
+    formData.append("examType", examType); // Append new field
 
     try {
       const response = await fetch("/api/ingest-exam", {
@@ -76,6 +115,11 @@ export default function UploadContent() {
         setSelectedFile(null);
         setExamName("");
         setExamYear("");
+        setExamCountry(""); // Clear new field
+        setIsGlobalExam(false); // Clear new field
+        setExamSchool(""); // Clear new field
+        setExamSubject(""); // Clear new field
+        setExamType(""); // Clear new field
         fetchExams(); // Re-fetch exams after successful upload
       } else {
         setMessage(data.error || "Upload failed. Please try again.");
@@ -163,6 +207,124 @@ export default function UploadContent() {
               boxSizing: "border-box",
             }}
             required
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="examCountry"
+            style={{
+              display: "block",
+              marginBottom: "5px",
+              fontWeight: "bold",
+            }}
+          >
+            Exam Country:
+          </label>
+          <input
+            type="text"
+            id="examCountry"
+            value={examCountry}
+            onChange={handleExamCountryChange}
+            placeholder="e.g., Ghana"
+            style={{
+              width: "100%",
+              padding: "10px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+            required
+          />
+        </div>
+        <div>
+          <input
+            type="checkbox"
+            id="isGlobalExam"
+            checked={isGlobalExam}
+            onChange={handleIsGlobalExamChange}
+            style={{ marginRight: "10px" }}
+          />
+          <label htmlFor="isGlobalExam" style={{ fontWeight: "bold" }}>
+            Is this a global exam?
+          </label>
+        </div>
+        <div>
+          <label
+            htmlFor="examSchool"
+            style={{
+              display: "block",
+              marginBottom: "5px",
+              fontWeight: "bold",
+            }}
+          >
+            Exam School (Optional):
+          </label>
+          <input
+            type="text"
+            id="examSchool"
+            value={examSchool}
+            onChange={handleExamSchoolChange}
+            placeholder="e.g., University of Ghana"
+            style={{
+              width: "100%",
+              padding: "10px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="examSubject"
+            style={{
+              display: "block",
+              marginBottom: "5px",
+              fontWeight: "bold",
+            }}
+          >
+            Exam Subject/Course:
+          </label>
+          <input
+            type="text"
+            id="examSubject"
+            value={examSubject}
+            onChange={handleExamSubjectChange}
+            placeholder="e.g., Law, Mathematics, Physics"
+            style={{
+              width: "100%",
+              padding: "10px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
+            required
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="examType"
+            style={{
+              display: "block",
+              marginBottom: "5px",
+              fontWeight: "bold",
+            }}
+          >
+            Exam Type (Optional):
+          </label>
+          <input
+            type="text"
+            id="examType"
+            value={examType}
+            onChange={handleExamTypeChange}
+            placeholder="e.g., Midterm, Final Exam, Quiz"
+            style={{
+              width: "100%",
+              padding: "10px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              boxSizing: "border-box",
+            }}
           />
         </div>
         <div>
