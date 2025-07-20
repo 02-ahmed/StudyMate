@@ -8,7 +8,7 @@ import { getAuth } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs/server";
 
 // Set max duration for this potentially long-running API route
-export const maxDuration = 300; // 5 minutes (adjust as needed, max is 300s for Vercel Hobby)
+export const maxDuration = 60; // Fixed to comply with Vercel hobby plan limits
 
 export async function POST(req) {
   // Clerk authentication and role check

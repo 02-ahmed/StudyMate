@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { getAuth } from "@clerk/nextjs/server";
 
-export const maxDuration = 300; // Adjust as needed
+export const maxDuration = 60; // Fixed to comply with Vercel hobby plan limits
 
 export async function GET(req) {
   try {
