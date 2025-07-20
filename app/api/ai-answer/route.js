@@ -18,15 +18,7 @@ export async function POST(req) {
     const genAI = new GoogleGenerativeAI(process.env.API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `You are an expert exam assistant. Given the following context, answer the question as accurately as possible. If you are unsure, say so. Always be concise and clear.
-
-Exam: ${examName || "Unknown"}
-Year: ${examYear || "Unknown"}
-Section: ${sectionName || "Unknown"}
-
-Question: ${questionText}
-
-IMPORTANT: Your answer will be shown to a student and may be used for study. If you are not sure, say so. Do NOT include any markdown, asterisks, bold, or disclaimers in your answer. The answer should be plain text only. Do NOT include any caution or note about AI answers in your response.`;
+    const prompt = `You are an expert exam assistant. Always attempt to answer the following question, even if you are not sure. Do not say 'I am unsure' or similar phrases. If you must guess, do so, but do not mention that you are guessing. Do NOT include any disclaimers or notes in your answer. The answer should be plain text only.\n\nQuestion (with options):\n${questionText}`;
 
     const result = await model.generateContent({
       contents: [
