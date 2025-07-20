@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import QuestionDisplay from "../components/questions/QuestionDisplay"; // Import the new component
 
 export default function UploadContent() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -320,47 +321,10 @@ export default function UploadContent() {
                           </h5>
                           <ol style={{ paddingLeft: "20px" }}>
                             {section.questions.map((question) => (
-                              <li
+                              <QuestionDisplay
                                 key={question.id}
-                                style={{ marginBottom: "10px" }}
-                              >
-                                <p>
-                                  <strong>
-                                    Q{question.question_number_in_exam}:
-                                  </strong>{" "}
-                                  {question.question_text}
-                                </p>
-                                {question.options &&
-                                  question.options.length > 0 && (
-                                    <ul
-                                      style={{
-                                        listStyleType: "lower-alpha",
-                                        paddingLeft: "20px",
-                                      }}
-                                    >
-                                      {question.options.map((option, idx) => (
-                                        <li key={idx}> {option}</li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                {question.correct_answer && (
-                                  <p
-                                    style={{
-                                      fontWeight: "bold",
-                                      color: "green",
-                                    }}
-                                  >
-                                    Correct Answer: {question.correct_answer}
-                                  </p>
-                                )}
-                                {question.explanation && (
-                                  <p
-                                    style={{ fontSize: "0.9em", color: "#666" }}
-                                  >
-                                    Explanation: {question.explanation}
-                                  </p>
-                                )}
-                              </li>
+                                question={question}
+                              />
                             ))}
                           </ol>
                         </div>
