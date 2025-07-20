@@ -1,8 +1,8 @@
 // app/api/ingest-exam/route.js
 
 import { NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebaseAdmin"; // Import the adminDb instance
-// import { GoogleGenerativeAI } from '@google/generative-ai'; // Will need this for Gemini
+import { adminDb } from "@/lib/firebaseAdmin";
+import { GoogleGenerativeAI } from "@google/generative-ai"; // Will need this for Gemini
 // import { v4 as uuidv4 } from 'uuid'; // Useful for generating unique IDs (install if needed)
 
 // Set max duration for this potentially long-running API route
@@ -41,11 +41,10 @@ export async function POST(req) {
     // using the base64Data of the file and a detailed prompt.
 
     // Example (conceptual) of Gemini call:
-    /*
-        const genAI = new GoogleGenerativeAI(process.env.API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" }); // Or gemini-2.0-flash
+    const genAI = new GoogleGenerativeAI(process.env.API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Or gemini-2.0-flash
 
-        const prompt = `You are an AI assistant specialized in extracting exam questions from documents.
+    const prompt = `You are an AI assistant specialized in extracting exam questions from documents.
         Analyze the provided document (PDF or image) which is an exam script.
         Extract the following structured information for each exam paper:
         1. Overall Exam Name (e.g., "Ghana Law Entrance Exam")
@@ -89,68 +88,29 @@ export async function POST(req) {
         }
         `;
 
-        const result = await model.generateContent({
-          contents: [
-            {
-              role: "user",
-              parts: [
-                { text: prompt },
-                {
-                  inlineData: {
-                    data: base64Data,
-                    mimeType: mimeType,
-                  },
-                },
-              ],
-            },
-          ],
-        });
-        const aiResponseText = await result.response.text();
-        const extractedData = JSON.parse(aiResponseText);
-        */
-
-    // For now, let's mock the extractedData structure to test Firestore
-    const extractedData = {
-      examName: examName,
-      examYear: examYear,
-      sections: [
+    const result = await model.generateContent({
+      contents: [
         {
-          sectionName: "Section A: Mock Multiple Choice",
-          sectionNumber: "A",
-          questionTypeInSection: "multiple_choice",
-          instructions: "Choose the best option.",
-          questions: [
+          role: "user",
+          parts: [
+            { text: prompt },
             {
-              questionNumber: 1,
-              questionText: "What is 2+2?",
-              options: ["1", "2", "3", "4"],
-              correctAnswer: "4",
-              explanation: "Basic arithmetic.",
-            },
-            {
-              questionNumber: 2,
-              questionText: "Capital of Ghana?",
-              options: ["Kumasi", "Accra", "Tamale", "Takoradi"],
-              correctAnswer: "Accra",
-              explanation: "Accra is the capital city of Ghana.",
-            },
-          ],
-        },
-        {
-          sectionName: "Section B: Mock Essay",
-          sectionNumber: "B",
-          questionTypeInSection: "essay",
-          instructions: "Write a short essay.",
-          questions: [
-            {
-              questionNumber: 3,
-              questionText: "Discuss the importance of the rule of law.",
-              explanation: "The rule of law is a fundamental principle...",
+              inlineData: {
+                data: base64Data,
+                mimeType: mimeType,
+              },
             },
           ],
         },
       ],
-    };
+    });
+    const aiResponseText = await result.response.text();
+    // Remove markdown code block (```json) if present in Gemini's response
+    const cleanAiResponseText = aiResponseText.replace(
+      /^```json\n|\n```$/g,
+      ""
+    );
+    const extractedData = JSON.parse(cleanAiResponseText);
 
     // --- Step 3: Save to Firestore using adminDb ---
     // Create the exam document

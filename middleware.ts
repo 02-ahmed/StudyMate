@@ -14,6 +14,7 @@ export default authMiddleware({
     "/api/generate-content",
     "/api/generate-explanation",
     "/api/analysePdf",
+    "/api/ingest-exam",
     "/pricing",
     "/learn",
     "/sign-in",
