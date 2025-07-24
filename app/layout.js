@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { Analytics } from "@vercel/analytics/react";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { PomodoroProvider } from "./contexts/PomodoroContext";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -55,6 +56,7 @@ export default function RootLayout({ children }) {
               >
                 <NavigationBar />
                 {children}
+                <SpeedInsights />
               </Box>
               <Analytics />
             </PomodoroProvider>
