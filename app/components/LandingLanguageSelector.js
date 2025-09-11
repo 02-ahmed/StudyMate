@@ -21,14 +21,14 @@ export default function LandingLanguageSelector({ inline = false }) {
           alignItems: "center",
         }}
       >
-        <TranslateIcon sx={{ color: "#4f46e5", fontSize: 20, mr: 1 }} />
+        <TranslateIcon sx={{ color: "#3B82F6", fontSize: 20, mr: 1 }} />
         <select
           value={language}
           onChange={handleLanguageChange}
           style={{
             border: "none",
             background: "transparent",
-            color: "#4f46e5",
+            color: "#3B82F6",
             fontWeight: 500,
             fontSize: "0.9rem",
             cursor: "pointer",

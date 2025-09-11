@@ -26,6 +26,11 @@ import { useLanguage } from "./contexts/LanguageContext";
 import useTranslation from "./hooks/useTranslation";
 import LandingNavBar from "./components/LandingNavBar";
 import LandingFooter from "./components/LandingFooter";
+import HeroSection from "./components/HeroSection";
+import LearningAdvantageSection from "./components/LearningAdvantageSection";
+import StudyResourcesSection from "./components/StudyResourcesSection";
+import ChattoSection from "./components/ChattoSection";
+import SmarterLearningSection from "./components/SmarterLearningSection";
 
 // Animation variants
 const fadeIn = {
@@ -135,171 +140,11 @@ export default function HomeContent() {
       }}
     >
       <LandingNavBar />
-
-      {/* Hero Section */}
-      <Box
-        sx={{
-          py: { xs: 8, sm: 16, md: 20 },
-          minHeight: { xs: "100vh", md: "100vh" },
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          position: "relative",
-          mt: { xs: 2, sm: 0 },
-        }}
-      >
-        <Grid container spacing={{ xs: 6, sm: 4 }} alignItems="center">
-          <Grid item xs={12} md={6}>
-            <motion.div initial="hidden" animate="visible" variants={stagger}>
-              <motion.div variants={fadeIn}>
-                <Typography
-                  variant="h1"
-                  gutterBottom
-                  sx={{
-                    fontWeight: 900,
-                    fontSize: { xs: "2.8rem", sm: "3.5rem", md: "3.5rem" },
-                    lineHeight: 1.1,
-                    mb: { xs: 3, sm: 4 },
-                    letterSpacing: "-0.03em",
-                    background:
-                      "linear-gradient(90deg,rgb(182, 52, 214) 0%, #4f46e5 100%)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                    color: "transparent",
-                    textAlign: { xs: "center", sm: "left" },
-                  }}
-                >
-                  {t("landing.hero.title", "Understand Anything With Ease")}
-                </Typography>
-              </motion.div>
-
-              <motion.div variants={fadeIn}>
-                <Typography
-                  variant="h5"
-                  sx={{
-                    color: "text.secondary",
-                    mb: { xs: 4, sm: 6 },
-                    maxWidth: "600px",
-                    fontSize: { xs: "1.3rem", sm: "1.5rem", md: "1.5rem" },
-                    lineHeight: 1.8,
-                    textAlign: { xs: "center", sm: "left" },
-                    mx: { xs: "auto", sm: 0 },
-                  }}
-                >
-                  {t(
-                    "landing.hero.subtitle",
-                    "Unleash your potential with AI-powered flashcards, smart notes, personalized learning analytics & more"
-                  )}
-                </Typography>
-              </motion.div>
-
-              <motion.div variants={fadeIn}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    gap: { xs: 2, sm: 3 },
-                    flexDirection: { xs: "column", sm: "row" },
-                    mt: { xs: 3, sm: 4 },
-                    width: "100%",
-                    justifyContent: { xs: "center", sm: "flex-start" },
-                  }}
-                >
-                  <Button
-                    variant="contained"
-                    href="/sign-up"
-                    sx={{
-                      px: { xs: 4, sm: 6 },
-                      py: { xs: 1.5, sm: 2 },
-                      fontSize: { xs: "1.1rem", sm: "1.2rem" },
-                      borderRadius: "50px",
-                      background:
-                        "linear-gradient(45deg, #3B82F6 30%, #EC4899 90%)",
-                      boxShadow: "0 12px 40px rgba(59, 130, 246, 0.4)",
-                      textTransform: "none",
-                      fontWeight: 700,
-                      width: { xs: "100%", sm: "auto" },
-                      "&:hover": {
-                        boxShadow: "0 20px 50px rgba(59, 130, 246, 0.5)",
-                        transform: "scale(1.05)",
-                      },
-                    }}
-                  >
-                    {t("landing.hero.getStarted", "Get Started")}
-                  </Button>
-
-                  <Button
-                    variant="outlined"
-                    size="medium"
-                    href="/sign-up"
-                    sx={{
-                      px: { xs: 4, sm: 6 },
-                      py: { xs: 1.5, sm: 2 },
-                      fontSize: { xs: "1.1rem", sm: "1.2rem" },
-                      borderRadius: "50px",
-                      borderWidth: "2px",
-                      borderColor: "#3B82F6",
-                      color: "#3B82F6",
-                      textTransform: "none",
-                      fontWeight: 700,
-                      width: { xs: "100%", sm: "auto" },
-                      "&:hover": {
-                        boxShadow: "0 10px 30px rgba(59, 130, 246, 0.3)",
-                        transform: "scale(1.05)",
-                      },
-                    }}
-                  >
-                    {t("landing.hero.signUp", "Sign Up For Free")}
-                  </Button>
-                </Box>
-              </motion.div>
-            </motion.div>
-          </Grid>
-
-          <Grid item xs={12} md={6}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
-              <Box
-                sx={{
-                  position: "relative",
-                  height: { xs: "280px", sm: "450px", md: "550px" },
-                  borderRadius: { xs: "24px", sm: "32px" },
-                  overflow: "hidden",
-                  boxShadow: "0 25px 60px rgba(0, 0, 0, 0.2)",
-                  "&:hover": {
-                    transform: "scale(1.03)",
-                  },
-                  mx: { xs: "auto", sm: 0 },
-                  maxWidth: { xs: "100%", sm: "none" },
-                }}
-              >
-                <Image
-                  src="/images/1st image.jpg"
-                  alt="Collaborative study"
-                  layout="fill"
-                  objectFit="cover"
-                  priority
-                />
-                <Box
-                  sx={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background:
-                      "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(59,130,246,0.15) 100%)",
-                  }}
-                />
-              </Box>
-            </motion.div>
-          </Grid>
-        </Grid>
-      </Box>
+      <HeroSection />
+      <LearningAdvantageSection />
+      <StudyResourcesSection />
+      <ChattoSection />
+      <SmarterLearningSection />
 
       {/* Features Section */}
       <Box

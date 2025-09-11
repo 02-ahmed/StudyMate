@@ -56,6 +56,11 @@ function NavigationBarContent() {
   const { language, changeLanguage } = useLanguage();
   const { t } = useTranslation();
 
+  // Don't render NavigationBar on landing page - LandingNavBar handles it
+  if (pathname === "/" && !isSignedIn) {
+    return null;
+  }
+
   const handleLanguageChange = (event) => {
     changeLanguage(event.target.value);
   };
