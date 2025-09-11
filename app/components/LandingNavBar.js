@@ -353,8 +353,23 @@ export default function LandingNavBar() {
                 Sign in
               </Link>
             </MenuItem>
-            <MenuItem onClick={handleMobileMenuClose}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <MenuItem
+              onClick={(e) => e.stopPropagation()}
+              sx={{
+                "&:hover": {
+                  backgroundColor: "transparent",
+                },
+                padding: "8px 16px",
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  width: "100%",
+                }}
+              >
                 <LandingLanguageSelector inline={true} />
               </Box>
             </MenuItem>

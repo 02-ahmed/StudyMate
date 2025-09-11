@@ -26,16 +26,17 @@ export default function HeroSection() {
           right: 0,
           bottom: 0,
           zIndex: 1,
+          backgroundImage: "url('/redesign/lady-smile.png')",
+          backgroundSize: "cover",
+          backgroundPosition: {
+            xs: "60% center", // Show more of the right side where woman's face is
+            sm: "60% center", // Show more of the right side on tablet
+            md: "center", // Center on medium screens
+            lg: "center", // Center on large screens
+          },
+          backgroundRepeat: "no-repeat",
         }}
-      >
-        <Image
-          src="/redesign/lady-smile.png"
-          alt="Professional study environment"
-          layout="fill"
-          objectFit="cover"
-          priority
-        />
-      </Box>
+      />
 
       {/* Dark Overlay */}
       <Box
