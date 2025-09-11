@@ -1,12 +1,14 @@
 "use client";
 
 import React from "react";
-import { Box, Select, MenuItem } from "@mui/material";
+import { Box, Select, MenuItem, useMediaQuery, useTheme } from "@mui/material";
 import TranslateIcon from "@mui/icons-material/Translate";
 import { useLanguage, SUPPORTED_LANGUAGES } from "../contexts/LanguageContext";
 
 export default function LandingLanguageSelector({ inline = false }) {
   const { language, changeLanguage } = useLanguage();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const handleLanguageChange = (event) => {
     changeLanguage(event.target.value);
@@ -21,27 +23,60 @@ export default function LandingLanguageSelector({ inline = false }) {
           alignItems: "center",
         }}
       >
-        <TranslateIcon sx={{ color: "#4f46e5", fontSize: 20, mr: 1 }} />
-        <select
-          value={language}
-          onChange={handleLanguageChange}
-          style={{
-            border: "none",
-            background: "transparent",
-            color: "#4f46e5",
-            fontWeight: 500,
-            fontSize: "0.9rem",
-            cursor: "pointer",
-            padding: "4px 8px",
-            outline: "none",
-          }}
-        >
-          {Object.entries(SUPPORTED_LANGUAGES).map(([code, name]) => (
-            <option key={code} value={code}>
-              {name}
-            </option>
-          ))}
-        </select>
+        <TranslateIcon sx={{ color: "#3B82F6", fontSize: 20, mr: 1 }} />
+        {isMobile ? (
+          // Use Material-UI Select for mobile to work better in menus
+          <Select
+            value={language}
+            onChange={handleLanguageChange}
+            size="small"
+            variant="standard"
+            sx={{
+              minWidth: 100,
+              "& .MuiSelect-select": {
+                py: 0.5,
+                px: 0,
+                color: "#3B82F6",
+                fontWeight: 500,
+                fontSize: "0.9rem",
+              },
+              "&:before, &:after": {
+                display: "none",
+              },
+              "& .MuiSelect-icon": {
+                color: "#3B82F6",
+              },
+            }}
+          >
+            {Object.entries(SUPPORTED_LANGUAGES).map(([code, name]) => (
+              <MenuItem key={code} value={code}>
+                {name}
+              </MenuItem>
+            ))}
+          </Select>
+        ) : (
+          // Use native select for desktop/tablet
+          <select
+            value={language}
+            onChange={handleLanguageChange}
+            style={{
+              border: "none",
+              background: "transparent",
+              color: "#3B82F6",
+              fontWeight: 500,
+              fontSize: "0.9rem",
+              cursor: "pointer",
+              padding: "4px 8px",
+              outline: "none",
+            }}
+          >
+            {Object.entries(SUPPORTED_LANGUAGES).map(([code, name]) => (
+              <option key={code} value={code}>
+                {name}
+              </option>
+            ))}
+          </select>
+        )}
       </Box>
     );
   }

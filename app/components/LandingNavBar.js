@@ -8,14 +8,17 @@ import {
   Toolbar,
   Container,
   Box,
+  Typography,
   Button,
   useMediaQuery,
   useTheme,
   IconButton,
   Menu,
   MenuItem,
+  Divider,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useLanguage } from "../contexts/LanguageContext";
 import useTranslation from "../hooks/useTranslation";
 import LandingLanguageSelector from "./LandingLanguageSelector";
@@ -23,7 +26,9 @@ import LandingLanguageSelector from "./LandingLanguageSelector";
 export default function LandingNavBar() {
   const { t } = useTranslation();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm")); // xs only (0-599px)
+  const isTablet = useMediaQuery(theme.breakpoints.between("sm", "lg")); // sm, md (600-1199px)
+  const isDesktop = useMediaQuery(theme.breakpoints.up("lg")); // lg and xl (1200px+)
   const [mobileMenuAnchor, setMobileMenuAnchor] = React.useState(null);
 
   const handleMobileMenuOpen = (event) => {
@@ -39,9 +44,8 @@ export default function LandingNavBar() {
       position="fixed"
       elevation={0}
       sx={{
-        backgroundColor: "rgba(255,255,255,0.8)",
-        backdropFilter: "blur(10px)",
-        borderBottom: "1px solid rgba(0,0,0,0.06)",
+        backgroundColor: "white",
+        borderBottom: "1px solid rgba(0,0,0,0.1)",
       }}
     >
       <Container maxWidth="xl">
@@ -51,8 +55,8 @@ export default function LandingNavBar() {
             sx={{
               display: "flex",
               alignItems: "center",
-              flexGrow: { xs: 0, sm: 1 },
-              mr: { xs: 2, sm: 0 },
+              flexGrow: { xs: 0, sm: 0 },
+              mr: { xs: 2, sm: 4 },
             }}
           >
             <Box
@@ -72,149 +76,304 @@ export default function LandingNavBar() {
             </Box>
           </Box>
 
-          {/* Desktop Navigation */}
-          {!isMobile ? (
+          {/* DESKTOP Navigation */}
+          {isDesktop ? (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+                flexGrow: 1,
+                justifyContent: "flex-end",
+              }}
+            >
+              {/* Navigation Links */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3,
+                  mr: 4,
+                }}
+              >
+                <Link
+                  href="/question-vault"
+                  passHref
+                  style={{ textDecoration: "none" }}
+                >
+                  <Typography
+                    sx={{
+                      color: "#374151",
+                      fontWeight: 500,
+                      fontSize: "0.95rem",
+                      cursor: "pointer",
+                      "&:hover": {
+                        color: "#1F2937",
+                      },
+                    }}
+                  >
+                    S-Bank
+                  </Typography>
+                </Link>
+                <Link
+                  href="/study-mate/chat"
+                  passHref
+                  style={{ textDecoration: "none" }}
+                >
+                  <Typography
+                    sx={{
+                      color: "#374151",
+                      fontWeight: 500,
+                      fontSize: "0.95rem",
+                      cursor: "pointer",
+                      "&:hover": {
+                        color: "#1F2937",
+                      },
+                    }}
+                  >
+                    StudyChat
+                  </Typography>
+                </Link>
+                <Link
+                  href="/generate"
+                  passHref
+                  style={{ textDecoration: "none" }}
+                >
+                  <Typography
+                    sx={{
+                      color: "#374151",
+                      fontWeight: 500,
+                      fontSize: "0.95rem",
+                      cursor: "pointer",
+                      "&:hover": {
+                        color: "#1F2937",
+                      },
+                    }}
+                  >
+                    Generate
+                  </Typography>
+                </Link>
+                <Link
+                  href="/practice"
+                  passHref
+                  style={{ textDecoration: "none" }}
+                >
+                  <Typography
+                    sx={{
+                      color: "#374151",
+                      fontWeight: 500,
+                      fontSize: "0.95rem",
+                      cursor: "pointer",
+                      "&:hover": {
+                        color: "#1F2937",
+                      },
+                    }}
+                  >
+                    Practice Tests
+                  </Typography>
+                </Link>
+              </Box>
+
+              {/* User Actions */}
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                }}
+              >
+                {/* Sign In Link */}
+                <Link
+                  href="/sign-in"
+                  passHref
+                  style={{ textDecoration: "none" }}
+                >
+                  <Typography
+                    sx={{
+                      color: "#3B82F6",
+                      fontWeight: 500,
+                      fontSize: "0.95rem",
+                      cursor: "pointer",
+                      "&:hover": {
+                        color: "#2563EB",
+                      },
+                    }}
+                  >
+                    Sign in
+                  </Typography>
+                </Link>
+
+                {/* Vertical Separator */}
+                <Divider
+                  orientation="vertical"
+                  flexItem
+                  sx={{
+                    height: 20,
+                    borderColor: "#D1D5DB",
+                  }}
+                />
+
+                {/* Language Selector */}
+                <LandingLanguageSelector inline={true} />
+              </Box>
+            </Box>
+          ) : isTablet ? (
+            // TABLET Navigation
             <Box
               sx={{
                 display: "flex",
                 alignItems: "center",
                 gap: 2,
+                ml: "auto",
               }}
             >
-              {/* Language Selector */}
-              <LandingLanguageSelector inline={true} />
-
-              {/* Pricing Button */}
-              <Link href="/pricing" passHref style={{ textDecoration: "none" }}>
-                <Button
+              {/* Sign In Link */}
+              <Link href="/sign-in" passHref style={{ textDecoration: "none" }}>
+                <Typography
                   sx={{
-                    color: "rgba(0,0,0,0.7)",
+                    color: "#3B82F6",
                     fontWeight: 500,
-                    fontSize: "0.9rem",
-                    padding: "6px 16px",
-                    whiteSpace: "nowrap",
-                    transition: "all 0.2s ease",
+                    fontSize: "0.95rem",
+                    cursor: "pointer",
                     "&:hover": {
-                      background: "rgba(79, 70, 229, 0.05)",
-                      transform: "translateY(-1px)",
+                      color: "#2563EB",
                     },
                   }}
                 >
-                  {t("nav.pricing", "Pricing")}
-                </Button>
+                  Sign in
+                </Typography>
               </Link>
 
-              {/* Sign In Button */}
-              <Button
-                color="inherit"
-                href="/sign-in"
+              {/* Vertical Separator */}
+              <Divider
+                orientation="vertical"
+                flexItem
                 sx={{
-                  color: "#4f46e5",
-                  fontSize: "0.9rem",
-                  fontWeight: 600,
-                  whiteSpace: "nowrap",
-                  minWidth: 80,
-                  padding: "6px 16px",
-                  "&:hover": {
-                    background: "rgba(79, 70, 229, 0.05)",
-                  },
+                  height: 20,
+                  borderColor: "#D1D5DB",
                 }}
-              >
-                {t("nav.signIn", "Sign In")}
-              </Button>
+              />
 
-              {/* Get Started Button */}
-              <Button
-                variant="contained"
-                href="/sign-up"
+              {/* Language Selector */}
+              <LandingLanguageSelector inline={true} />
+
+              {/* Hamburger Menu */}
+              <IconButton
+                edge="end"
+                color="inherit"
+                aria-label="menu"
+                onClick={handleMobileMenuOpen}
                 sx={{
-                  bgcolor: "#4f46e5",
-                  fontWeight: 600,
-                  fontSize: "0.9rem",
-                  borderRadius: "8px",
-                  textTransform: "none",
-                  boxShadow: "0 2px 10px rgba(79, 70, 229, 0.3)",
-                  padding: "6px 16px",
-                  minWidth: 100,
-                  whiteSpace: "nowrap",
-                  "&:hover": {
-                    bgcolor: "#4338ca",
-                    boxShadow: "0 4px 12px rgba(79, 70, 229, 0.4)",
-                    transform: "translateY(-1px)",
-                  },
-                  transition: "all 0.2s ease",
+                  color: "#374151",
+                  ml: 1,
                 }}
               >
-                {t("nav.getStarted", "Get Started")}
-              </Button>
+                <MenuIcon />
+              </IconButton>
             </Box>
           ) : (
-            // Mobile Navigation
-            <>
-              {/* Mobile Menu Icon - Positioned on the right */}
+            // MOBILE Navigation - Only Hamburger Menu
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "flex-end",
+                width: "100%",
+              }}
+            >
+              <IconButton
+                edge="end"
+                color="inherit"
+                aria-label="menu"
+                onClick={handleMobileMenuOpen}
+                sx={{
+                  color: "#374151",
+                  mr: -1,
+                }}
+              >
+                <MenuIcon />
+              </IconButton>
+            </Box>
+          )}
+
+          {/* Mobile Menu */}
+          <Menu
+            anchorEl={mobileMenuAnchor}
+            open={Boolean(mobileMenuAnchor)}
+            onClose={handleMobileMenuClose}
+            PaperProps={{
+              sx: {
+                borderRadius: 2,
+                boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+                mt: 1,
+              },
+            }}
+          >
+            <MenuItem onClick={handleMobileMenuClose}>
+              <Link
+                href="/question-vault"
+                passHref
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                S-Bank
+              </Link>
+            </MenuItem>
+            <MenuItem onClick={handleMobileMenuClose}>
+              <Link
+                href="/study-mate/chat"
+                passHref
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                StudyChat
+              </Link>
+            </MenuItem>
+            <MenuItem onClick={handleMobileMenuClose}>
+              <Link
+                href="/generate"
+                passHref
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                Generate
+              </Link>
+            </MenuItem>
+            <MenuItem onClick={handleMobileMenuClose}>
+              <Link
+                href="/practice"
+                passHref
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                Practice Tests
+              </Link>
+            </MenuItem>
+            <MenuItem onClick={handleMobileMenuClose}>
+              <Link
+                href="/sign-in"
+                passHref
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                Sign in
+              </Link>
+            </MenuItem>
+            <MenuItem
+              onClick={(e) => e.stopPropagation()}
+              sx={{
+                "&:hover": {
+                  backgroundColor: "transparent",
+                },
+                padding: "8px 16px",
+              }}
+            >
               <Box
                 sx={{
                   display: "flex",
-                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  gap: 1,
                   width: "100%",
                 }}
               >
-                <IconButton
-                  edge="end"
-                  color="inherit"
-                  aria-label="menu"
-                  onClick={handleMobileMenuOpen}
-                  sx={{
-                    color: "#4f46e5",
-                    mr: -1, // Negative margin to align to the edge
-                  }}
-                >
-                  <MenuIcon />
-                </IconButton>
+                <LandingLanguageSelector inline={true} />
               </Box>
-
-              {/* Mobile Menu */}
-              <Menu
-                anchorEl={mobileMenuAnchor}
-                open={Boolean(mobileMenuAnchor)}
-                onClose={handleMobileMenuClose}
-                PaperProps={{
-                  sx: {
-                    borderRadius: 2,
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-                  },
-                }}
-              >
-                <MenuItem onClick={handleMobileMenuClose}>
-                  <Link
-                    href="/pricing"
-                    passHref
-                    style={{ textDecoration: "none", color: "inherit" }}
-                  >
-                    {t("nav.pricing", "Pricing")}
-                  </Link>
-                </MenuItem>
-                <MenuItem onClick={handleMobileMenuClose}>
-                  <Link
-                    href="/sign-in"
-                    passHref
-                    style={{ textDecoration: "none", color: "inherit" }}
-                  >
-                    {t("nav.signIn", "Sign In")}
-                  </Link>
-                </MenuItem>
-                <MenuItem onClick={handleMobileMenuClose}>
-                  <Link
-                    href="/sign-up"
-                    passHref
-                    style={{ textDecoration: "none", color: "inherit" }}
-                  >
-                    {t("nav.getStarted", "Get Started")}
-                  </Link>
-                </MenuItem>
-              </Menu>
-            </>
-          )}
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </Container>
     </AppBar>
