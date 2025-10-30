@@ -69,7 +69,7 @@ export async function POST(req) {
 
     // --- Step 2: Call the Gemini API for structured extraction ---
     const genAI = new GoogleGenerativeAI(process.env.API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     let prompt;
     if (extractionMode === "manual") {
