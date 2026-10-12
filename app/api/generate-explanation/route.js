@@ -16,7 +16,7 @@ export async function POST(request) {
       );
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
 
     const prompt = `
       I need help understanding this concept:

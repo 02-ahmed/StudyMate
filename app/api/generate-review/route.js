@@ -16,7 +16,7 @@ export async function POST(request) {
       throw new Error("API key is not configured");
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
 
     const prompt = `
       I need a comprehensive learning guide about ${topic}.
