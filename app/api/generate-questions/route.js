@@ -142,7 +142,7 @@ Additional Rules:
 
     // Update the model configuration to increase creativity
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-3.6-flash",
       generationConfig: {
         temperature: 0.9, // Increase randomness
         topK: 40,
